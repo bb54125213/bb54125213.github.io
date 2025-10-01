@@ -143,3 +143,8 @@ button[type="submit"]:disabled {
         font-size: 1.5em;
     }
 }
+
+/* 追記 */
+.hidden {
+    display: none;
+}

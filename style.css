@@ -1,26 +1,64 @@
-/* 基本設定 */
+:root {
+    --color-primary: #0071C5;
+    --color-text: #404756;
+    --color-background: #FFFFFF;
+    --color-border: #e0e0e0;
+}
+
 body {
     font-family: 'Noto Sans JP', sans-serif;
-    background-color: #f4f7f6;
-    color: #333;
+    background-color: var(--color-background);
+    color: var(--color-text);
     margin: 0;
     padding: 20px;
     line-height: 1.6;
+    overflow-x: hidden;
 }
 
-/* 全体を囲むコンテナ */
+.side-images {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 15vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    gap: 20px;
+    z-index: -1;
+    padding: 20px 0;
+}
+
+.side-images.left { left: 0; }
+.side-images.right { right: 0; }
+
+.side-images img {
+    max-width: 100%;
+    height: auto;
+    opacity: 0.5;
+    animation: pulse-rotate 15s ease-in-out infinite;
+}
+
+@keyframes pulse-rotate {
+    0% { transform: scale(1) rotate(-5deg); }
+    50% { transform: scale(1.1) rotate(5deg); }
+    100% { transform: scale(1) rotate(-5deg); }
+}
+
 .container {
-    max-width: 800px;
+    max-width: 700px;
     margin: 0 auto;
-    background-color: #ffffff;
-    padding: 30px;
+    background-color: var(--color-background);
+    padding: 30px 40px;
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 1;
 }
 
 h1 {
     text-align: center;
-    color: #2c3e50;
+    color: var(--color-text);
     margin-bottom: 20px;
 }
 
@@ -29,10 +67,9 @@ p {
     margin-bottom: 30px;
 }
 
-/* 動画の埋め込み */
 .video-container {
     position: relative;
-    padding-bottom: 56.25%; /* 16:9 アスペクト比 */
+    padding-bottom: 56.25%;
     height: 0;
     overflow: hidden;
     margin-bottom: 40px;
@@ -47,7 +84,6 @@ p {
     height: 100%;
 }
 
-/* フォームのセクション */
 fieldset {
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -58,11 +94,10 @@ fieldset {
 legend {
     font-size: 1.2em;
     font-weight: 700;
-    color: #3498db;
+    color: var(--color-primary);
     padding: 0 10px;
 }
 
-/* フォームの各パーツ */
 .form-group {
     margin-bottom: 20px;
 }
@@ -84,34 +119,30 @@ textarea {
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-sizing: border-box; /* paddingを含めてwidth 100%にする */
+    box-sizing: border-box;
     font-size: 1em;
 }
 
 textarea {
-    resize: vertical; /* 縦方向のみリサイズ可能に */
+    resize: vertical;
 }
 
-/* カスタムラジオボタンのスタイル */
 .radio-group,
 .radio-group-vertical {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px; /* ボタン間の隙間 */
+    gap: 10px;
 }
 
-/* 縦並びのとき */
 .radio-group-vertical {
     flex-direction: column;
 }
 
-/* 元のラジオボタンを隠す */
 .radio-group input[type="radio"],
 .radio-group-vertical input[type="radio"] {
     display: none;
 }
 
-/* ボタン風のラベルスタイル */
 .radio-group label,
 .radio-group-vertical label {
     display: block;
@@ -121,32 +152,29 @@ textarea {
     cursor: pointer;
     transition: all 0.2s ease;
     font-weight: 500;
-    text-align: center; /* 文字を中央揃えにする */
+    text-align: center;
 }
 
-/* ホバー時のスタイル */
 .radio-group label:hover,
 .radio-group-vertical label:hover {
     background-color: #f0f8ff;
-    border-color: #3498db;
+    border-color: var(--color-primary);
 }
 
-/* 選択されたときのスタイル */
 .radio-group input[type="radio"]:checked + label,
 .radio-group-vertical input[type="radio"]:checked + label {
-    background-color: #3498db;
-    border-color: #3498db;
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
     color: white;
     font-weight: 700;
 }
 
-/* ボタン共通スタイル */
 button[type="submit"],
 #nextButton {
     display: block;
     width: 100%;
     padding: 15px;
-    background-color: #3498db;
+    background-color: var(--color-primary);
     color: white;
     border: none;
     border-radius: 5px;
@@ -154,12 +182,12 @@ button[type="submit"],
     font-weight: 700;
     cursor: pointer;
     transition: background-color 0.3s;
-    margin-top: 20px; /* ボタンの上の余白 */
+    margin-top: 20px;
 }
 
 button[type="submit"]:hover,
 #nextButton:hover {
-    background-color: #2980b9;
+    background-color: #005a9e;
 }
 
 button[type="submit"]:disabled {
@@ -167,17 +195,26 @@ button[type="submit"]:disabled {
     cursor: not-allowed;
 }
 
-/* 非表示用クラス */
 .hidden {
     display: none;
 }
 
-/* レスポンシブ対応 */
+.progress-bar-container {
+    background-color: var(--color-border);
+}
+
+.progress-bar {
+    background-color: var(--color-primary);
+}
+
 @media (max-width: 600px) {
     .container {
         padding: 20px;
     }
     h1 {
         font-size: 1.5em;
+    }
+    .side-images {
+        width: 10vw; /* スマホでは画像を小さく */
     }
 }

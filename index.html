@@ -8,12 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        .progress-bar-container{width:100%;background-color:#e0e0e0;border-radius:5px;margin-bottom:20px}
-        .progress-bar{width:0%;height:20px;background-color:#3498db;border-radius:5px;text-align:center;line-height:20px;color:white;transition:width .4s ease}
-    </style>
 </head>
 <body>
+    <div class="side-images left" id="side-images-left"></div>
+    <div class="side-images right" id="side-images-right"></div>
+
     <div class="container">
         <h1>砂時計アニメーションによる心理的効果計測テスト</h1>
         
@@ -46,9 +45,10 @@
                 <button type="submit">動画視聴へ進む</button>
             </form>
         </div>
-
         <div id="step2" class="hidden">
-            <div class="progress-bar-container"><div id="progressBar" class="progress-bar"></div></div>
+            <div class="progress-bar-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
             <form id="mainForm">
                 <div id="questions-container">
                     <fieldset class="question-block hidden"><legend>質問1</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">この動画を見てどう感じましたか？</label><div class="radio-group-vertical"><input type="radio" id="q1a" name="q1" value="A" required><label for="q1a">A</label><input type="radio" id="q1b" name="q1" value="B"><label for="q1b">B</label><input type="radio" id="q1c" name="q1" value="C"><label for="q1c">C</label><input type="radio" id="q1d" name="q1" value="D"><label for="q1d">D</label><input type="radio" id="q1e" name="q1" value="E"><label for="q1e">E</label><input type="radio" id="q1f" name="q1" value="F"><label for="q1f">F</label><input type="radio" id="q1g" name="q1" value="G"><label for="q1g">G</label><input type="radio" id="q1h" name="q1" value="H"><label for="q1h">H</label><input type="radio" id="q1i" name="q1" value="I"><label for="q1i">I</label></div></div></fieldset>
@@ -61,7 +61,6 @@
                     <fieldset class="question-block hidden"><legend>質問8</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問8のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q8a" name="q8" value="A" required><label for="q8a">A</label><input type="radio" id="q8b" name="q8" value="B"><label for="q8b">B</label><input type="radio" id="q8c" name="q8" value="C"><label for="q8c">C</label><input type="radio" id="q8d" name="q8" value="D"><label for="q8d">D</label><input type="radio" id="q8e" name="q8" value="E"><label for="q8e">E</label><input type="radio" id="q8f" name="q8" value="F"><label for="q8f">F</label><input type="radio" id="q8g" name="q8" value="G"><label for="q8g">G</label><input type="radio" id="q8h" name="q8" value="H"><label for="q8h">H</label><input type="radio" id="q8i" name="q8" value="I"><label for="q8i">I</label></div></div></fieldset>
                     <fieldset class="question-block hidden"><legend>質問9</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問9のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q9a" name="q9" value="A" required><label for="q9a">A</label><input type="radio" id="q9b" name="q9" value="B"><label for="q9b">B</label><input type="radio" id="q9c" name="q9" value="C"><label for="q9c">C</label><input type="radio" id="q9d" name="q9" value="D"><label for="q9d">D</label><input type="radio" id="q9e" name="q9" value="E"><label for="q9e">E</label><input type="radio" id="q9f" name="q9" value="F"><label for="q9f">F</label><input type="radio" id="q9g" name="q9" value="G"><label for="q9g">G</label><input type="radio" id="q9h" name="q9" value="H"><label for="q9h">H</label><input type="radio" id="q9i" name="q9" value="I"><label for="q9i">I</label></div></div></fieldset>
                 </div>
-                
                 <div id="final-step" class="hidden">
                     <fieldset>
                         <legend>ご感想</legend>
@@ -78,8 +77,6 @@
     </div>
 
     <script>
-        // ... JavaScript部分は前回の応答から変更ありません ...
-        // DOM要素の取得
         const container = document.querySelector('.container');
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
@@ -96,7 +93,6 @@
         let questions = [];
         let currentQuestionIndex = 0;
 
-        // ページ読み込み完了時の処理
         window.addEventListener('DOMContentLoaded', () => {
             const questionElements = Array.from(questionsContainer.getElementsByClassName('question-block'));
             for (let i = questionElements.length - 1; i > 0; i--) {
@@ -105,41 +101,77 @@
             }
             questions = questionElements;
             questions.forEach(q => questionsContainer.appendChild(q));
+            setupSideImages();
         });
 
-        // ステップ1（ユーザー情報）の処理
+        function setupSideImages() {
+            const leftContainer = document.getElementById('side-images-left');
+            const rightContainer = document.getElementById('side-images-right');
+            const imageBaseUrl = 'https://bb54124213.github.io/image/';
+
+            const imageSources = [
+                { src: `${imageBaseUrl}image11.png`, color: 1 }, { src: `${imageBaseUrl}image12.png`, color: 1 },
+                { src: `${imageBaseUrl}image21.png`, color: 2 }, { src: `${imageBaseUrl}image22.png`, color: 2 },
+                { src: `${imageBaseUrl}image31.png`, color: 3 }, { src: `${imageBaseUrl}image32.png`, color: 3 }
+            ];
+
+            function shuffleWithConstraint(array) {
+                let shuffled = [...array].sort(() => 0.5 - Math.random());
+                for (let i = 0; i < 50; i++) {
+                    let conflictFound = false;
+                    for (let j = 1; j < shuffled.length; j++) {
+                        if (shuffled[j].color === shuffled[j-1].color) {
+                            const swapIndex = Math.floor(Math.random() * shuffled.length);
+                            [shuffled[j], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[j]];
+                            conflictFound = true;
+                            break;
+                        }
+                    }
+                    if (!conflictFound) break;
+                }
+                return shuffled;
+            }
+
+            const finalImageOrder = shuffleWithConstraint(imageSources);
+
+            finalImageOrder.forEach((imgData, index) => {
+                const img = document.createElement('img');
+                img.src = imgData.src;
+                img.style.animationDelay = `-${(Math.random() * 10).toFixed(2)}s`;
+
+                if (index < finalImageOrder.length / 2) {
+                    leftContainer.appendChild(img);
+                } else {
+                    rightContainer.appendChild(img);
+                }
+            });
+        }
+
         userInfoForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const formData = new FormData(userInfoForm);
             formData.forEach((value, key) => { userInfo[key] = value; });
-
             step1.classList.add('hidden');
             step2.classList.remove('hidden');
-            
             startTime = new Date();
             showNextQuestion();
         });
 
-        // 「次へ」ボタンの処理
         nextButton.addEventListener('click', () => {
             const currentQuestion = questions[currentQuestionIndex];
             const radioName = currentQuestion.querySelector('input[type="radio"]').name;
             const selectedValue = mainForm.querySelector(`input[name="${radioName}"]:checked`);
-
             if (!selectedValue) {
                 alert('回答を選択してください。');
                 return;
             }
-
             currentQuestion.classList.add('hidden');
             currentQuestionIndex++;
             showNextQuestion();
         });
 
-        // 次の質問を表示する関数
         function showNextQuestion() {
             container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
             updateProgressBar();
             if (currentQuestionIndex < questions.length) {
                 questions[currentQuestionIndex].classList.remove('hidden');
@@ -150,29 +182,23 @@
             }
         }
 
-        // プログレスバーを更新する関数
         function updateProgressBar() {
             const progress = (currentQuestionIndex / questions.length) * 100;
             progressBar.style.width = `${progress}%`;
             progressBar.textContent = `${currentQuestionIndex} / ${questions.length}`;
         }
         
-        // 最終的なフォーム送信の処理
         mainForm.addEventListener('submit', (e) => {
             e.preventDefault();
             submitButton.disabled = true;
             submitButton.textContent = '送信中...';
-
             const endTime = new Date();
             const elapsedTime = Math.round((endTime - startTime) / 1000);
-
             const mainFormData = new FormData(mainForm);
             const finalData = { ...userInfo };
             mainFormData.forEach((value, key) => { finalData[key] = value; });
             finalData['elapsedTime'] = elapsedTime;
-
             const URL = 'https://script.google.com/macros/s/AKfycbxuTh1vXaVATAl2ySTjTdj7p_XYFmAiAYQ2vlAdPMYnAvtqdGvDcbSs3LSyOcIdAkGr/exec';
-
             fetch(URL, {
                 method: 'POST',
                 mode: 'no-cors',

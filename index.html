@@ -2,10 +2,113 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>私のウェブサイト</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube動画アンケート</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>こんにちは！</h1>
-    <p>これはGitHub Pagesで公開されたサイトです。</p>
+
+    <div class="container">
+        <h1>YouTube動画アンケート</h1>
+        <p>以下の動画をご覧いただいた後、アンケートにご回答ください。</p>
+
+        <div class="video-container">
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <form id="myForm">
+            <fieldset>
+                <legend>1. あなたについて教えてください</legend>
+                <div class="form-group">
+                    <label for="age">年代:</label>
+                    <select id="age" name="age" required>
+                        <option value="">選択してください</option>
+                        <option value="10代">10代</option>
+                        <option value="20代">20代</option>
+                        <option value="30代">30代</option>
+                        <option value="40代">40代</option>
+                        <option value="50代">50代</option>
+                        <option value="60代以上">60代以上</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>性別:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="gender" value="男性" required> 男性</label>
+                        <label><input type="radio" name="gender" value="女性"> 女性</label>
+                        <label><input type="radio" name="gender" value="その他"> その他</label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>2. 動画に関する質問</legend>
+                <div class="form-group">
+                    <label class="question-title">質問1: この動画で最も印象に残った点は？</label>
+                    <div class="radio-group-vertical">
+                        <label><input type="radio" name="q1" value="A" required> 選択肢A</label>
+                        <label><input type="radio" name="q1" value="B"> 選択肢B</label>
+                        <label><input type="radio" name="q1" value="C"> 選択肢C</label>
+                    </div>
+                </div>
+                </fieldset>
+
+            <fieldset>
+                <legend>3. ご感想</legend>
+                <div class="form-group">
+                    <label for="feedback">この動画やアンケート全体に対するご意見、ご感想があればご記入ください。</label>
+                    <textarea id="feedback" name="feedback" rows="6" placeholder="自由にご記入ください..."></textarea>
+                </div>
+            </fieldset>
+
+            <button type="submit">アンケートを送信する</button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('myForm');
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitButton.disabled = true;
+            submitButton.textContent = '送信中...';
+
+            const formData = new FormData(form);
+            const data = {};
+            // スプレッドシートのヘッダー名と一致させる
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            const URL = 'https://script.google.com/macros/s/AKfycbxuTh1vXaVATAl2ySTjTdj7p_XYFmAiAYQ2vlAdPMYnAvtqdGvDcbSs3LSyOcIdAkGr/exec';
+
+            fetch(URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data),
+                redirect: 'follow'
+            })
+            .then(response => {
+                alert('アンケートの送信が完了しました。ご協力ありがとうございます！');
+                form.reset();
+            })
+            .catch(error => {
+                alert('エラーが発生しました。もう一度お試しください。');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = 'アンケートを送信する';
+            });
+        });
+    </script>
 </body>
 </html>

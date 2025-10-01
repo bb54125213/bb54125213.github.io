@@ -15,7 +15,7 @@ function doPost(e) {
       } else if (header === 'date') {
         return `${now.getFullYear()}/${('0' + (now.getMonth() + 1)).slice(-2)}/${('0' + now.getDate()).slice(-2)}`;
       } else {
-        // スプレッドシートのヘッダー名（英語）と、HTMLのname属性を一致させる
+        // スプレッドシートのヘッダー名と、HTMLのname属性を一致させる
         return params[header] || '';
       }
     });

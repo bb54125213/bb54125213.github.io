@@ -92,26 +92,57 @@ textarea {
     resize: vertical; /* 縦方向のみリサイズ可能に */
 }
 
-/* ラジオボタンのグループ */
+/* カスタムラジオボタンのスタイル */
+.radio-group,
+.radio-group-vertical {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* ボタン間の隙間 */
+}
+
+/* 縦並びのとき */
+.radio-group-vertical {
+    flex-direction: column;
+}
+
+/* 元のラジオボタンを隠す */
+.radio-group input[type="radio"],
+.radio-group-vertical input[type="radio"] {
+    display: none;
+}
+
+/* ボタン風のラベルスタイル */
 .radio-group label,
 .radio-group-vertical label {
-    font-weight: 400;
-    margin-right: 20px;
-    display: inline-flex;
-    align-items: center;
-}
-
-.radio-group-vertical label {
     display: block;
-    margin-bottom: 10px;
+    padding: 12px 20px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    text-align: center; /* 文字を中央揃えにする */
 }
 
-input[type="radio"] {
-    margin-right: 8px;
+/* ホバー時のスタイル */
+.radio-group label:hover,
+.radio-group-vertical label:hover {
+    background-color: #f0f8ff;
+    border-color: #3498db;
 }
 
-/* 送信ボタン */
-button[type="submit"] {
+/* 選択されたときのスタイル */
+.radio-group input[type="radio"]:checked + label,
+.radio-group-vertical input[type="radio"]:checked + label {
+    background-color: #3498db;
+    border-color: #3498db;
+    color: white;
+    font-weight: 700;
+}
+
+/* ボタン共通スタイル */
+button[type="submit"],
+#nextButton {
     display: block;
     width: 100%;
     padding: 15px;
@@ -123,15 +154,22 @@ button[type="submit"] {
     font-weight: 700;
     cursor: pointer;
     transition: background-color 0.3s;
+    margin-top: 20px; /* ボタンの上の余白 */
 }
 
-button[type="submit"]:hover {
+button[type="submit"]:hover,
+#nextButton:hover {
     background-color: #2980b9;
 }
 
 button[type="submit"]:disabled {
     background-color: #bdc3c7;
     cursor: not-allowed;
+}
+
+/* 非表示用クラス */
+.hidden {
+    display: none;
 }
 
 /* レスポンシブ対応 */
@@ -142,9 +180,4 @@ button[type="submit"]:disabled {
     h1 {
         font-size: 1.5em;
     }
-}
-
-/* 追記 */
-.hidden {
-    display: none;
 }

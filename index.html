@@ -9,27 +9,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* プログレスバー用のスタイル */
-        .progress-bar-container {
-            width: 100%;
-            background-color: #e0e0e0;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .progress-bar {
-            width: 0%;
-            height: 20px;
-            background-color: #3498db;
-            border-radius: 5px;
-            text-align: center;
-            line-height: 20px;
-            color: white;
-            transition: width 0.4s ease;
-        }
+        .progress-bar-container{width:100%;background-color:#e0e0e0;border-radius:5px;margin-bottom:20px}
+        .progress-bar{width:0%;height:20px;background-color:#3498db;border-radius:5px;text-align:center;line-height:20px;color:white;transition:width .4s ease}
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>砂時計アニメーションによる心理的効果計測テスト</h1>
         
@@ -53,48 +37,29 @@
                     <div class="form-group">
                         <label>性別:</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="gender" value="男性" required> 男性</label>
-                            <label><input type="radio" name="gender" value="女性"> 女性</label>
-                            <label><input type="radio" name="gender" value="その他"> その他</label>
+                            <input type="radio" id="gender_male" name="gender" value="男性" required><label for="gender_male">男性</label>
+                            <input type="radio" id="gender_female" name="gender" value="女性"><label for="gender_female">女性</label>
+                            <input type="radio" id="gender_other" name="gender" value="その他"><label for="gender_other">その他</label>
                         </div>
                     </div>
                 </fieldset>
                 <button type="submit">動画視聴へ進む</button>
             </form>
-            </div>
+        </div>
 
         <div id="step2" class="hidden">
-            <div class="progress-bar-container">
-                <div id="progressBar" class="progress-bar"></div>
-            </div>
+            <div class="progress-bar-container"><div id="progressBar" class="progress-bar"></div></div>
             <form id="mainForm">
                 <div id="questions-container">
-                    <fieldset class="question-block hidden">
-                        <legend>質問1</legend>
-                        <div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div>
-                        <div class="form-group">
-                            <label class="question-title">この動画を見てどう感じましたか？</label>
-                            <div class="radio-group-vertical">
-                                <label><input type="radio" name="q1" value="A" required> A</label>
-                                <label><input type="radio" name="q1" value="B"> B</label>
-                                <label><input type="radio" name="q1" value="C"> C</label>
-                                <label><input type="radio" name="q1" value="D"> D</label>
-                                <label><input type="radio" name="q1" value="E"> E</label>
-                                <label><input type="radio" name="q1" value="F"> F</label>
-                                <label><input type="radio" name="q1" value="G"> G</label>
-                                <label><input type="radio" name="q1" value="H"> H</label>
-                                <label><input type="radio" name="q1" value="I"> I</label>
-                            </div>
-                        </div>
-                    </fieldset>
-                    <fieldset class="question-block hidden"><legend>質問2</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">この動画で印象に残ったのは？</label><div class="radio-group-vertical"><label><input type="radio" name="q2" value="A" required> A</label><label><input type="radio" name="q2" value="B"> B</label><label><input type="radio" name="q2" value="C"> C</label><label><input type="radio" name="q2" value="D"> D</label><label><input type="radio" name="q2" value="E"> E</label><label><input type="radio" name="q2" value="F"> F</label><label><input type="radio" name="q2" value="G"> G</label><label><input type="radio" name="q2" value="H"> H</label><label><input type="radio" name="q2" value="I"> I</label></div></div></fieldset>
-                    <fieldset class="question-block hidden"><legend>質問3</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問3のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q3" value="A" required> A</label><label><input type="radio" name="q3" value="B"> B</label><label><input type="radio" name="q3" value="C"> C</label><label><input type="radio" name="q3" value="D"> D</label><label><input type="radio" name="q3" value="E"> E</label><label><input type="radio" name="q3" value="F"> F</label><label><input type="radio" name="q3" value="G"> G</label><label><input type="radio" name="q3" value="H"> H</label><label><input type="radio" name="q3" value="I"> I</label></div></div></fieldset>
-                    <fieldset class="question-block hidden"><legend>質問4</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問4のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q4" value="A" required> A</label><label><input type="radio" name="q4" value="B"> B</label><label><input type="radio" name="q4" value="C"> C</label><label><input type="radio" name="q4" value="D"> D</label><label><input type="radio" name="q4" value="E"> E</label><label><input type="radio" name="q4" value="F"> F</label><label><input type="radio" name="q4" value="G"> G</label><label><input type="radio" name="q4" value="H"> H</label><label><input type="radio" name="q4" value="I"> I</label></div></div></fieldset>
-                    <fieldset class="question-block hidden"><legend>質問5</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問5のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q5" value="A" required> A</label><label><input type="radio" name="q5" value="B"> B</label><label><input type="radio" name="q5" value="C"> C</label><label><input type="radio" name="q5" value="D"> D</label><label><input type="radio" name="q5" value="E"> E</label><label><input type="radio" name="q5" value="F"> F</label><label><input type="radio" name="q5" value="G"> G</label><label><input type="radio" name="q5" value="H"> H</label><label><input type="radio" name="q5" value="I"> I</label></div></div></fieldset>
-                    <fieldset class="question-block hidden"><legend>質問6</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問6のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q6" value="A" required> A</label><label><input type="radio" name="q6" value="B"> B</label><label><input type="radio" name="q6" value="C"> C</label><label><input type="radio" name="q6" value="D"> D</label><label><input type="radio" name="q6" value="E"> E</label><label><input type="radio" name="q6" value="F"> F</label><label><input type="radio" name="q6" value="G"> G</label><label><input type="radio" name="q6" value="H"> H</label><label><input type="radio" name="q6" value="I"> I</label></div></div></fieldset>
-                    <fieldset class="question-block hidden"><legend>質問7</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問7のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q7" value="A" required> A</label><label><input type="radio" name="q7" value="B"> B</label><label><input type="radio" name="q7" value="C"> C</label><label><input type="radio" name="q7" value="D"> D</label><label><input type="radio" name="q7" value="E"> E</label><label><input type="radio" name="q7" value="F"> F</label><label><input type="radio" name="q7" value="G"> G</label><label><input type="radio" name="q7" value="H"> H</label><label><input type="radio" name="q7" value="I"> I</label></div></div></fieldset>
-                    <fieldset class="question-block hidden"><legend>質問8</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問8のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q8" value="A" required> A</label><label><input type="radio" name="q8" value="B"> B</label><label><input type="radio" name="q8" value="C"> C</label><label><input type="radio" name="q8" value="D"> D</label><label><input type="radio" name="q8" value="E"> E</label><label><input type="radio" name="q8" value="F"> F</label><label><input type="radio" name="q8" value="G"> G</label><label><input type="radio" name="q8" value="H"> H</label><label><input type="radio" name="q8" value="I"> I</label></div></div></fieldset>
-                    <fieldset class="question-block hidden"><legend>質問9</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問9のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q9" value="A" required> A</label><label><input type="radio" name="q9" value="B"> B</label><label><input type="radio" name="q9" value="C"> C</label><label><input type="radio" name="q9" value="D"> D</label><label><input type="radio" name="q9" value="E"> E</label><label><input type="radio" name="q9" value="F"> F</label><label><input type="radio" name="q9" value="G"> G</label><label><input type="radio" name="q9" value="H"> H</label><label><input type="radio" name="q9" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問1</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">この動画を見てどう感じましたか？</label><div class="radio-group-vertical"><input type="radio" id="q1a" name="q1" value="A" required><label for="q1a">A</label><input type="radio" id="q1b" name="q1" value="B"><label for="q1b">B</label><input type="radio" id="q1c" name="q1" value="C"><label for="q1c">C</label><input type="radio" id="q1d" name="q1" value="D"><label for="q1d">D</label><input type="radio" id="q1e" name="q1" value="E"><label for="q1e">E</label><input type="radio" id="q1f" name="q1" value="F"><label for="q1f">F</label><input type="radio" id="q1g" name="q1" value="G"><label for="q1g">G</label><input type="radio" id="q1h" name="q1" value="H"><label for="q1h">H</label><input type="radio" id="q1i" name="q1" value="I"><label for="q1i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問2</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">この動画で印象に残ったのは？</label><div class="radio-group-vertical"><input type="radio" id="q2a" name="q2" value="A" required><label for="q2a">A</label><input type="radio" id="q2b" name="q2" value="B"><label for="q2b">B</label><input type="radio" id="q2c" name="q2" value="C"><label for="q2c">C</label><input type="radio" id="q2d" name="q2" value="D"><label for="q2d">D</label><input type="radio" id="q2e" name="q2" value="E"><label for="q2e">E</label><input type="radio" id="q2f" name="q2" value="F"><label for="q2f">F</label><input type="radio" id="q2g" name="q2" value="G"><label for="q2g">G</label><input type="radio" id="q2h" name="q2" value="H"><label for="q2h">H</label><input type="radio" id="q2i" name="q2" value="I"><label for="q2i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問3</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問3のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q3a" name="q3" value="A" required><label for="q3a">A</label><input type="radio" id="q3b" name="q3" value="B"><label for="q3b">B</label><input type="radio" id="q3c" name="q3" value="C"><label for="q3c">C</label><input type="radio" id="q3d" name="q3" value="D"><label for="q3d">D</label><input type="radio" id="q3e" name="q3" value="E"><label for="q3e">E</label><input type="radio" id="q3f" name="q3" value="F"><label for="q3f">F</label><input type="radio" id="q3g" name="q3" value="G"><label for="q3g">G</label><input type="radio" id="q3h" name="q3" value="H"><label for="q3h">H</label><input type="radio" id="q3i" name="q3" value="I"><label for="q3i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問4</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問4のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q4a" name="q4" value="A" required><label for="q4a">A</label><input type="radio" id="q4b" name="q4" value="B"><label for="q4b">B</label><input type="radio" id="q4c" name="q4" value="C"><label for="q4c">C</label><input type="radio" id="q4d" name="q4" value="D"><label for="q4d">D</label><input type="radio" id="q4e" name="q4" value="E"><label for="q4e">E</label><input type="radio" id="q4f" name="q4" value="F"><label for="q4f">F</label><input type="radio" id="q4g" name="q4" value="G"><label for="q4g">G</label><input type="radio" id="q4h" name="q4" value="H"><label for="q4h">H</label><input type="radio" id="q4i" name="q4" value="I"><label for="q4i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問5</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問5のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q5a" name="q5" value="A" required><label for="q5a">A</label><input type="radio" id="q5b" name="q5" value="B"><label for="q5b">B</label><input type="radio" id="q5c" name="q5" value="C"><label for="q5c">C</label><input type="radio" id="q5d" name="q5" value="D"><label for="q5d">D</label><input type="radio" id="q5e" name="q5" value="E"><label for="q5e">E</label><input type="radio" id="q5f" name="q5" value="F"><label for="q5f">F</label><input type="radio" id="q5g" name="q5" value="G"><label for="q5g">G</label><input type="radio" id="q5h" name="q5" value="H"><label for="q5h">H</label><input type="radio" id="q5i" name="q5" value="I"><label for="q5i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問6</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問6のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q6a" name="q6" value="A" required><label for="q6a">A</label><input type="radio" id="q6b" name="q6" value="B"><label for="q6b">B</label><input type="radio" id="q6c" name="q6" value="C"><label for="q6c">C</label><input type="radio" id="q6d" name="q6" value="D"><label for="q6d">D</label><input type="radio" id="q6e" name="q6" value="E"><label for="q6e">E</label><input type="radio" id="q6f" name="q6" value="F"><label for="q6f">F</label><input type="radio" id="q6g" name="q6" value="G"><label for="q6g">G</label><input type="radio" id="q6h" name="q6" value="H"><label for="q6h">H</label><input type="radio" id="q6i" name="q6" value="I"><label for="q6i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問7</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問7のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q7a" name="q7" value="A" required><label for="q7a">A</label><input type="radio" id="q7b" name="q7" value="B"><label for="q7b">B</label><input type="radio" id="q7c" name="q7" value="C"><label for="q7c">C</label><input type="radio" id="q7d" name="q7" value="D"><label for="q7d">D</label><input type="radio" id="q7e" name="q7" value="E"><label for="q7e">E</label><input type="radio" id="q7f" name="q7" value="F"><label for="q7f">F</label><input type="radio" id="q7g" name="q7" value="G"><label for="q7g">G</label><input type="radio" id="q7h" name="q7" value="H"><label for="q7h">H</label><input type="radio" id="q7i" name="q7" value="I"><label for="q7i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問8</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問8のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q8a" name="q8" value="A" required><label for="q8a">A</label><input type="radio" id="q8b" name="q8" value="B"><label for="q8b">B</label><input type="radio" id="q8c" name="q8" value="C"><label for="q8c">C</label><input type="radio" id="q8d" name="q8" value="D"><label for="q8d">D</label><input type="radio" id="q8e" name="q8" value="E"><label for="q8e">E</label><input type="radio" id="q8f" name="q8" value="F"><label for="q8f">F</label><input type="radio" id="q8g" name="q8" value="G"><label for="q8g">G</label><input type="radio" id="q8h" name="q8" value="H"><label for="q8h">H</label><input type="radio" id="q8i" name="q8" value="I"><label for="q8i">I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問9</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問9のテキスト</label><div class="radio-group-vertical"><input type="radio" id="q9a" name="q9" value="A" required><label for="q9a">A</label><input type="radio" id="q9b" name="q9" value="B"><label for="q9b">B</label><input type="radio" id="q9c" name="q9" value="C"><label for="q9c">C</label><input type="radio" id="q9d" name="q9" value="D"><label for="q9d">D</label><input type="radio" id="q9e" name="q9" value="E"><label for="q9e">E</label><input type="radio" id="q9f" name="q9" value="F"><label for="q9f">F</label><input type="radio" id="q9g" name="q9" value="G"><label for="q9g">G</label><input type="radio" id="q9h" name="q9" value="H"><label for="q9h">H</label><input type="radio" id="q9i" name="q9" value="I"><label for="q9i">I</label></div></div></fieldset>
                 </div>
                 
                 <div id="final-step" class="hidden">
@@ -113,7 +78,9 @@
     </div>
 
     <script>
+        // ... JavaScript部分は前回の応答から変更ありません ...
         // DOM要素の取得
+        const container = document.querySelector('.container');
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
         const userInfoForm = document.getElementById('userInfoForm');
@@ -171,6 +138,8 @@
 
         // 次の質問を表示する関数
         function showNextQuestion() {
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
             updateProgressBar();
             if (currentQuestionIndex < questions.length) {
                 questions[currentQuestionIndex].classList.remove('hidden');

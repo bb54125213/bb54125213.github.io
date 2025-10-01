@@ -12,7 +12,6 @@
 <body>
     <div class="side-images left" id="side-images-left"></div>
     <div class="side-images right" id="side-images-right"></div>
-
     <div class="container">
         <h1>砂時計アニメーションによる心理的効果計測テスト</h1>
         
@@ -21,31 +20,14 @@
             <form id="userInfoForm">
                 <fieldset>
                     <legend>回答者情報</legend>
-                    <div class="form-group">
-                        <label for="age">年代:</label>
-                        <select id="age" name="age" required>
-                            <option value="">選択してください</option>
-                            <option value="10代">10代</option>
-                            <option value="20代">20代</option>
-                            <option value="30代">30代</option>
-                            <option value="40代">40代</option>
-                            <option value="50代">50代</option>
-                            <option value="60代以上">60代以上</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>性別:</label>
-                        <div class="radio-group">
-                            <input type="radio" id="gender_male" name="gender" value="男性" required><label for="gender_male">男性</label>
-                            <input type="radio" id="gender_female" name="gender" value="女性"><label for="gender_female">女性</label>
-                            <input type="radio" id="gender_other" name="gender" value="その他"><label for="gender_other">その他</label>
-                        </div>
-                    </div>
+                    <div class="form-group"><label for="age">年代:</label><select id="age" name="age" required><option value="">選択してください</option><option value="10代">10代</option><option value="20代">20代</option><option value="30代">30代</option><option value="40代">40代</option><option value="50代">50代</option><option value="60代以上">60代以上</option></select></div>
+                    <div class="form-group"><label>性別:</label><div class="radio-group"><input type="radio" id="gender_male" name="gender" value="男性" required><label for="gender_male">男性</label><input type="radio" id="gender_female" name="gender" value="女性"><label for="gender_female">女性</label><input type="radio" id="gender_other" name="gender" value="その他"><label for="gender_other">その他</label></div></div>
                 </fieldset>
                 <button type="submit">動画視聴へ進む</button>
             </form>
         </div>
         <div id="step2" class="hidden">
+            <div id="progressText" class="progress-text"></div>
             <div class="progress-bar-container">
                 <div id="progressBar" class="progress-bar"></div>
             </div>
@@ -72,11 +54,18 @@
                     <button type="submit">アンケートを送信する</button>
                 </div>
             </form>
-            <button id="nextButton" class="hidden">次へ</button>
+            <button id="nextButton" style="display: none;">次へ</button>
         </div>
     </div>
 
     <script>
+        const IMAGE_SETTINGS = {
+            imagesPerSide: 4,
+            imageMaxWidthRatio: 0.5,
+            horizontalOffsetRatio: -0.5,
+            verticalPaddingRatio: 0.01,
+        };
+
         const container = document.querySelector('.container');
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
@@ -85,14 +74,96 @@
         const questionsContainer = document.getElementById('questions-container');
         const finalStep = document.getElementById('final-step');
         const nextButton = document.getElementById('nextButton');
-        const submitButton = mainForm.querySelector('button[type="submit"]');
         const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const leftImageContainer = document.getElementById('side-images-left');
+        const rightImageContainer = document.getElementById('side-images-right');
 
-        let userInfo = {};
-        let startTime;
-        let questions = [];
-        let currentQuestionIndex = 0;
+        let userInfo = {}, startTime, questions = [], currentQuestionIndex = 0;
+        
+        function setupSideImages() {
+            const imageBaseUrl = 'https://bb54125213.github.io/image/';
+            const originalSources = [
+                { src: `${imageBaseUrl}image11.png`, color: 1 },
+                { src: `${imageBaseUrl}image21.png`, color: 2 },
+                { src: `${imageBaseUrl}image31.png`, color: 3 }
+            ];
 
+            let imageSources = [];
+            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) {
+                imageSources.push(originalSources[i % originalSources.length]);
+            }
+            imageSources = [...imageSources, ...imageSources];
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+            
+            const shuffledImages = shuffleArray(imageSources);
+            const leftImagesData = shuffledImages.slice(0, IMAGE_SETTINGS.imagesPerSide);
+            const rightImagesData = shuffledImages.slice(IMAGE_SETTINGS.imagesPerSide);
+
+            const sideImageContainers = [
+                { container: leftImageContainer, images: leftImagesData, isLeft: true },
+                { container: rightImageContainer, images: rightImagesData, isLeft: false }
+            ];
+            
+            const totalImages = IMAGE_SETTINGS.imagesPerSide;
+            if (totalImages <= 0) return;
+            
+            const padding = window.innerHeight * IMAGE_SETTINGS.verticalPaddingRatio;
+            const availableHeight = window.innerHeight - (padding * 2);
+            const slotHeight = availableHeight / totalImages;
+
+            sideImageContainers.forEach(side => {
+                const { container, images, isLeft } = side;
+                container.innerHTML = '';
+                
+                shuffleArray(images).forEach((imgData, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'image-wrapper';
+
+                    const img = document.createElement('img');
+                    img.src = imgData.src;
+                    img.dataset.color = imgData.color;
+                    img.style.animationDelay = `-${(Math.random() * 20).toFixed(2)}s`;
+                    img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`;
+                    img.style.maxWidth = `${IMAGE_SETTINGS.imageMaxWidthRatio * 100}vw`;
+                    
+                    wrapper.appendChild(img);
+                    
+                    const verticalPosition = padding + (index * slotHeight) + (slotHeight / 2);
+                    wrapper.style.top = `${verticalPosition}px`;
+                    
+                    if (isLeft) {
+                        wrapper.style.left = '0';
+                        wrapper.style.transform = `translateX(${IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    } else {
+                        wrapper.style.right = '0';
+                        wrapper.style.transform = `translateX(${-IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    }
+                    
+                    container.appendChild(wrapper);
+                });
+            });
+        }
+        
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(setupSideImages, 250);
+        });
+
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`;
+            rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`;
+        });
+        
         window.addEventListener('DOMContentLoaded', () => {
             const questionElements = Array.from(questionsContainer.getElementsByClassName('question-block'));
             for (let i = questionElements.length - 1; i > 0; i--) {
@@ -103,49 +174,6 @@
             questions.forEach(q => questionsContainer.appendChild(q));
             setupSideImages();
         });
-
-        function setupSideImages() {
-            const leftContainer = document.getElementById('side-images-left');
-            const rightContainer = document.getElementById('side-images-right');
-            const imageBaseUrl = 'https://bb54124213.github.io/image/';
-
-            const imageSources = [
-                { src: `${imageBaseUrl}image11.png`, color: 1 }, { src: `${imageBaseUrl}image12.png`, color: 1 },
-                { src: `${imageBaseUrl}image21.png`, color: 2 }, { src: `${imageBaseUrl}image22.png`, color: 2 },
-                { src: `${imageBaseUrl}image31.png`, color: 3 }, { src: `${imageBaseUrl}image32.png`, color: 3 }
-            ];
-
-            function shuffleWithConstraint(array) {
-                let shuffled = [...array].sort(() => 0.5 - Math.random());
-                for (let i = 0; i < 50; i++) {
-                    let conflictFound = false;
-                    for (let j = 1; j < shuffled.length; j++) {
-                        if (shuffled[j].color === shuffled[j-1].color) {
-                            const swapIndex = Math.floor(Math.random() * shuffled.length);
-                            [shuffled[j], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[j]];
-                            conflictFound = true;
-                            break;
-                        }
-                    }
-                    if (!conflictFound) break;
-                }
-                return shuffled;
-            }
-
-            const finalImageOrder = shuffleWithConstraint(imageSources);
-
-            finalImageOrder.forEach((imgData, index) => {
-                const img = document.createElement('img');
-                img.src = imgData.src;
-                img.style.animationDelay = `-${(Math.random() * 10).toFixed(2)}s`;
-
-                if (index < finalImageOrder.length / 2) {
-                    leftContainer.appendChild(img);
-                } else {
-                    rightContainer.appendChild(img);
-                }
-            });
-        }
 
         userInfoForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -175,21 +203,27 @@
             updateProgressBar();
             if (currentQuestionIndex < questions.length) {
                 questions[currentQuestionIndex].classList.remove('hidden');
-                nextButton.classList.remove('hidden');
+                nextButton.style.display = 'block';
             } else {
-                nextButton.classList.add('hidden');
+                nextButton.style.display = 'none'; 
                 finalStep.classList.remove('hidden');
             }
         }
 
         function updateProgressBar() {
-            const progress = (currentQuestionIndex / questions.length) * 100;
-            progressBar.style.width = `${progress}%`;
-            progressBar.textContent = `${currentQuestionIndex} / ${questions.length}`;
+            const totalQuestions = questions.length;
+            // ▼▼▼ 変更点: 0の時に最低でも5%表示されるようにする ▼▼▼
+            const progressPercentage = currentQuestionIndex === 0 
+                ? 5 
+                : (currentQuestionIndex / totalQuestions) * 100;
+
+            progressBar.style.width = `${progressPercentage}%`;
+            progressText.textContent = `${currentQuestionIndex} / ${totalQuestions}`;
         }
         
         mainForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = '送信中...';
             const endTime = new Date();

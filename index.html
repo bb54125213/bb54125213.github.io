@@ -35,8 +35,33 @@
         
         <div id="step1">
             <p>まず、あなたについて教えてください。</p>
-            <form id="userInfoForm"></form>
-        </div>
+            <form id="userInfoForm">
+                <fieldset>
+                    <legend>回答者情報</legend>
+                    <div class="form-group">
+                        <label for="age">年代:</label>
+                        <select id="age" name="age" required>
+                            <option value="">選択してください</option>
+                            <option value="10代">10代</option>
+                            <option value="20代">20代</option>
+                            <option value="30代">30代</option>
+                            <option value="40代">40代</option>
+                            <option value="50代">50代</option>
+                            <option value="60代以上">60代以上</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>性別:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="gender" value="男性" required> 男性</label>
+                            <label><input type="radio" name="gender" value="女性"> 女性</label>
+                            <label><input type="radio" name="gender" value="その他"> その他</label>
+                        </div>
+                    </div>
+                </fieldset>
+                <button type="submit">動画視聴へ進む</button>
+            </form>
+            </div>
 
         <div id="step2" class="hidden">
             <div class="progress-bar-container">
@@ -46,7 +71,7 @@
                 <div id="questions-container">
                     <fieldset class="question-block hidden">
                         <legend>質問1</legend>
-                        <div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" frameborder="0" allowfullscreen></iframe></div>
+                        <div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div>
                         <div class="form-group">
                             <label class="question-title">この動画を見てどう感じましたか？</label>
                             <div class="radio-group-vertical">
@@ -62,8 +87,15 @@
                             </div>
                         </div>
                     </fieldset>
-                    <fieldset class="question-block hidden"><legend>質問2</legend></fieldset>
-                    </div>
+                    <fieldset class="question-block hidden"><legend>質問2</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">この動画で印象に残ったのは？</label><div class="radio-group-vertical"><label><input type="radio" name="q2" value="A" required> A</label><label><input type="radio" name="q2" value="B"> B</label><label><input type="radio" name="q2" value="C"> C</label><label><input type="radio" name="q2" value="D"> D</label><label><input type="radio" name="q2" value="E"> E</label><label><input type="radio" name="q2" value="F"> F</label><label><input type="radio" name="q2" value="G"> G</label><label><input type="radio" name="q2" value="H"> H</label><label><input type="radio" name="q2" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問3</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問3のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q3" value="A" required> A</label><label><input type="radio" name="q3" value="B"> B</label><label><input type="radio" name="q3" value="C"> C</label><label><input type="radio" name="q3" value="D"> D</label><label><input type="radio" name="q3" value="E"> E</label><label><input type="radio" name="q3" value="F"> F</label><label><input type="radio" name="q3" value="G"> G</label><label><input type="radio" name="q3" value="H"> H</label><label><input type="radio" name="q3" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問4</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問4のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q4" value="A" required> A</label><label><input type="radio" name="q4" value="B"> B</label><label><input type="radio" name="q4" value="C"> C</label><label><input type="radio" name="q4" value="D"> D</label><label><input type="radio" name="q4" value="E"> E</label><label><input type="radio" name="q4" value="F"> F</label><label><input type="radio" name="q4" value="G"> G</label><label><input type="radio" name="q4" value="H"> H</label><label><input type="radio" name="q4" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問5</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問5のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q5" value="A" required> A</label><label><input type="radio" name="q5" value="B"> B</label><label><input type="radio" name="q5" value="C"> C</label><label><input type="radio" name="q5" value="D"> D</label><label><input type="radio" name="q5" value="E"> E</label><label><input type="radio" name="q5" value="F"> F</label><label><input type="radio" name="q5" value="G"> G</label><label><input type="radio" name="q5" value="H"> H</label><label><input type="radio" name="q5" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問6</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問6のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q6" value="A" required> A</label><label><input type="radio" name="q6" value="B"> B</label><label><input type="radio" name="q6" value="C"> C</label><label><input type="radio" name="q6" value="D"> D</label><label><input type="radio" name="q6" value="E"> E</label><label><input type="radio" name="q6" value="F"> F</label><label><input type="radio" name="q6" value="G"> G</label><label><input type="radio" name="q6" value="H"> H</label><label><input type="radio" name="q6" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問7</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問7のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q7" value="A" required> A</label><label><input type="radio" name="q7" value="B"> B</label><label><input type="radio" name="q7" value="C"> C</label><label><input type="radio" name="q7" value="D"> D</label><label><input type="radio" name="q7" value="E"> E</label><label><input type="radio" name="q7" value="F"> F</label><label><input type="radio" name="q7" value="G"> G</label><label><input type="radio" name="q7" value="H"> H</label><label><input type="radio" name="q7" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問8</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問8のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q8" value="A" required> A</label><label><input type="radio" name="q8" value="B"> B</label><label><input type="radio" name="q8" value="C"> C</label><label><input type="radio" name="q8" value="D"> D</label><label><input type="radio" name="q8" value="E"> E</label><label><input type="radio" name="q8" value="F"> F</label><label><input type="radio" name="q8" value="G"> G</label><label><input type="radio" name="q8" value="H"> H</label><label><input type="radio" name="q8" value="I"> I</label></div></div></fieldset>
+                    <fieldset class="question-block hidden"><legend>質問9</legend><div class="video-container"><iframe src="https://www.youtube.com/embed/k4Ds_jlc-VE" title="YouTube video player" frameborder="0" allowfullscreen></iframe></div><div class="form-group"><label class="question-title">質問9のテキスト</label><div class="radio-group-vertical"><label><input type="radio" name="q9" value="A" required> A</label><label><input type="radio" name="q9" value="B"> B</label><label><input type="radio" name="q9" value="C"> C</label><label><input type="radio" name="q9" value="D"> D</label><label><input type="radio" name="q9" value="E"> E</label><label><input type="radio" name="q9" value="F"> F</label><label><input type="radio" name="q9" value="G"> G</label><label><input type="radio" name="q9" value="H"> H</label><label><input type="radio" name="q9" value="I"> I</label></div></div></fieldset>
+                </div>
                 
                 <div id="final-step" class="hidden">
                     <fieldset>
@@ -99,14 +131,13 @@
 
         // ページ読み込み完了時の処理
         window.addEventListener('DOMContentLoaded', () => {
-            // 質問をシャッフル
             const questionElements = Array.from(questionsContainer.getElementsByClassName('question-block'));
             for (let i = questionElements.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [questionElements[i], questionElements[j]] = [questionElements[j], questionElements[i]];
             }
             questions = questionElements;
-            questions.forEach(q => questionsContainer.appendChild(q)); // DOMに再配置
+            questions.forEach(q => questionsContainer.appendChild(q));
         });
 
         // ステップ1（ユーザー情報）の処理
@@ -124,7 +155,6 @@
 
         // 「次へ」ボタンの処理
         nextButton.addEventListener('click', () => {
-            // 現在の質問で回答が選択されているかチェック
             const currentQuestion = questions[currentQuestionIndex];
             const radioName = currentQuestion.querySelector('input[type="radio"]').name;
             const selectedValue = mainForm.querySelector(`input[name="${radioName}"]:checked`);
@@ -146,7 +176,6 @@
                 questions[currentQuestionIndex].classList.remove('hidden');
                 nextButton.classList.remove('hidden');
             } else {
-                // 全ての質問が終了
                 nextButton.classList.add('hidden');
                 finalStep.classList.remove('hidden');
             }
@@ -162,9 +191,39 @@
         // 最終的なフォーム送信の処理
         mainForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            // ...以前の送信処理と同じ...
+            submitButton.disabled = true;
+            submitButton.textContent = '送信中...';
+
+            const endTime = new Date();
+            const elapsedTime = Math.round((endTime - startTime) / 1000);
+
+            const mainFormData = new FormData(mainForm);
+            const finalData = { ...userInfo };
+            mainFormData.forEach((value, key) => { finalData[key] = value; });
+            finalData['elapsedTime'] = elapsedTime;
+
             const URL = 'https://script.google.com/macros/s/AKfycbxuTh1vXaVATAl2ySTjTdj7p_XYFmAiAYQ2vlAdPMYnAvtqdGvDcbSs3LSyOcIdAkGr/exec';
-            // ...fetch処理...
+
+            fetch(URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalData),
+                redirect: 'follow'
+            })
+            .then(response => {
+                alert('アンケートの送信が完了しました。ご協力ありがとうございます！');
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('エラーが発生しました。もう一度お試しください。');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = 'アンケートを送信する';
+            });
         });
     </script>
 </body>

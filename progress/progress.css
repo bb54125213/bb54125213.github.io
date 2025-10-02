@@ -40,6 +40,7 @@
     border: 1px solid var(--color-border);
     border-radius: 8px;
     text-align: center;
+    flex: 1; /* flex-direction: column のときも幅を揃える */
 }
 
 .stimulus-container h2 {
@@ -53,44 +54,57 @@
     padding: 10px;
     font-size: 1em;
 }
-.replay-button:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
+.replay-button:disabled,
+
+#choice-container {
+    text-align: center; /* 中身を中央揃えに */
 }
 
-/* 選択ボタンのエリア */
 #choice-buttons {
     display: flex;
-    gap: 15px; /* 隙間を少し狭く */
-    margin-top: 20px;
+    gap: 15px;
+    margin-top: 10px;
 }
-
-/* 選択ボタンのスタイル */
 .choice-button {
     flex-grow: 1;
-    padding: 20px;
+    padding: 15px; /* 少し小さく */
     font-size: 1.1em;
 }
-
-/* ボタンの色指定 */
 .choice-button.color-1 {
-    background-color: #0071C5; /* 色1 */
+    background-color: #0071C5;
 }
 .choice-button.color-1:hover {
     background-color: #005a9e;
 }
 .choice-button.color-3 {
-    background-color: #265F5B; /* 色3 */
+    background-color: #265F5B;
 }
 .choice-button.color-3:hover {
     background-color: #1e4a46;
 }
-
-/* ▼▼▼ 変更点: 調整ログのスタイルを追加 ▼▼▼ */
+/* 「同じになった！」ボタンを独立させる */
+#choice-same {
+    margin-top: 10px;
+    width: 100%;
+}
 .adjustment-log {
     text-align: center;
     margin-top: 15px;
     font-size: 0.9em;
     color: #666;
-    height: 1.2em; /* 高さを確保してレイアウトがガタつかないように */
+    height: 1.2em;
+}
+.results-summary ul {
+    list-style-type: none;
+    padding: 0;
+    background-color: #f9f9f9;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+.results-summary li {
+    padding: 15px;
+    border-bottom: 1px solid var(--color-border);
+}
+.results-summary li:last-child {
+    border-bottom: none;
 }

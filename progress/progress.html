@@ -50,14 +50,28 @@
             </div>
 
             <div id="choice-container">
-                <p style="text-align: center; font-weight: bold;">バー(B)は、バー(A)と比べて？</p>
+                <p style="text-align: center; font-weight: bold;">「同じになった！」と感じるまでBの速度を調整してください。</p>
                 <div id="choice-buttons">
-                    <button id="choice-slower" class="choice-button home-button color-3">遅い</button>
-                    <button id="choice-same" class="choice-button home-button color-1">同じ</button>
-                    <button id="choice-faster" class="choice-button home-button color-3">速い</button>
+                    <button id="choice-slower" class="choice-button home-button color-3">遅くする</button>
+                    <button id="choice-faster" class="choice-button home-button color-3">速くする</button>
                 </div>
+                <button id="choice-same" class="choice-button home-button color-1">同じになった！</button>
                 <div id="adjustment-log" class="adjustment-log"></div>
             </div>
+        </div>
+
+        <div id="step3" class="hidden">
+            <h2 class="section-title">テスト結果</h2>
+            <p>ご協力ありがとうございました。今回のテスト結果は以下の通りです。</p>
+            <div id="results-summary" class="results-summary"></div>
+            <fieldset>
+                <legend>ご感想</legend>
+                <div class="form-group">
+                    <label for="feedback">テスト全体に対するご意見、ご感想があればご記入ください。</label>
+                    <textarea id="feedback" name="feedback" rows="6" placeholder="自由にご記入ください..."></textarea>
+                </div>
+            </fieldset>
+            <button id="reload-button" class="home-button">もう一度試す</button>
         </div>
     </div>
 
@@ -103,7 +117,6 @@
             sideImageContainers.forEach(side => {
                 const { container, images, isLeft } = side;
                 container.innerHTML = '';
-                let currentY = padding;
                 shuffleArray(images).forEach(imgData => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'image-wrapper';
@@ -135,26 +148,29 @@
         // --- ここからプログレスバー実験用のスクリプト ---
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
         const userInfoForm = document.getElementById('userInfoForm');
-        
         const instruction = document.getElementById('instruction');
         const trialProgressText = document.getElementById('trial-progress');
         const barA = document.getElementById('barA');
         const barB = document.getElementById('barB');
-        
         const playAButton = document.getElementById('playA');
         const playBButton = document.getElementById('playB');
         const choiceSlower = document.getElementById('choice-slower');
         const choiceSame = document.getElementById('choice-same');
         const choiceFaster = document.getElementById('choice-faster');
         const adjustmentLog = document.getElementById('adjustment-log');
+        const resultsSummary = document.getElementById('results-summary');
+        const reloadButton = document.getElementById('reload-button');
 
         const COLORS = { R: '#ff0000', G: '#00ff00', B: '#0000ff', C: '#00ffff', M: '#ff00ff', Y: '#ffff00' };
-        const SOUND_FREQUENCIES = [330, 440, 550];
+        const SOUND_FREQUENCIES = { Sound1: 330, Sound2: 440, Sound3: 550 };
         const GRAY_COLOR = '#888';
         
         let audioContext, trials = [], currentTrialIndex = 0, results = [], currentBDuration;
         let fasterClicks = 0, slowerClicks = 0;
+        let currentOscillator = null;
+        let isPlaying = false;
 
         userInfoForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -165,13 +181,12 @@
 
         function startNewExperiment() {
             const colorKeys = Object.keys(COLORS);
-            // 1. 色のみ6試行（音なし）
             colorKeys.forEach(key => {
-                trials.push({ color: COLORS[key], sound: null });
+                trials.push({ type: '色', condition: key, color: COLORS[key], sound: null });
             });
-            // 2. 音のみ3試行（色は灰色）
-            SOUND_FREQUENCIES.forEach(freq => {
-                trials.push({ color: null, sound: freq });
+            const soundKeys = Object.keys(SOUND_FREQUENCIES);
+            soundKeys.forEach(key => {
+                trials.push({ type: '音', condition: key, color: null, sound: SOUND_FREQUENCIES[key] });
             });
             
             trials.sort(() => Math.random() - 0.5);
@@ -180,9 +195,7 @@
 
         function startNextTrial() {
             if (currentTrialIndex >= trials.length) {
-                alert('全てのテストが終了しました。ご協力ありがとうございました！');
-                console.log("最終結果:", results);
-                window.location.reload();
+                showFinalResults();
                 return;
             }
             fasterClicks = 0;
@@ -194,55 +207,78 @@
             currentBDuration = EXPERIMENT_SETTINGS.durationA + EXPERIMENT_SETTINGS.startOffsetB;
             
             updateUI(`AとBのバーを再生し、速度を比べてください。`);
+            resetBars();
         }
 
         function updateUI(message) {
-            trialProgressText.textContent = `試行 ${currentTrialIndex + 1} / ${trials.length}`;
+            trialProgressText.textContent = `問題 ${currentTrialIndex + 1} / ${trials.length}`;
             instruction.textContent = message;
-            barB.style.animation = 'none';
-            barB.style.width = '0%';
-            playAButton.disabled = false;
-            playBButton.disabled = false;
+            setPlaybackButtonsDisabled(false);
         }
 
         function updateLog() {
-            adjustmentLog.textContent = `調整回数: 速い ${fasterClicks}回, 遅い ${slowerClicks}回`;
+            adjustmentLog.textContent = `調整回数: 速くする ${fasterClicks}回, 遅くする ${slowerClicks}回`;
+        }
+        
+        function resetBars() {
+            stopSound();
+            isPlaying = false;
+            
+            barA.style.animation = 'none';
+            barA.style.width = '0%';
+            barB.style.animation = 'none';
+            barB.style.width = '0%';
+
+            setPlaybackButtonsDisabled(false);
         }
 
-        playAButton.addEventListener('click', () => playBar(barA, EXPERIMENT_SETTINGS.durationA, trials[currentTrialIndex].sound));
-        playBButton.addEventListener('click', () => playBar(barB, currentBDuration, null));
-
-        choiceSlower.addEventListener('click', () => { // BがAより遅いと感じた ⇒ Bの時間を短く（速く）する
-            currentBDuration -= EXPERIMENT_SETTINGS.stepB;
-            slowerClicks++;
-            updateLog();
-            updateUI("Bの速度を調整しました（速くしました）。もう一度比べてみましょう。");
+        playAButton.addEventListener('click', () => {
+            if (isPlaying) return;
+            playBar(barA, EXPERIMENT_SETTINGS.durationA, trials[currentTrialIndex].sound);
         });
 
-        choiceFaster.addEventListener('click', () => { // BがAより速いと感じた ⇒ Bの時間を長く（遅く）する
+        playBButton.addEventListener('click', () => {
+            if (isPlaying) return;
+            playBar(barB, currentBDuration, null);
+        });
+
+        choiceSlower.addEventListener('click', () => {
             currentBDuration += EXPERIMENT_SETTINGS.stepB;
+            slowerClicks++;
+            updateLog();
+            barB.style.animation = 'none';
+            barB.style.width = '0%';
+            stopSound();
+            isPlaying = false;
+            setPlaybackButtonsDisabled(false);
+            instruction.textContent = "Bの速度を調整しました（遅くしました）。もう一度比べてみましょう。";
+        });
+
+        choiceFaster.addEventListener('click', () => {
+            currentBDuration -= EXPERIMENT_SETTINGS.stepB;
             fasterClicks++;
             updateLog();
-            updateUI("Bの速度を調整しました（遅くしました）。もう一度比べてみましょう。");
+            barB.style.animation = 'none';
+            barB.style.width = '0%';
+            stopSound();
+            isPlaying = false;
+            setPlaybackButtonsDisabled(false);
+            instruction.textContent = "Bの速度を調整しました（速くしました）。もう一度比べてみましょう。";
         });
 
         choiceSame.addEventListener('click', () => {
-            const result = {
-                trial: currentTrialIndex + 1,
+            resetBars(); // AもBも即座にリセット
+            results.push({
                 stimulus: trials[currentTrialIndex],
-                finalDurationB: currentBDuration.toFixed(2),
-                adjustments: { faster: fasterClicks, slower: slowerClicks }
-            };
-            results.push(result);
-            console.log(`試行 ${result.trial} の結果: ${result.finalDurationB} 秒`);
-            
+                finalDurationB: currentBDuration
+            });
             currentTrialIndex++;
             startNextTrial();
         });
 
         function playBar(barElement, duration, frequency) {
-            playAButton.disabled = true;
-            playBButton.disabled = true;
+            isPlaying = true;
+            setPlaybackButtonsDisabled(true);
 
             barElement.style.animation = 'none';
             void barElement.offsetWidth;
@@ -251,23 +287,70 @@
             if (frequency) playSound(frequency, duration);
 
             barElement.addEventListener('animationend', () => {
-                playAButton.disabled = false;
-                playBButton.disabled = false;
+                stopSound();
+                setPlaybackButtonsDisabled(false);
+                isPlaying = false;
             }, { once: true });
         }
         
+        function setPlaybackButtonsDisabled(isDisabled) {
+            playAButton.disabled = isDisabled;
+            playBButton.disabled = isDisabled;
+        }
+
+        function showFinalResults() {
+            step2.classList.add('hidden');
+            step3.classList.remove('hidden');
+
+            let summaryHtml = '<ul>';
+            results.forEach(res => {
+                const diff = res.finalDurationB - EXPERIMENT_SETTINGS.durationA;
+                let feeling = '';
+                if (diff > 0.1) {
+                    feeling = `基準より <strong>${Math.abs(diff).toFixed(2)}秒 遅い</strong> と感じていました。`;
+                } else if (diff < -0.1) {
+                    feeling = `基準より <strong>${Math.abs(diff).toFixed(2)}秒 速い</strong> と感じていました。`;
+                } else {
+                    feeling = '基準とほぼ同じ速度だと感じていました。';
+                }
+                const conditionText = res.stimulus.type === '色' 
+                    ? `色: ${res.stimulus.condition} (音なし)`
+                    : `音: ${res.stimulus.condition} (色なし)`;
+
+                summaryHtml += `<li>【${conditionText}】<br> &nbsp;&nbsp; ${feeling}</li>`;
+            });
+            summaryHtml += '</ul>';
+            resultsSummary.innerHTML = summaryHtml;
+        }
+        
+        reloadButton.addEventListener('click', () => { window.location.reload(); });
+
         function playSound(frequency, duration) {
              if (!audioContext) { try { audioContext = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.error('Web Audio API not supported'); return; } }
-            const oscillator = audioContext.createOscillator();
+            
+            stopSound();
+            
+            currentOscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            currentOscillator.type = 'sine';
+            currentOscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
             gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
-            oscillator.connect(gainNode);
+            
+            currentOscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + duration);
+            currentOscillator.start();
+            
+            setTimeout(() => {
+                stopSound();
+            }, duration * 1000);
+        }
+
+        function stopSound() {
+            if (currentOscillator) {
+                currentOscillator.stop();
+                currentOscillator.disconnect();
+                currentOscillator = null;
+            }
         }
     </script>
 </body>

@@ -150,7 +150,8 @@ textarea {
     font-weight: 700;
 }
 button[type="submit"],
-#nextButton {
+#nextButton ,
+.home-button {
     display: block;
     width: 100%;
     padding: 15px;
@@ -163,6 +164,9 @@ button[type="submit"],
     cursor: pointer;
     transition: background-color 0.3s;
     margin-top: 20px;
+    text-align: center;
+    text-decoration: none;
+    box-sizing: border-box;
 }
 button[type="submit"]:hover,
 #nextButton:hover {

@@ -232,3 +232,30 @@ button[type="submit"]:disabled {
         max-width: 20vw;
     }
 }
+/* ホームページ用のセクション見出し */
+.section-title {
+    font-size: 1.3em;
+    color: var(--color-primary);
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 10px;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* ホームページ用の本文 */
+.section-body {
+    font-size: 1em;
+    line-height: 1.9;
+    color: var(--color-text);
+    margin-bottom: 30px;
+}
+
+/* 各テストへの導線をまとめるセクション */
+.test-section {
+    margin-top: 50px;
+    padding: 25px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}

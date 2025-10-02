@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>砂時計アニメーションによる心理的効果計測テスト</title>
+    <title>心理的効果を用いた工業デザイン</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,33 +14,38 @@
     <div class="side-images right" id="side-images-right"></div>
 
     <div class="container">
-        <h1>砂時計アニメーションによる心理的効果計測テスト</h1>
+        <h1>心理的効果を用いた工業デザイン</h1>
         
-        <div style="text-align: center; margin: 40px 0;">
-            <p style="font-size: 1.1em; line-height: 1.8;">
-                この度は、本テストにご協力いただき誠にありがとうございます。<br>
-                いくつかの簡単な質問にお答えいただくことで、<br>
-                砂時計のアニメーションがもたらす心理的な効果を計測します。
-            </p>
-            <p>準備ができましたら、下のボタンからテストを開始してください。</p>
+        <h2 class="section-title">1. 目的</h2>
+        <p class="section-body">
+            このアンケートでは、特定の視覚的アニメーションが人間の時間感覚や印象にどのような影響を与えるかを調査します。得られたデータは、より快適で心地よいユーザー体験を提供する工業デザインへの応用に役立てられます。
+        </p>
+
+        <div class="test-section">
+            <h2 class="section-title">砂時計アニメーションによる心理的効果計測テスト</h2>
+            <a href="sand/sand.html" class="home-button">砂時計のテストを開始する</a>
         </div>
 
-        <a href="sand/sand.html" class="home-button">テストを開始する</a>
-    </div>
+        <div class="test-section">
+            <h2 class="section-title">プログレスバーによる心理的効果計測テスト</h2>
+            <a href="progress/progress.html" class="home-button">プログレスバーのテストを開始する</a>
+        </div>
+        </div>
 
     <script>
+        // (JavaScript部分は変更ありませんので、そのままです)
         const IMAGE_SETTINGS = {
             imagesPerSide: 4,
             imageMaxWidthRatio: 0.5,
             horizontalOffsetRatio: -0.5,
             verticalPaddingRatio: 0.01,
         };
-
+        
+        // ...（以下、前回と同じスクリプトが続きます）...
         const leftImageContainer = document.getElementById('side-images-left');
         const rightImageContainer = document.getElementById('side-images-right');
 
         function setupSideImages() {
-            // (この部分はsand.htmlのスクリプトと全く同じです)
             const imageBaseUrl = 'https://bb54125213.github.io/image/';
             const originalSources = [
                 { src: `${imageBaseUrl}image11.png`, color: 1 },

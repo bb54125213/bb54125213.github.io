@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プログレスバーによる心理的効果計測テスト</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="progress.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="side-images left" id="side-images-left"></div>
+    <div class="side-images right" id="side-images-right"></div>
+
+    <div class="container">
+        <h1>プログレスバーによる心理的効果計測テスト</h1>
+        
+        <div id="step1">
+            <p>まず、あなたについて教えてください。</p>
+            <form id="userInfoForm">
+                <fieldset>
+                    <legend>回答者情報</legend>
+                    <div class="form-group"><label for="age">年代:</label><select id="age" name="age" required><option value="">選択してください</option><option value="10代">10代</option><option value="20代">20代</option><option value="30代">30代</option><option value="40代">40代</option><option value="50代">50代</option><option value="60代以上">60代以上</option></select></div>
+                    <div class="form-group"><label>性別:</label><div class="radio-group"><input type="radio" id="gender_male" name="gender" value="男性" required><label for="gender_male">男性</label><input type="radio" id="gender_female" name="gender" value="女性"><label for="gender_female">女性</label><input type="radio" id="gender_other" name="gender" value="その他"><label for="gender_other">その他</label></div></div>
+                </fieldset>
+                <button type="submit">テストを開始する</button>
+            </form>
+        </div>
+
+        <div id="step2" class="hidden">
+            <div id="trial-info">
+                <p id="trial-progress" style="text-align: center; font-weight: bold;"></p>
+                <p id="instruction" style="text-align: center;">AとBのバーを再生し、速度を比べてください。</p>
+            </div>
+
+            <div class="stimulus-wrapper">
+                <div id="stimulusA-container" class="stimulus-container">
+                    <h2>基準のバー (A)</h2>
+                    <div class="progress-bar-wrapper"><div id="barA" class="bar"></div></div>
+                    <button id="playA" class="replay-button home-button">Aを再生</button>
+                </div>
+                
+                <div id="stimulusB-container" class="stimulus-container">
+                    <h2>比較するバー (B)</h2>
+                    <div class="progress-bar-wrapper"><div id="barB" class="bar gray"></div></div>
+                    <button id="playB" class="replay-button home-button">Bを再生</button>
+                </div>
+            </div>
+
+            <div id="choice-container">
+                <p style="text-align: center; font-weight: bold;">バー(B)は、バー(A)と比べて？</p>
+                <div id="choice-buttons">
+                    <button id="choice-slower" class="choice-button home-button color-3">遅い</button>
+                    <button id="choice-same" class="choice-button home-button color-1">同じ</button>
+                    <button id="choice-faster" class="choice-button home-button color-3">速い</button>
+                </div>
+                <div id="adjustment-log" class="adjustment-log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================================================================
+        // ▼▼▼ 実験内容の【時間・ステップ】はここで調整します ▼▼▼
+        // ===================================================================
+        const EXPERIMENT_SETTINGS = {
+            durationA: 5,       // 基準(A)の秒数
+            startOffsetB: -2,   // Bの開始秒数（Aとの差）
+            stepB: 0.25         // 調整する秒数の幅
+        };
+        // ===================================================================
+        // ▼▼▼ サイド画像の設定エリア（index.htmlと共通）▼▼▼
+        // ===================================================================
+        const IMAGE_SETTINGS = {
+            imagesPerSide: 4,
+            imageMaxWidthRatio: 0.5,
+            horizontalOffsetRatio: -0.5,
+            verticalPaddingRatio: 0.01,
+        };
+        // ===================================================================
+
+        // --- ここからサイド画像用のスクリプト（完全版） ---
+        const leftImageContainer = document.getElementById('side-images-left');
+        const rightImageContainer = document.getElementById('side-images-right');
+        function setupSideImages() {
+             const imageBaseUrl = 'https://bb54125213.github.io/image/';
+            const originalSources = [ { src: `${imageBaseUrl}image11.png`, color: 1 }, { src: `${imageBaseUrl}image21.png`, color: 2 }, { src: `${imageBaseUrl}image31.png`, color: 3 } ];
+            let imageSources = [];
+            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) { imageSources.push(originalSources[i % originalSources.length]); }
+            imageSources = [...imageSources, ...imageSources];
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
+            const shuffledImages = shuffleArray(imageSources);
+            const leftImagesData = shuffledImages.slice(0, IMAGE_SETTINGS.imagesPerSide);
+            const rightImagesData = shuffledImages.slice(IMAGE_SETTINGS.imagesPerSide);
+            const sideImageContainers = [ { container: leftImageContainer, images: leftImagesData, isLeft: true }, { container: rightImageContainer, images: rightImagesData, isLeft: false } ];
+            const totalImages = IMAGE_SETTINGS.imagesPerSide;
+            if (totalImages <= 0) return;
+            const padding = window.innerHeight * IMAGE_SETTINGS.verticalPaddingRatio;
+            const availableHeight = window.innerHeight - (padding * 2);
+            const slotHeight = availableHeight / totalImages;
+            sideImageContainers.forEach(side => {
+                const { container, images, isLeft } = side;
+                container.innerHTML = '';
+                let currentY = padding;
+                shuffleArray(images).forEach(imgData => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'image-wrapper';
+                    const img = document.createElement('img');
+                    img.src = imgData.src;
+                    img.dataset.color = imgData.color;
+                    img.style.animationDelay = `-${(Math.random() * 20).toFixed(2)}s`;
+                    img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`;
+                    img.style.maxWidth = `${IMAGE_SETTINGS.imageMaxWidthRatio * 100}vw`;
+                    wrapper.appendChild(img);
+                    const verticalPosition = padding + (images.indexOf(imgData) * slotHeight) + (slotHeight / 2);
+                    wrapper.style.top = `${verticalPosition}px`;
+                    if (isLeft) {
+                        wrapper.style.left = '0';
+                        wrapper.style.transform = `translateX(${IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    } else {
+                        wrapper.style.right = '0';
+                        wrapper.style.transform = `translateX(${-IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    }
+                    container.appendChild(wrapper);
+                });
+            });
+        }
+        let resizeTimer;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupSideImages, 250); });
+        window.addEventListener('scroll', () => { const scrollY = window.scrollY; leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; });
+        window.addEventListener('DOMContentLoaded', () => { setupSideImages(); });
+        
+        // --- ここからプログレスバー実験用のスクリプト ---
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const userInfoForm = document.getElementById('userInfoForm');
+        
+        const instruction = document.getElementById('instruction');
+        const trialProgressText = document.getElementById('trial-progress');
+        const barA = document.getElementById('barA');
+        const barB = document.getElementById('barB');
+        
+        const playAButton = document.getElementById('playA');
+        const playBButton = document.getElementById('playB');
+        const choiceSlower = document.getElementById('choice-slower');
+        const choiceSame = document.getElementById('choice-same');
+        const choiceFaster = document.getElementById('choice-faster');
+        const adjustmentLog = document.getElementById('adjustment-log');
+
+        const COLORS = { R: '#ff0000', G: '#00ff00', B: '#0000ff', C: '#00ffff', M: '#ff00ff', Y: '#ffff00' };
+        const SOUND_FREQUENCIES = [330, 440, 550];
+        const GRAY_COLOR = '#888';
+        
+        let audioContext, trials = [], currentTrialIndex = 0, results = [], currentBDuration;
+        let fasterClicks = 0, slowerClicks = 0;
+
+        userInfoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            startNewExperiment();
+        });
+
+        function startNewExperiment() {
+            const colorKeys = Object.keys(COLORS);
+            // 1. 色のみ6試行（音なし）
+            colorKeys.forEach(key => {
+                trials.push({ color: COLORS[key], sound: null });
+            });
+            // 2. 音のみ3試行（色は灰色）
+            SOUND_FREQUENCIES.forEach(freq => {
+                trials.push({ color: null, sound: freq });
+            });
+            
+            trials.sort(() => Math.random() - 0.5);
+            startNextTrial();
+        }
+
+        function startNextTrial() {
+            if (currentTrialIndex >= trials.length) {
+                alert('全てのテストが終了しました。ご協力ありがとうございました！');
+                console.log("最終結果:", results);
+                window.location.reload();
+                return;
+            }
+            fasterClicks = 0;
+            slowerClicks = 0;
+            updateLog();
+
+            const currentTrial = trials[currentTrialIndex];
+            barA.style.backgroundColor = currentTrial.color || GRAY_COLOR;
+            currentBDuration = EXPERIMENT_SETTINGS.durationA + EXPERIMENT_SETTINGS.startOffsetB;
+            
+            updateUI(`AとBのバーを再生し、速度を比べてください。`);
+        }
+
+        function updateUI(message) {
+            trialProgressText.textContent = `試行 ${currentTrialIndex + 1} / ${trials.length}`;
+            instruction.textContent = message;
+            barB.style.animation = 'none';
+            barB.style.width = '0%';
+            playAButton.disabled = false;
+            playBButton.disabled = false;
+        }
+
+        function updateLog() {
+            adjustmentLog.textContent = `調整回数: 速い ${fasterClicks}回, 遅い ${slowerClicks}回`;
+        }
+
+        playAButton.addEventListener('click', () => playBar(barA, EXPERIMENT_SETTINGS.durationA, trials[currentTrialIndex].sound));
+        playBButton.addEventListener('click', () => playBar(barB, currentBDuration, null));
+
+        choiceSlower.addEventListener('click', () => { // BがAより遅いと感じた ⇒ Bの時間を短く（速く）する
+            currentBDuration -= EXPERIMENT_SETTINGS.stepB;
+            slowerClicks++;
+            updateLog();
+            updateUI("Bの速度を調整しました（速くしました）。もう一度比べてみましょう。");
+        });
+
+        choiceFaster.addEventListener('click', () => { // BがAより速いと感じた ⇒ Bの時間を長く（遅く）する
+            currentBDuration += EXPERIMENT_SETTINGS.stepB;
+            fasterClicks++;
+            updateLog();
+            updateUI("Bの速度を調整しました（遅くしました）。もう一度比べてみましょう。");
+        });
+
+        choiceSame.addEventListener('click', () => {
+            const result = {
+                trial: currentTrialIndex + 1,
+                stimulus: trials[currentTrialIndex],
+                finalDurationB: currentBDuration.toFixed(2),
+                adjustments: { faster: fasterClicks, slower: slowerClicks }
+            };
+            results.push(result);
+            console.log(`試行 ${result.trial} の結果: ${result.finalDurationB} 秒`);
+            
+            currentTrialIndex++;
+            startNextTrial();
+        });
+
+        function playBar(barElement, duration, frequency) {
+            playAButton.disabled = true;
+            playBButton.disabled = true;
+
+            barElement.style.animation = 'none';
+            void barElement.offsetWidth;
+            barElement.style.animation = `progress ${duration}s linear forwards`;
+            
+            if (frequency) playSound(frequency, duration);
+
+            barElement.addEventListener('animationend', () => {
+                playAButton.disabled = false;
+                playBButton.disabled = false;
+            }, { once: true });
+        }
+        
+        function playSound(frequency, duration) {
+             if (!audioContext) { try { audioContext = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.error('Web Audio API not supported'); return; } }
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+    </script>
+</body>
+</html>

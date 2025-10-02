@@ -1,0 +1,96 @@
+/* プログレスバー全体のラッパー */
+.progress-bar-wrapper {
+    width: 100%;
+    height: 40px;
+    background-color: #f0f0f0;
+    border-radius: 8px; /* ボタン風の丸み */
+    border: 3px solid #ccc; /* ボタン風の枠線 */
+    box-sizing: border-box;
+    padding: 3px; /* 内側に少し余白 */
+    overflow: hidden; /* 中のバーがはみ出さないように */
+}
+
+/* プログレスバー本体 */
+.bar {
+    width: 0%;
+    height: 100%;
+    border-radius: 2px; /* 少し丸みをつける */
+}
+.bar.gray {
+    background-color: #888;
+}
+
+/* アニメーションの定義 */
+@keyframes progress {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
+/* AとBのバーを縦並びにするラッパー */
+.stimulus-wrapper {
+    display: flex;
+    flex-direction: column; /* 縦並びに変更 */
+    gap: 20px;
+    margin: 20px 0;
+}
+
+/* AとBそれぞれのコンテナ */
+.stimulus-container {
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stimulus-container h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+}
+
+.replay-button {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px;
+    font-size: 1em;
+}
+.replay-button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* 選択ボタンのエリア */
+#choice-buttons {
+    display: flex;
+    gap: 15px; /* 隙間を少し狭く */
+    margin-top: 20px;
+}
+
+/* 選択ボタンのスタイル */
+.choice-button {
+    flex-grow: 1;
+    padding: 20px;
+    font-size: 1.1em;
+}
+
+/* ボタンの色指定 */
+.choice-button.color-1 {
+    background-color: #0071C5; /* 色1 */
+}
+.choice-button.color-1:hover {
+    background-color: #005a9e;
+}
+.choice-button.color-3 {
+    background-color: #265F5B; /* 色3 */
+}
+.choice-button.color-3:hover {
+    background-color: #1e4a46;
+}
+
+/* ▼▼▼ 変更点: 調整ログのスタイルを追加 ▼▼▼ */
+.adjustment-log {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #666;
+    height: 1.2em; /* 高さを確保してレイアウトがガタつかないように */
+}

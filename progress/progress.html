@@ -234,9 +234,7 @@
         playAButton.addEventListener('click', () => playBar(barA, EXPERIMENT_SETTINGS.durationA, trials[currentTrialIndex].sound));
         playBButton.addEventListener('click', () => playBar(barB, currentBDuration, null));
 
-        // ▼▼▼ ここからが今回の修正の核心部です ▼▼▼
         choiceSlower.addEventListener('click', () => {
-            // 再生中であっても中断して調整する
             stopPlayback();
             currentBDuration += EXPERIMENT_SETTINGS.stepB;
             slowerClicks++;
@@ -245,7 +243,6 @@
         });
 
         choiceFaster.addEventListener('click', () => {
-            // 再生中であっても中断して調整する
             stopPlayback();
             currentBDuration -= EXPERIMENT_SETTINGS.stepB;
             fasterClicks++;
@@ -267,45 +264,40 @@
         function playBar(barElement, duration, frequency) {
             setPlaybackButtonsDisabled(true);
 
-            // 先に再生をリセット
             barElement.style.animation = 'none';
-            void barElement.offsetWidth; // 強制再描画
+            void barElement.offsetWidth;
             barElement.style.animation = `progress ${duration}s linear forwards`;
             
-            stopSound(); // 既存の音があれば止める
+            stopSound();
             if (frequency) playSound(frequency, duration);
 
-            // 再生が終わったらボタンを有効化
             barElement.addEventListener('animationend', () => {
                 stopSound();
                 setPlaybackButtonsDisabled(false);
             }, { once: true });
         }
         
-        // 再生ボタンだけを無効化する関数
         function setPlaybackButtonsDisabled(isDisabled) {
             playAButton.disabled = isDisabled;
             playBButton.disabled = isDisabled;
         }
 
-        // 全ての再生を停止し、ボタンを有効化する新しい関数
         function stopPlayback() {
             stopSound();
-            // アニメーションを強制的に停止・リセット
             barA.style.animation = 'none';
             barA.style.width = '0%';
             barB.style.animation = 'none';
             barB.style.width = '0%';
             setPlaybackButtonsDisabled(false);
         }
-        // ▲▲▲ 修正ここまで ▲▲▲
 
         function showEndScreen() {
             step2.classList.add('hidden');
             step3.classList.remove('hidden');
         }
         
-        viewResultsButton.addEventListener('click', () => {
+        // ▼▼▼ ここからが今回の修正の核心部です ▼▼▼
+        function handleSubmitAndShowResults() {
             viewResultsButton.disabled = true;
             viewResultsButton.textContent = '結果を送信中...';
 
@@ -320,11 +312,11 @@
 
             fetch(GAS_URL, {
                 method: 'POST',
-                mode: 'no-cors',
+                mode: 'no-cors', // no-corsモードを維持
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(finalData)
             })
-            .then(() => {
+            .then(() => { // no-corsモードではレスポンスの中身は見れないので、then()の中身はすぐに実行される
                 let summaryHtml = '<ul>';
                 results.forEach(res => {
                     const diff = res.finalDurationB - EXPERIMENT_SETTINGS.durationA;
@@ -348,6 +340,10 @@
                 document.querySelector('#step3 fieldset').classList.add('hidden');
                 viewResultsButton.textContent = 'テストを終了する';
                 viewResultsButton.disabled = false;
+                
+                // ★★★ 修正点: 一度使った「送信機能」をボタンから削除する ★★★
+                viewResultsButton.removeEventListener('click', handleSubmitAndShowResults);
+                // ★★★ 新しい機能（ページ移動）を割り当てる ★★★
                 viewResultsButton.onclick = () => window.location.href = '../index.html';
             })
             .catch(error => {
@@ -356,10 +352,13 @@
                 viewResultsButton.disabled = false;
                 viewResultsButton.textContent = '回答結果をみる';
             });
-        });
+        }
+        
+        viewResultsButton.addEventListener('click', handleSubmitAndShowResults);
+        // ▲▲▲ 修正ここまで ▲▲▲
         
         function playSound(frequency, duration) {
-             if (!audioContext) { try { audioContext = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.error('Web Audio API not supported'); return; } }
+             if (!audioContext) { try { audioContext = new (window.Audio-Context || window.webkitAudioContext)(); } catch (e) { console.error('Web Audio API not supported'); return; } }
             stopSound();
             currentOscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();

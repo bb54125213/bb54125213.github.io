@@ -3,89 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>発表会アンケート</title>
+    <title>中間発表プレテスト</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* 「いいね」ボタン専用のスタイル */
-        .like-button-container {
-            text-align: center;
-            margin: 40px 0;
-            position: relative;
-        }
-        .like-button {
-            background-color: #f0f0f0;
-            color: var(--color-text);
-            border: 2px solid var(--color-border);
-            padding: 15px 30px;
-            font-size: 1.5em;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            z-index: 2;
-        }
-        .like-button:active {
-            transform: scale(0.95);
-        }
-        .like-feedback {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            margin-bottom: 15px;
-            background-color: var(--color-text);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            white-space: nowrap;
-        }
-        .like-feedback.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(-10px);
-        }
-        .flying-emoji {
-            position: absolute;
-            left: 50%;
-            bottom: 20%;
-            font-size: 2.5em;
-            pointer-events: none;
-            animation: fly-up 1.5s ease-out forwards;
-            z-index: 1;
-        }
-        @keyframes fly-up {
-            0% {
-                transform: translate(-50%, 0) scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: translate(-50%, -250px) scale(0.5);
-                opacity: 0;
-            }
-        }
-        /* ▼▼▼ 変更点: グラフ用のスタイルを追加 ▼▼▼ */
-        .chart-container {
-            margin-top: 40px;
-            padding: 20px;
-            border: 1px solid var(--color-border);
-            border-radius: 8px;
-        }
-        .chart-container iframe {
-            width: 100%;
-            height: 400px; /* グラフの高さ */
-            border: none;
-        }
+        /* 「いいね」ボタンなどの専用スタイル（変更なし） */
+        .like-button-container { text-align: center; margin: 40px 0; position: relative; }
+        .like-button { background-color: #f0f0f0; color: var(--color-text); border: 2px solid var(--color-border); padding: 15px 30px; font-size: 1.5em; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; position: relative; z-index: 2; }
+        .like-button:active { transform: scale(0.95); }
+        .like-feedback { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 15px; background-color: var(--color-text); color: white; padding: 8px 15px; border-radius: 20px; opacity: 0; transition: opacity 0.3s, transform 0.3s; white-space: nowrap; }
+        .like-feedback.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+        .flying-emoji { position: absolute; left: 50%; bottom: 20%; font-size: 2.5em; pointer-events: none; animation: fly-up 1.5s ease-out forwards; z-index: 1; }
+        @keyframes fly-up { 0% { transform: translate(-50%, 0) scale(1); opacity: 1; } 100% { transform: translate(-50%, -250px) scale(0.5); opacity: 0; } }
+        .chart-container { margin-top: 40px; padding: 20px; border: 1px solid var(--color-border); border-radius: 8px; }
+        .chart-container iframe { width: 100%; height: 400px; border: none; }
     </style>
 </head>
 <body>
     <div class="side-images left" id="side-images-left"></div>
     <div class="side-images right" id="side-images-right"></div>
     <div class="container">
-        <h1>発表会に関するアンケート</h1>
+        <h1>中間発表プレテスト</h1>
         
         <div id="step1">
             <p>まず、あなたについて教えてください。</p>
@@ -102,27 +42,42 @@
         <div id="step2" class="hidden">
             <p style="text-align: center; font-weight: bold; color: #c0392b;">※回答は発表者の指示に従ってください。</p>
             <form id="mainForm">
-                <fieldset><legend>第1問</legend><div class="form-group"><label class="question-title">指示された選択肢の中から1つ選んでください。</label><div class="radio-group-vertical"><input type="radio" id="q1a" name="question1" value="A" required><label for="q1a">A</label><input type="radio" id="q1b" name="question1" value="B"><label for="q1b">B</label><input type="radio" id="q1c" name="question1" value="C"><label for="q1c">C</label><input type="radio" id="q1d" name="question1" value="D"><label for="q1d">D</label><input type="radio" id="q1e" name="question1" value="E"><label for="q1e">E</label><input type="radio" id="q1f" name="question1" value="F"><label for="q1f">F</label><input type="radio" id="q1g" name="question1" value="G"><label for="q1g">G</label><input type="radio" id="q1h" name="question1" value="H"><label for="q1h">H</label><input type="radio" id="q1i" name="question1" value="I"><label for="q1i">I</label></div></div></fieldset>
-                <fieldset><legend>第2問</legend><div class="form-group"><label class="question-title">指示された選択肢の中から1つ選んでください。</label><div class="radio-group-vertical"><input type="radio" id="q2a" name="question2" value="A" required><label for="q2a">A</label><input type="radio" id="q2b" name="question2" value="B"><label for="q2b">B</label><input type="radio" id="q2c" name="question2" value="C"><label for="q2c">C</label><input type="radio" id="q2d" name="question2" value="D"><label for="q2d">D</label><input type="radio" id="q2e" name="question2" value="E"><label for="q2e">E</label><input type="radio" id="q2f" name="question2" value="F"><label for="q2f">F</label><input type="radio" id="q2g" name="question2" value="G"><label for="q2g">G</label><input type="radio" id="q2h" name="question2" value="H"><label for="q2h">H</label><input type="radio" id="q2i" name="question2" value="I"><label for="q2i">I</label></div></div></fieldset>
-                <fieldset><legend>やってみての感想（任意）</legend><div class="form-group"><label for="feedback" class="question-title">このアンケートの操作感などについて、ご意見があればご記入ください。</label><textarea id="feedback" name="feedback" rows="4" placeholder="自由にご記入ください..."></textarea></div></fieldset>
-                <button type="submit">アンケートを送信する</button>
+                <fieldset>
+                    <legend>第1問</legend>
+                    <div class="form-group">
+                        <label class="question-title">動画を視聴して、Xと同じ時間の砂時計はどれか選んでください</label>
+                        <div class="radio-group-vertical"><input type="radio" id="q1a" name="question1" value="A" required><label for="q1a">A</label><input type="radio" id="q1b" name="question1" value="B"><label for="q1b">B</label><input type="radio" id="q1c" name="question1" value="C"><label for="q1c">C</label><input type="radio" id="q1d" name="question1" value="D"><label for="q1d">D</label><input type="radio" id="q1e" name="question1" value="E"><label for="q1e">E</label><input type="radio" id="q1f" name="question1" value="F"><label for="q1f">F</label><input type="radio" id="q1g" name="question1" value="G"><label for="q1g">G</label><input type="radio" id="q1h" name="question1" value="H"><label for="q1h">H</label><input type="radio" id="q1i" name="question1" value="I"><label for="q1i">I</label></div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>第2問</legend>
+                    <div class="form-group">
+                        <label class="question-title">動画を視聴して、Xと同じ時間の砂時計はどれか選んでください</label>
+                        <div class="radio-group-vertical"><input type="radio" id="q2a" name="question2" value="A" required><label for="q2a">A</label><input type="radio" id="q2b" name="question2" value="B"><label for="q2b">B</label><input type="radio" id="q2c" name="question2" value="C"><label for="q2c">C</label><input type="radio" id="q2d" name="question2" value="D"><label for="q2d">D</label><input type="radio" id="q2e" name="question2" value="E"><label for="q2e">E</label><input type="radio" id="q2f" name="question2" value="F"><label for="q2f">F</label><input type="radio" id="q2g" name="question2" value="G"><label for="q2g">G</label><input type="radio" id="q2h" name="question2" value="H"><label for="q2h">H</label><input type="radio" id="q2i" name="question2" value="I"><label for="q2i">I</label></div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>感想（任意）</legend>
+                    <div class="form-group">
+                        <label for="feedback" class="question-title">プレテストを受けたご感想をご記入ください。</label>
+                        <textarea id="feedback" name="feedback" rows="4" placeholder="自由にご記入ください..."></textarea>
+                    </div>
+                </fieldset>
+                <button type="submit">プレテストを提出する</button>
             </form>
         </div>
 
         <div id="step3" class="hidden">
             <h2 class="section-title">ご協力ありがとうございました！</h2>
             <p style="text-align: center;">アンケートは以上で終了です。引き続き発表をお聞きください。<br>その中で「いいね」と思う場面があれば下の「いいね」ボタンを何回でも押してください！</p>
-            
             <div class="like-button-container">
                 <div id="likeFeedback" class="like-feedback">ありがとうございます！</div>
                 <button id="likeButton" class="like-button">👍 いいね！</button>
             </div>
-            
             <div class="chart-container">
                 <h2 class="section-title" style="margin-top: 0; text-align: center;">現在の回答状況（リアルタイム更新）</h2>
                 <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQq4wTkbfC2-3rSeuiRJxBj11UssWdC9fPQFRN-6H-WYvytn-xvOd4fqEJM714KsqW2JN30_c_UE2TW/pubchart?oid=360856784&format=interactive"></iframe>
             </div>
-
             <a href="../index.html" class="home-button">プロジェクトの詳細や本テストはこちら</a>
         </div>
     </div>
@@ -192,8 +147,7 @@
         let resizeTimer;
         window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupSideImages, 250); });
         window.addEventListener('scroll', () => { const scrollY = window.scrollY; leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; });
-        window.addEventListener('DOMContentLoaded', () => { setupSideImages(); });
-
+        
         // --- アンケートフォーム用スクリプト ---
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
@@ -204,6 +158,16 @@
         const likeButtonContainer = document.querySelector('.like-button-container');
         const likeFeedback = document.getElementById('likeFeedback');
         let userInfo = {};
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setupSideImages();
+            if (window.location.hash === '#step3') {
+                document.querySelector('h1').classList.add('hidden');
+                step1.classList.add('hidden');
+                step2.classList.add('hidden');
+                step3.classList.remove('hidden');
+            }
+        });
 
         userInfoForm.addEventListener('submit', (e) => {
             e.preventDefault();

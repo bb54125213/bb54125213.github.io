@@ -259,3 +259,65 @@ button[type="submit"]:disabled {
     border-radius: 8px;
     background-color: #f9f9f9;
 }
+
+/* モーダルウィンドウの背景（デフォルトは非表示） */
+.modal {
+    display: none; /* ← 常に表示されていた原因を修正 */
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* JavaScriptでモーダルを表示する際に使うスタイル */
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* モーダルのコンテンツ部分 */
+.modal-content {
+    background-color: #fefefe;
+    /* ▼▼▼ 変更点: marginをリセットし、幅の計算方法を変更 ▼▼▼ */
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #888;
+    width: 90%; /* 画面幅の90%を基準に */
+    max-width: 800px;
+    border-radius: 8px;
+    position: relative;
+}
+
+/* 閉じるボタン */
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* グラフのコンテナとiframe */
+.chart-container {
+    margin-top: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.chart-container iframe {
+    width: 100%;
+    height: 450px;
+    border: none;
+}

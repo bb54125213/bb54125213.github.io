@@ -18,7 +18,7 @@
         
         <div class="test-section">
             <h2 class="section-title">発表会アンケートのリアルタイム集計結果</h2>
-            <a href="presentation/pre.html#step3" class="home-button">プレテストの結果表示はこちら</a>
+            <button id="show-chart-button" class="home-button">プレテストの結果表示はこちら</button>
         </div>
 
         <h2 class="section-title">ねらい</h2>
@@ -37,8 +37,16 @@
         </div>
     </div>
 
+    <div id="chart-modal" class="modal"> <div class="modal-content">
+            <span id="close-modal-button" class="close-button">&times;</span>
+            <h2 class="section-title" style="margin-top: 0; text-align: center;">現在の回答状況</h2>
+            <div class="chart-container">
+                <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQq4wTkbfC2-3rSeuiRJxBj11UssWdC9fPQFRN-6H-WYvytn-xvOd4fqEJM714KsqW2JN30_c_UE2TW/pubchart?oid=360856784&format=interactive"></iframe>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // (JavaScript部分は変更ありません)
         const IMAGE_SETTINGS = {
             imagesPerSide: 4,
             imageMaxWidthRatio: 0.5,
@@ -83,8 +91,7 @@
             sideImageContainers.forEach(side => {
                 const { container, images, isLeft } = side;
                 container.innerHTML = '';
-                let currentY = padding;
-                shuffleArray(images).forEach(imgData => {
+                shuffleArray(images).forEach((imgData, index) => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'image-wrapper';
                     const img = document.createElement('img');
@@ -94,7 +101,7 @@
                     img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`; 
                     img.style.maxWidth = `${IMAGE_SETTINGS.imageMaxWidthRatio * 100}vw`;
                     wrapper.appendChild(img);
-                    const verticalPosition = padding + (images.indexOf(imgData) * slotHeight) + (slotHeight / 2);
+                    const verticalPosition = padding + (index * slotHeight) + (slotHeight / 2);
                     wrapper.style.top = `${verticalPosition}px`;
                     if (isLeft) {
                         wrapper.style.left = '0';
@@ -109,19 +116,29 @@
         }
         
         let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(setupSideImages, 250);
-        });
-
-        window.addEventListener('scroll', () => {
-            const scrollY = window.scrollY;
-            leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`;
-            rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`;
-        });
+        window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupSideImages, 250); });
+        window.addEventListener('scroll', () => { const scrollY = window.scrollY; leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; });
         
         window.addEventListener('DOMContentLoaded', () => {
             setupSideImages();
+        });
+
+        const chartModal = document.getElementById('chart-modal');
+        const showChartButton = document.getElementById('show-chart-button');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+        showChartButton.addEventListener('click', () => {
+            chartModal.classList.add('show');
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            chartModal.classList.remove('show');
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target == chartModal) {
+                chartModal.classList.remove('show');
+            }
         });
     </script>
 </body>

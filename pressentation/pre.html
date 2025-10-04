@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>発表会アンケート</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .like-button-container {
+            text-align: center;
+            margin: 40px 0;
+            position: relative; /* 飛び出す絵文字の基準位置 */
+        }
+        .like-button {
+            background-color: #f0f0f0;
+            color: var(--color-text);
+            border: 2px solid var(--color-border);
+            padding: 15px 30px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 2;
+        }
+        .like-button:active {
+            transform: scale(0.95);
+        }
+        .like-feedback {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 15px;
+            background-color: var(--color-text);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            white-space: nowrap;
+        }
+        .like-feedback.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px);
+        }
+        .flying-emoji {
+            position: absolute;
+            left: 50%;
+            bottom: 20%;
+            font-size: 2.5em;
+            pointer-events: none;
+            animation: fly-up 1.5s ease-out forwards;
+            z-index: 1;
+        }
+        @keyframes fly-up {
+            0% {
+                transform: translate(-50%, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -250px) scale(0.5);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="side-images left" id="side-images-left"></div>
+    <div class="side-images right" id="side-images-right"></div>
+    <div class="container">
+        <h1>発表会に関するアンケート</h1>
+        
+        <div id="step1">
+            <p>まず、あなたについて教えてください。</p>
+            <form id="userInfoForm">
+                <fieldset>
+                    <legend>回答者情報</legend>
+                    <div class="form-group"><label for="age">年代:</label><select id="age" name="age" required><option value="">選択してください</option><option value="10代">10代</option><option value="20代">20代</option><option value="30代">30代</option><option value="40代">40代</option><option value="50代">50代</option><option value="60代以上">60代以上</option></select></div>
+                    <div class="form-group"><label>性別:</label><div class="radio-group"><input type="radio" id="gender_male" name="gender" value="男性" required><label for="gender_male">男性</label><input type="radio" id="gender_female" name="gender" value="女性"><label for="gender_female">女性</label><input type="radio" id="gender_other" name="gender" value="その他"><label for="gender_other">その他</label></div></div>
+                </fieldset>
+                <button type="submit">アンケートに進む</button>
+            </form>
+        </div>
+
+        <div id="step2" class="hidden">
+            <p style="text-align: center; font-weight: bold; color: #c0392b;">※回答は発表者の指示に従ってください。</p>
+            <form id="mainForm">
+                <fieldset><legend>第1問</legend><div class="form-group"><label class="question-title">指示された選択肢の中から1つ選んでください。</label><div class="radio-group-vertical"><input type="radio" id="q1a" name="question1" value="A" required><label for="q1a">A</label><input type="radio" id="q1b" name="question1" value="B"><label for="q1b">B</label><input type="radio" id="q1c" name="question1" value="C"><label for="q1c">C</label><input type="radio" id="q1d" name="question1" value="D"><label for="q1d">D</label><input type="radio" id="q1e" name="question1" value="E"><label for="q1e">E</label><input type="radio" id="q1f" name="question1" value="F"><label for="q1f">F</label><input type="radio" id="q1g" name="question1" value="G"><label for="q1g">G</label><input type="radio" id="q1h" name="question1" value="H"><label for="q1h">H</label><input type="radio" id="q1i" name="question1" value="I"><label for="q1i">I</label></div></div></fieldset>
+                <fieldset><legend>第2問</legend><div class="form-group"><label class="question-title">指示された選択肢の中から1つ選んでください。</label><div class="radio-group-vertical"><input type="radio" id="q2a" name="question2" value="A" required><label for="q2a">A</label><input type="radio" id="q2b" name="question2" value="B"><label for="q2b">B</label><input type="radio" id="q2c" name="question2" value="C"><label for="q2c">C</label><input type="radio" id="q2d" name="question2" value="D"><label for="q2d">D</label><input type="radio" id="q2e" name="question2" value="E"><label for="q2e">E</label><input type="radio" id="q2f" name="question2" value="F"><label for="q2f">F</label><input type="radio" id="q2g" name="question2" value="G"><label for="q2g">G</label><input type="radio" id="q2h" name="question2" value="H"><label for="q2h">H</label><input type="radio" id="q2i" name="question2" value="I"><label for="q2i">I</label></div></div></fieldset>
+                <fieldset><legend>やってみての感想（任意）</legend><div class="form-group"><label for="feedback" class="question-title">このアンケートの操作感などについて、ご意見があればご記入ください。</label><textarea id="feedback" name="feedback" rows="4" placeholder="自由にご記入ください..."></textarea></div></fieldset>
+                <button type="submit">アンケートを送信する</button>
+            </form>
+        </div>
+
+        <div id="step3" class="hidden">
+            <h2 class="section-title">ご協力ありがとうございました！</h2>
+            <p style="text-align: center;">アンケートは以上で終了です。引き続き発表をお聞きください。<br>その中で「いいね」と思う場面があれば下の「いいね」ボタンを押してください！</p>
+            
+            <div class="like-button-container">
+                <div id="likeFeedback" class="like-feedback">ありがとうございます！</div>
+                <button id="likeButton" class="like-button">👍 いいね！</button>
+            </div>
+            
+            <a href="../index.html" class="home-button">研究の詳細や他のテストはこちら</a>
+        </div>
+    </div>
+
+    <script>
+        // --- サイド画像用スクリプト ---
+        const IMAGE_SETTINGS = { imagesPerSide: 4, imageMaxWidthRatio: 0.5, horizontalOffsetRatio: -0.5, verticalPaddingRatio: 0.01 };
+        const leftImageContainer = document.getElementById('side-images-left');
+        const rightImageContainer = document.getElementById('side-images-right');
+        function setupSideImages() {
+             const imageBaseUrl = 'https://bb54125213.github.io/image/';
+            const originalSources = [ { src: `${imageBaseUrl}image11.png`, color: 1 }, { src: `${imageBaseUrl}image21.png`, color: 2 }, { src: `${imageBaseUrl}image31.png`, color: 3 } ];
+            let imageSources = [];
+            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) { imageSources.push(originalSources[i % originalSources.length]); }
+            imageSources = [...imageSources, ...imageSources];
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
+            const shuffledImages = shuffleArray(imageSources);
+            const leftImagesData = shuffledImages.slice(0, IMAGE_SETTINGS.imagesPerSide);
+            const rightImagesData = shuffledImages.slice(IMAGE_SETTINGS.imagesPerSide);
+            const sideImageContainers = [ { container: leftImageContainer, images: leftImagesData, isLeft: true }, { container: rightImageContainer, images: rightImagesData, isLeft: false } ];
+            const totalImages = IMAGE_SETTINGS.imagesPerSide;
+            if (totalImages <= 0) return;
+            const padding = window.innerHeight * IMAGE_SETTINGS.verticalPaddingRatio;
+            const availableHeight = window.innerHeight - (padding * 2);
+            const slotHeight = availableHeight / totalImages;
+            sideImageContainers.forEach(side => {
+                const { container, images, isLeft } = side;
+                container.innerHTML = '';
+                shuffleArray(images).forEach(imgData => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'image-wrapper';
+                    const img = document.createElement('img');
+                    img.src = imgData.src;
+                    img.dataset.color = imgData.color;
+                    img.style.animationDelay = `-${(Math.random() * 20).toFixed(2)}s`;
+                    img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`;
+                    img.style.maxWidth = `${IMAGE_SETTINGS.imageMaxWidthRatio * 100}vw`;
+                    wrapper.appendChild(img);
+                    const verticalPosition = padding + (images.indexOf(imgData) * slotHeight) + (slotHeight / 2);
+                    wrapper.style.top = `${verticalPosition}px`;
+                    if (isLeft) {
+                        wrapper.style.left = '0';
+                        wrapper.style.transform = `translateX(${IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    } else {
+                        wrapper.style.right = '0';
+                        wrapper.style.transform = `translateX(${-IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    }
+                    container.appendChild(wrapper);
+                });
+            });
+        }
+        let resizeTimer;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupSideImages, 250); });
+        window.addEventListener('scroll', () => { const scrollY = window.scrollY; leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; });
+        window.addEventListener('DOMContentLoaded', () => { setupSideImages(); });
+
+        // --- アンケートフォーム用スクリプト ---
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const userInfoForm = document.getElementById('userInfoForm');
+        const mainForm = document.getElementById('mainForm');
+        const likeButton = document.getElementById('likeButton');
+        const likeButtonContainer = document.querySelector('.like-button-container');
+        const likeFeedback = document.getElementById('likeFeedback');
+        let userInfo = {};
+
+        userInfoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(userInfoForm);
+            formData.forEach((value, key) => { userInfo[key] = value; });
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+        });
+        
+        mainForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = '送信中...';
+            
+            const mainFormData = new FormData(mainForm);
+            const finalData = { ...userInfo };
+            mainFormData.forEach((value, key) => { finalData[key] = value; });
+            
+            const URL = 'https://script.google.com/macros/s/AKfycbwQp5mHCfpdtO335hroLG9KHmjvGTcETj9QiPcOH9jx-9Mxx5Rs3H0ieOIPuABnNGtW/exec';
+
+            fetch(URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(finalData)
+            })
+            .then(() => {
+                document.querySelector('h1').classList.add('hidden');
+                step2.classList.add('hidden');
+                step3.classList.remove('hidden');
+            })
+            .catch(error => {
+                alert('送信中にエラーが発生しました。');
+                console.error('Error:', error);
+                submitButton.disabled = false;
+                submitButton.textContent = 'アンケートを送信する';
+            });
+        });
+
+        likeButton.addEventListener('click', () => {
+            // 絵文字を飛ばす
+            const emoji = document.createElement('div');
+            emoji.className = 'flying-emoji';
+            
+            // 10%の確率で別の絵文字を出す
+            if (Math.random() < 0.1) {
+                const rareEmojis = ['🎉', '💖', '✨', '🚀'];
+                emoji.textContent = rareEmojis[Math.floor(Math.random() * rareEmojis.length)];
+            } else {
+                emoji.textContent = '👍';
+            }
+
+            // 絵文字の水平位置をランダムにする
+            emoji.style.left = `${40 + Math.random() * 20}%`;
+            likeButtonContainer.appendChild(emoji);
+
+            // アニメーション終了後に絵文字を削除
+            emoji.addEventListener('animationend', () => {
+                emoji.remove();
+            });
+
+            // フィードバックメッセージを表示
+            likeFeedback.textContent = 'ありがとうございます！';
+            likeFeedback.classList.add('show');
+            
+            // 1秒後にメッセージを隠す
+            setTimeout(() => {
+                likeFeedback.classList.remove('show');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

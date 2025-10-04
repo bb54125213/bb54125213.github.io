@@ -9,10 +9,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* 「いいね」ボタン専用のスタイル */
         .like-button-container {
             text-align: center;
             margin: 40px 0;
-            position: relative; /* 飛び出す絵文字の基準位置 */
+            position: relative;
         }
         .like-button {
             background-color: #f0f0f0;
@@ -22,7 +23,7 @@
             font-size: 1.5em;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             position: relative;
             z-index: 2;
         }
@@ -66,6 +67,18 @@
                 opacity: 0;
             }
         }
+        /* ▼▼▼ 変更点: グラフ用のスタイルを追加 ▼▼▼ */
+        .chart-container {
+            margin-top: 40px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+        }
+        .chart-container iframe {
+            width: 100%;
+            height: 400px; /* グラフの高さ */
+            border: none;
+        }
     </style>
 </head>
 <body>
@@ -98,14 +111,19 @@
 
         <div id="step3" class="hidden">
             <h2 class="section-title">ご協力ありがとうございました！</h2>
-            <p style="text-align: center;">アンケートは以上で終了です。引き続き発表をお聞きください。<br>その中で「いいね」と思う場面があれば下の「いいね」ボタンを押してください！</p>
+            <p style="text-align: center;">アンケートは以上で終了です。引き続き発表をお聞きください。<br>その中で「いいね」と思う場面があれば下の「いいね」ボタンを何回でも押してください！</p>
             
             <div class="like-button-container">
                 <div id="likeFeedback" class="like-feedback">ありがとうございます！</div>
                 <button id="likeButton" class="like-button">👍 いいね！</button>
             </div>
             
-            <a href="../index.html" class="home-button">研究の詳細や他のテストはこちら</a>
+            <div class="chart-container">
+                <h2 class="section-title" style="margin-top: 0; text-align: center;">現在の回答状況（リアルタイム更新）</h2>
+                <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQq4wTkbfC2-3rSeuiRJxBj11UssWdC9fPQFRN-6H-WYvytn-xvOd4fqEJM714KsqW2JN30_c_UE2TW/pubchart?oid=360856784&format=interactive"></iframe>
+            </div>
+
+            <a href="../index.html" class="home-button">プロジェクトの詳細や本テストはこちら</a>
         </div>
     </div>
 
@@ -115,16 +133,31 @@
         const leftImageContainer = document.getElementById('side-images-left');
         const rightImageContainer = document.getElementById('side-images-right');
         function setupSideImages() {
-             const imageBaseUrl = 'https://bb54125213.github.io/image/';
-            const originalSources = [ { src: `${imageBaseUrl}image11.png`, color: 1 }, { src: `${imageBaseUrl}image21.png`, color: 2 }, { src: `${imageBaseUrl}image31.png`, color: 3 } ];
+            const imageBaseUrl = 'https://bb54125213.github.io/image/';
+            const originalSources = [
+                { src: `${imageBaseUrl}image11.png`, color: 1 },
+                { src: `${imageBaseUrl}image21.png`, color: 2 },
+                { src: `${imageBaseUrl}image31.png`, color: 3 }
+            ];
             let imageSources = [];
-            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) { imageSources.push(originalSources[i % originalSources.length]); }
+            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) {
+                imageSources.push(originalSources[i % originalSources.length]);
+            }
             imageSources = [...imageSources, ...imageSources];
-            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
             const shuffledImages = shuffleArray(imageSources);
             const leftImagesData = shuffledImages.slice(0, IMAGE_SETTINGS.imagesPerSide);
             const rightImagesData = shuffledImages.slice(IMAGE_SETTINGS.imagesPerSide);
-            const sideImageContainers = [ { container: leftImageContainer, images: leftImagesData, isLeft: true }, { container: rightImageContainer, images: rightImagesData, isLeft: false } ];
+            const sideImageContainers = [
+                { container: leftImageContainer, images: leftImagesData, isLeft: true },
+                { container: rightImageContainer, images: rightImagesData, isLeft: false }
+            ];
             const totalImages = IMAGE_SETTINGS.imagesPerSide;
             if (totalImages <= 0) return;
             const padding = window.innerHeight * IMAGE_SETTINGS.verticalPaddingRatio;
@@ -133,7 +166,7 @@
             sideImageContainers.forEach(side => {
                 const { container, images, isLeft } = side;
                 container.innerHTML = '';
-                shuffleArray(images).forEach(imgData => {
+                shuffleArray(images).forEach((imgData, index) => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'image-wrapper';
                     const img = document.createElement('img');
@@ -143,7 +176,7 @@
                     img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`;
                     img.style.maxWidth = `${IMAGE_SETTINGS.imageMaxWidthRatio * 100}vw`;
                     wrapper.appendChild(img);
-                    const verticalPosition = padding + (images.indexOf(imgData) * slotHeight) + (slotHeight / 2);
+                    const verticalPosition = padding + (index * slotHeight) + (slotHeight / 2);
                     wrapper.style.top = `${verticalPosition}px`;
                     if (isLeft) {
                         wrapper.style.left = '0';
@@ -211,32 +244,21 @@
         });
 
         likeButton.addEventListener('click', () => {
-            // 絵文字を飛ばす
             const emoji = document.createElement('div');
             emoji.className = 'flying-emoji';
-            
-            // 10%の確率で別の絵文字を出す
             if (Math.random() < 0.1) {
                 const rareEmojis = ['🎉', '💖', '✨', '🚀'];
                 emoji.textContent = rareEmojis[Math.floor(Math.random() * rareEmojis.length)];
             } else {
                 emoji.textContent = '👍';
             }
-
-            // 絵文字の水平位置をランダムにする
             emoji.style.left = `${40 + Math.random() * 20}%`;
             likeButtonContainer.appendChild(emoji);
-
-            // アニメーション終了後に絵文字を削除
             emoji.addEventListener('animationend', () => {
                 emoji.remove();
             });
-
-            // フィードバックメッセージを表示
             likeFeedback.textContent = 'ありがとうございます！';
             likeFeedback.classList.add('show');
-            
-            // 1秒後にメッセージを隠す
             setTimeout(() => {
                 likeFeedback.classList.remove('show');
             }, 1000);

@@ -48,11 +48,13 @@
             <div id="choice-container">
                 <p style="text-align: center; font-weight: bold;">「同じになった！」と感じるまでBの速度を調整してください。</p>
                 <div id="choice-buttons">
-                    <button id="choice-slower" class="choice-button home-button color-3">遅くする</button>
-                    <button id="choice-faster" class="choice-button home-button color-3">速くする</button>
+                    <button id="choice-slower-coarse" class="choice-button home-button color-3">◀◀ もっと遅く</button>
+                    <button id="choice-slower-fine" class="choice-button home-button color-3">◀ 遅くする</button>
+                    <button id="choice-faster-fine" class="choice-button home-button color-3">速くする ▶</button>
+                    <button id="choice-faster-coarse" class="choice-button home-button color-3">もっと速く ▶▶</button>
                 </div>
-                <button id="choice-same" class="choice-button home-button color-1">同じになった！</button>
                 <div id="adjustment-log" class="adjustment-log"></div>
+                <button id="choice-same" class="choice-button home-button color-1">同じになった！</button>
             </div>
         </div>
 
@@ -72,10 +74,14 @@
 
     <script>
         // --- 設定エリア ---
-        const EXPERIMENT_SETTINGS = { durationA: 1.5, startOffsetB: -0.5, stepB: 0.05 };
+        const EXPERIMENT_SETTINGS = { 
+            durationA: 1.5, 
+            stepFine: 0.05,
+            stepCoarse: 0.10, // stepFineの2倍
+        };
         const IMAGE_SETTINGS = { imagesPerSide: 4, imageMaxWidthRatio: 0.5, horizontalOffsetRatio: -0.5, verticalPaddingRatio: 0.01 };
         
-        // --- サイド画像用スクリプト ---
+        // --- サイド画像用スクリプト（変更なし） ---
         const leftImageContainer = document.getElementById('side-images-left');
         const rightImageContainer = document.getElementById('side-images-right');
         function setupSideImages() {
@@ -138,9 +144,11 @@
         const barB = document.getElementById('barB');
         const playAButton = document.getElementById('playA');
         const playBButton = document.getElementById('playB');
-        const choiceSlower = document.getElementById('choice-slower');
         const choiceSame = document.getElementById('choice-same');
-        const choiceFaster = document.getElementById('choice-faster');
+        const choiceSlowerFine = document.getElementById('choice-slower-fine');
+        const choiceFasterFine = document.getElementById('choice-faster-fine');
+        const choiceSlowerCoarse = document.getElementById('choice-slower-coarse');
+        const choiceFasterCoarse = document.getElementById('choice-faster-coarse');
         const adjustmentLog = document.getElementById('adjustment-log');
         const resultsSummary = document.getElementById('results-summary');
         const viewResultsButton = document.getElementById('view-results-button');
@@ -200,7 +208,7 @@
         }
 
         function updateLog() {
-            adjustmentLog.textContent = `調整回数: 速くする ${fasterClicks}回, 遅くする ${slowerClicks}回`;
+            adjustmentLog.innerHTML = `調整回数: 速く ${fasterClicks}回, 遅く ${slowerClicks}回`;
         }
         
         function resetBars() {
@@ -215,29 +223,37 @@
             if (isPlaying) return;
             playAnimation(barA, EXPERIMENT_SETTINGS.durationA, null);
         });
-
         playBButton.addEventListener('click', () => {
             if (isPlaying) return;
             playAnimation(barB, currentBDuration, trials[currentTrialIndex].sound);
         });
 
-        choiceSlower.addEventListener('click', () => {
-            if (isPlaying) { stopPlayback(); }
-            currentBDuration += EXPERIMENT_SETTINGS.stepB;
-            slowerClicks++;
-            updateLog();
-            barB.style.animation = 'none';
-            instruction.textContent = "Bの速度を調整しました（遅くしました）。もう一度比べてみましょう。";
+        // ▼▼▼ 変更点: ボタンのロジックを修正 ▼▼▼
+        choiceSlowerFine.addEventListener('click', () => {
+            adjustBSpeed(EXPERIMENT_SETTINGS.stepFine, 'slower', 1);
+        });
+        choiceSlowerCoarse.addEventListener('click', () => {
+            adjustBSpeed(EXPERIMENT_SETTINGS.stepCoarse, 'slower', 2);
+        });
+        choiceFasterFine.addEventListener('click', () => {
+            adjustBSpeed(-EXPERIMENT_SETTINGS.stepFine, 'faster', 1);
+        });
+        choiceFasterCoarse.addEventListener('click', () => {
+            adjustBSpeed(-EXPERIMENT_SETTINGS.stepCoarse, 'faster', 2);
         });
 
-        choiceFaster.addEventListener('click', () => {
+        function adjustBSpeed(step, type, count) {
             if (isPlaying) { stopPlayback(); }
-            currentBDuration -= EXPERIMENT_SETTINGS.stepB;
-            fasterClicks++;
+            currentBDuration += step;
+            if (currentBDuration < 0.1) currentBDuration = 0.1;
+
+            if (type === 'faster') fasterClicks += count;
+            if (type === 'slower') slowerClicks += count;
             updateLog();
+
             barB.style.animation = 'none';
-            instruction.textContent = "Bの速度を調整しました（速くしました）。もう一度比べてみましょう。";
-        });
+            instruction.textContent = "Bの速度を調整しました。もう一度比べてみましょう。";
+        }
 
         choiceSame.addEventListener('click', () => {
             stopPlayback();

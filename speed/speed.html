@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>落下速度テスト</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="speed.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="side-images left" id="side-images-left"></div>
+    <div class="side-images right" id="side-images-right"></div>
+    <div class="container">
+        <h1>落下速度テスト</h1>
+        
+        <div id="step1">
+            <p>まず、あなたについて教えてください。</p>
+            <form id="userInfoForm">
+                <fieldset>
+                    <legend>回答者情報</legend>
+                    <div class="form-group"><label for="age">年代:</label><select id="age" name="age" required><option value="">選択してください</option><option value="10代">10代</option><option value="20代">20代</option><option value="30代">30代</option><option value="40代">40代</option><option value="50代">50代</option><option value="60代以上">60代以上</option></select></div>
+                    <div class="form-group"><label>性別:</label><div class="radio-group"><input type="radio" id="gender_male" name="gender" value="男性" required><label for="gender_male">男性</label><input type="radio" id="gender_female" name="gender" value="女性"><label for="gender_female">女性</label><input type="radio" id="gender_other" name="gender" value="その他"><label for="gender_other">その他</label></div></div>
+                </fieldset>
+                <button type="submit">テストを開始する</button>
+            </form>
+        </div>
+
+        <div id="step2" class="hidden">
+            <div id="trial-info">
+                <p id="trial-progress" style="text-align: center; font-weight: bold;"></p>
+                <p id="instruction" style="text-align: center;">左(A)と右(B)の棒の落下速度を比べてください。</p>
+            </div>
+            <div class="stimulus-wrapper">
+                <div class="stimulus-container">
+                    <h2>基準 (A)</h2>
+                    <div class="animation-wrapper"><div id="barA" class="bar gray"></div></div>
+                    <button id="playA" class="replay-button home-button">Aを再生</button>
+                </div>
+                <div class="stimulus-container">
+                    <h2>比較 (B)</h2>
+                    <div class="animation-wrapper"><div id="barB" class="bar"></div></div>
+                    <button id="playB" class="replay-button home-button">Bを再生</button>
+                </div>
+            </div>
+            <div id="choice-container">
+                <p style="text-align: center; font-weight: bold;">「同じになった！」と感じるまでBの速度を調整してください。</p>
+                <div id="choice-buttons">
+                    <button id="choice-slower" class="choice-button home-button color-3">遅くする</button>
+                    <button id="choice-faster" class="choice-button home-button color-3">速くする</button>
+                </div>
+                <button id="choice-same" class="choice-button home-button color-1">同じになった！</button>
+                <div id="adjustment-log" class="adjustment-log"></div>
+            </div>
+        </div>
+
+        <div id="step3" class="hidden">
+            <h2 class="section-title">ご協力ありがとうございました</h2>
+            <fieldset>
+                <legend>ご感想（任意）</legend>
+                <div class="form-group">
+                    <label for="feedback">テスト全体に対するご意見、ご感想があればご記入ください。</label>
+                    <textarea id="feedback" name="feedback" rows="4" placeholder="自由にご記入ください..."></textarea>
+                </div>
+            </fieldset>
+            <div id="results-summary" class="results-summary hidden"></div>
+            <button id="view-results-button" class="home-button">結果を提出して終了</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 設定エリア ---
+        const EXPERIMENT_SETTINGS = { durationA: 1.5, startOffsetB: -0.5, stepB: 0.05 };
+        const IMAGE_SETTINGS = { imagesPerSide: 4, imageMaxWidthRatio: 0.5, horizontalOffsetRatio: -0.5, verticalPaddingRatio: 0.01 };
+        
+        // --- サイド画像用スクリプト ---
+        const leftImageContainer = document.getElementById('side-images-left');
+        const rightImageContainer = document.getElementById('side-images-right');
+        function setupSideImages() {
+            const imageBaseUrl = 'https://bb54125213.github.io/image/';
+            const originalSources = [
+                { src: `${imageBaseUrl}image11.png`, color: 1 }, { src: `${imageBaseUrl}image21.png`, color: 2 }, { src: `${imageBaseUrl}image31.png`, color: 3 }
+            ];
+            let imageSources = [];
+            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) { imageSources.push(originalSources[i % originalSources.length]); }
+            imageSources = [...imageSources, ...imageSources];
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
+            const shuffledImages = shuffleArray(imageSources);
+            const leftImagesData = shuffledImages.slice(0, IMAGE_SETTINGS.imagesPerSide);
+            const rightImagesData = shuffledImages.slice(IMAGE_SETTINGS.imagesPerSide);
+            const sideImageContainers = [ { container: leftImageContainer, images: leftImagesData, isLeft: true }, { container: rightImageContainer, images: rightImagesData, isLeft: false } ];
+            const totalImages = IMAGE_SETTINGS.imagesPerSide;
+            if (totalImages <= 0) return;
+            const padding = window.innerHeight * IMAGE_SETTINGS.verticalPaddingRatio;
+            const availableHeight = window.innerHeight - (padding * 2);
+            const slotHeight = availableHeight / totalImages;
+            sideImageContainers.forEach(side => {
+                const { container, images, isLeft } = side;
+                container.innerHTML = '';
+                shuffleArray(images).forEach(imgData => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'image-wrapper';
+                    const img = document.createElement('img');
+                    img.src = imgData.src;
+                    img.dataset.color = imgData.color;
+                    img.style.animationDelay = `-${(Math.random() * 20).toFixed(2)}s`;
+                    img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`;
+                    img.style.maxWidth = `${IMAGE_SETTINGS.imageMaxWidthRatio * 100}vw`;
+                    wrapper.appendChild(img);
+                    const verticalPosition = padding + (images.indexOf(imgData) * slotHeight) + (slotHeight / 2);
+                    wrapper.style.top = `${verticalPosition}px`;
+                    if (isLeft) {
+                        wrapper.style.left = '0';
+                        wrapper.style.transform = `translateX(${IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    } else {
+                        wrapper.style.right = '0';
+                        wrapper.style.transform = `translateX(${-IMAGE_SETTINGS.horizontalOffsetRatio * 100}%) translateY(-50%)`;
+                    }
+                    container.appendChild(wrapper);
+                });
+            });
+        }
+        let resizeTimer;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupSideImages, 250); });
+        window.addEventListener('scroll', () => { const scrollY = window.scrollY; leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; });
+        window.addEventListener('DOMContentLoaded', () => { setupSideImages(); });
+        
+        // --- 落下テスト用スクリプト ---
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const userInfoForm = document.getElementById('userInfoForm');
+        const instruction = document.getElementById('instruction');
+        const trialProgressText = document.getElementById('trial-progress');
+        const barA = document.getElementById('barA');
+        const barB = document.getElementById('barB');
+        const playAButton = document.getElementById('playA');
+        const playBButton = document.getElementById('playB');
+        const choiceSlower = document.getElementById('choice-slower');
+        const choiceSame = document.getElementById('choice-same');
+        const choiceFaster = document.getElementById('choice-faster');
+        const adjustmentLog = document.getElementById('adjustment-log');
+        const resultsSummary = document.getElementById('results-summary');
+        const viewResultsButton = document.getElementById('view-results-button');
+        const COLORS = { R: '#ff0000', G: '#00ff00', B: '#0000ff', C: '#00ffff', M: '#ff00ff', Y: '#ffff00' };
+        const SOUND_FREQUENCIES = { Sound1: 330, Sound2: 440, Sound3: 550 };
+        const GRAY_COLOR = '#888';
+        let audioContext, trials = [], currentTrialIndex = 0, results = [], currentBDuration, elapsedTime = 0;
+        let fasterClicks = 0, slowerClicks = 0;
+        let isPlaying = false, userInfo = {};
+        let currentOscillator = null;
+        const randomStartOffsets = [-0.5, -0.4, -0.3, 0.3, 0.4, 0.5];
+
+        userInfoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(userInfoForm);
+            formData.forEach((value, key) => { userInfo[key] = value; });
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            startTime = new Date();
+            startNewExperiment();
+        });
+
+        function startNewExperiment() {
+            const colorKeys = Object.keys(COLORS);
+            colorKeys.forEach(key => {
+                trials.push({ type: '色', condition: key, color: COLORS[key], sound: null });
+            });
+            const soundKeys = Object.keys(SOUND_FREQUENCIES);
+            soundKeys.forEach(key => {
+                trials.push({ type: '音', condition: key, color: null, sound: SOUND_FREQUENCIES[key] });
+            });
+            trials.sort(() => Math.random() - 0.5);
+            startNextTrial();
+        }
+
+        function startNextTrial() {
+            if (currentTrialIndex >= trials.length) {
+                elapsedTime = (new Date() - startTime) / 1000;
+                showEndScreen();
+                return;
+            }
+            fasterClicks = 0;
+            slowerClicks = 0;
+            updateLog();
+            const currentTrial = trials[currentTrialIndex];
+            barB.style.backgroundColor = currentTrial.color || GRAY_COLOR;
+            const randomOffset = randomStartOffsets[Math.floor(Math.random() * randomStartOffsets.length)];
+            currentBDuration = EXPERIMENT_SETTINGS.durationA + randomOffset;
+            updateUI(`左(A)と右(B)の棒の落下速度を比べてください。`);
+            resetBars();
+        }
+
+        function updateUI(message) {
+            trialProgressText.textContent = `問題 ${currentTrialIndex + 1} / ${trials.length}`;
+            instruction.textContent = message;
+            setPlaybackButtonsDisabled(false);
+        }
+
+        function updateLog() {
+            adjustmentLog.textContent = `調整回数: 速くする ${fasterClicks}回, 遅くする ${slowerClicks}回`;
+        }
+        
+        function resetBars() {
+            stopSound();
+            isPlaying = false;
+            barA.style.animation = 'none';
+            barB.style.animation = 'none';
+            setPlaybackButtonsDisabled(false);
+        }
+
+        playAButton.addEventListener('click', () => {
+            if (isPlaying) return;
+            playAnimation(barA, EXPERIMENT_SETTINGS.durationA, null);
+        });
+
+        playBButton.addEventListener('click', () => {
+            if (isPlaying) return;
+            playAnimation(barB, currentBDuration, trials[currentTrialIndex].sound);
+        });
+
+        choiceSlower.addEventListener('click', () => {
+            if (isPlaying) { stopPlayback(); }
+            currentBDuration += EXPERIMENT_SETTINGS.stepB;
+            slowerClicks++;
+            updateLog();
+            barB.style.animation = 'none';
+            instruction.textContent = "Bの速度を調整しました（遅くしました）。もう一度比べてみましょう。";
+        });
+
+        choiceFaster.addEventListener('click', () => {
+            if (isPlaying) { stopPlayback(); }
+            currentBDuration -= EXPERIMENT_SETTINGS.stepB;
+            fasterClicks++;
+            updateLog();
+            barB.style.animation = 'none';
+            instruction.textContent = "Bの速度を調整しました（速くしました）。もう一度比べてみましょう。";
+        });
+
+        choiceSame.addEventListener('click', () => {
+            stopPlayback();
+            results.push({
+                stimulus: trials[currentTrialIndex],
+                finalDurationB: currentBDuration,
+                adjustments: { faster: fasterClicks, slower: slowerClicks }
+            });
+            currentTrialIndex++;
+            startNextTrial();
+        });
+
+        function playAnimation(element, duration, frequency) {
+            isPlaying = true;
+            setPlaybackButtonsDisabled(true);
+            element.style.animation = 'none';
+            void element.offsetWidth;
+            element.style.animation = `fall ${duration}s linear forwards`;
+            if (frequency) playSound(frequency, duration);
+            element.addEventListener('animationend', () => {
+                stopSound();
+                isPlaying = false;
+                setPlaybackButtonsDisabled(false);
+                element.style.animation = 'none';
+            }, { once: true });
+        }
+        
+        function setPlaybackButtonsDisabled(isDisabled) {
+            playAButton.disabled = isDisabled;
+            playBButton.disabled = isDisabled;
+        }
+
+        function stopPlayback() {
+            stopSound();
+            isPlaying = false;
+            barA.style.animation = 'none';
+            barB.style.animation = 'none';
+            setPlaybackButtonsDisabled(false);
+        }
+
+        function showEndScreen() {
+            step2.classList.add('hidden');
+            step3.classList.remove('hidden');
+        }
+        
+        function handleSubmitAndShowResults() {
+            viewResultsButton.disabled = true;
+            viewResultsButton.textContent = '結果を送信中...';
+            const finalData = { userInfo: userInfo, results: results, elapsedTime: elapsedTime, feedback: document.getElementById('feedback').value };
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbyGkQS_f_2w-9o3fh8b3N5WaDHXBFNfRvBiZ4BQH69xHQkKY4hdRYdkolGbHxoc1g/exec';
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                redirect: 'follow',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalData)
+            })
+            .then(() => {
+                let summaryHtml = '<ul>';
+                results.forEach(res => {
+                    const diff = res.finalDurationB - EXPERIMENT_SETTINGS.durationA;
+                    let feeling = '';
+                    if (diff > 0.1) {
+                        feeling = `基準より <strong>${Math.abs(diff).toFixed(2)}秒 遅い</strong> と感じていました。`;
+                    } else if (diff < -0.1) {
+                        feeling = `基準より <strong>${Math.abs(diff).toFixed(2)}秒 速い</strong> と感じていました。`;
+                    } else {
+                        feeling = '基準とほぼ同じ速度だと感じていました。';
+                    }
+                    const conditionText = res.stimulus.type === '色' 
+                        ? `色: ${res.stimulus.condition} (音なし)`
+                        : `音: ${res.stimulus.condition} (色なし)`;
+                    summaryHtml += `<li>【${conditionText}】<br> &nbsp;&nbsp; ${feeling}</li>`;
+                });
+                summaryHtml += '</ul>';
+                resultsSummary.innerHTML = summaryHtml;
+                resultsSummary.classList.remove('hidden');
+                document.querySelector('#step3 fieldset').classList.add('hidden');
+                viewResultsButton.textContent = 'ホームページに戻る';
+                viewResultsButton.disabled = false;
+                viewResultsButton.removeEventListener('click', handleSubmitAndShowResults);
+                viewResultsButton.onclick = () => window.location.href = '../index.html';
+            })
+            .catch(error => {
+                alert('送信中にエラーが発生しました。GASのURLやデプロイ設定が正しいか確認してください。');
+                console.error('Fetch Error:', error);
+                viewResultsButton.disabled = false;
+                viewResultsButton.textContent = '結果を提出して終了';
+            });
+        }
+        viewResultsButton.addEventListener('click', handleSubmitAndShowResults);
+        
+        function playSound(frequency, duration) {
+             if (!audioContext) { try { audioContext = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.error('Web Audio API not supported'); return; } }
+            stopSound();
+            currentOscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            currentOscillator.type = 'sine';
+            currentOscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            currentOscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            currentOscillator.start();
+            setTimeout(() => { stopSound(); }, duration * 1000);
+        }
+        function stopSound() {
+            if (currentOscillator) {
+                currentOscillator.stop();
+                currentOscillator.disconnect();
+                currentOscillator = null;
+            }
+        }
+    </script>
+</body>
+</html>

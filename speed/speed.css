@@ -1,0 +1,109 @@
+/* アニメーション全体のラッパー（枠） */
+.animation-wrapper {
+    width: 100%;
+    height: 300px; /* 縦長の枠 */
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    border: 2px solid #ccc;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden; /* 枠外にはみ出した棒を隠す */
+}
+
+/* 落下する棒のスタイル */
+.bar {
+    width: 100%; /* 枠いっぱいの幅 */
+    height: 20px;  /* 棒の太さ */
+    border-radius: 4px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translateY(-100%); /* 初期位置は枠の上で見えない場所 */
+}
+.bar.gray {
+    background-color: #888;
+}
+
+/* 落下アニメーションの定義 */
+@keyframes fall {
+    from {
+        transform: translateY(-100%); /* 上の見えない位置からスタート */
+    }
+    to {
+        transform: translateY(300px); /* 枠の高さ分だけ下に移動して消える */
+    }
+}
+
+
+/* --- 以下、progress.css と共通のスタイル --- */
+.stimulus-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    margin: 20px 0;
+}
+.stimulus-container {
+    flex: 1;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    text-align: center;
+}
+.stimulus-container h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+}
+.replay-button {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px;
+    font-size: 1em;
+}
+.replay-button:disabled,
+.choice-button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+#choice-container {
+    text-align: center;
+}
+#choice-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+.choice-button {
+    flex-grow: 1;
+    padding: 15px;
+    font-size: 1.1em;
+}
+.choice-button.color-1 { background-color: #0071C5; }
+.choice-button.color-1:hover { background-color: #005a9e; }
+.choice-button.color-3 { background-color: #265F5B; }
+.choice-button.color-3:hover { background-color: #1e4a46; }
+#choice-same {
+    margin-top: 10px;
+    width: 100%;
+}
+.adjustment-log {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #666;
+    height: 1.2em;
+}
+.results-summary ul {
+    list-style-type: none;
+    padding: 0;
+    background-color: #f9f9f9;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+.results-summary li {
+    padding: 15px;
+    border-bottom: 1px solid var(--color-border);
+}
+.results-summary li:last-child {
+    border-bottom: none;
+}

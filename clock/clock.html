@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>感じ方が変わるデジタル時計</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="clock.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container clock-container">
+        <h1>感じ方が変わるデジタル時計</h1>
+        
+        <div id="clock">
+            <div class="digit-col" id="hour1"></div>
+            <div class="digit-col" id="hour2"></div>
+            <span class="separator">:</span>
+            <div class="digit-col" id="min1"></div>
+            <div class="digit-col" id="min2"></div>
+            <span class="separator">:</span>
+            <div class="digit-col" id="sec1"></div>
+            <div class="digit-col" id="sec2"></div>
+        </div>
+
+        <div id="controls">
+            <div class="control-group">
+                <label>色の変更:</label>
+                <button data-color="#404756">Default</button>
+                <button data-color="#ff0000">Red</button>
+                <button data-color="#00ff00">Green</button>
+                <button data-color="#0000ff">Blue</button>
+                <button data-color="#00ffff">Cyan</button>
+                <button data-color="#ff00ff">Magenta</button>
+                <button data-color="#ffff00">Yellow</button>
+            </div>
+            <div class="control-group">
+                <label>音の変更:</label>
+                <button id="sound-toggle">Sound: OFF</button>
+            </div>
+        </div>
+        <a href="../index.html" class="home-button">ホームページに戻る</a>
+    </div>
+
+    <script>
+        const clock = document.getElementById('clock');
+        const soundToggleButton = document.getElementById('sound-toggle');
+        const colorButtons = document.querySelectorAll('#controls button[data-color]');
+        const digitElements = {
+            hour1: document.getElementById('hour1'),
+            hour2: document.getElementById('hour2'),
+            min1: document.getElementById('min1'),
+            min2: document.getElementById('min2'),
+            sec1: document.getElementById('sec1'),
+            sec2: document.getElementById('sec2'),
+        };
+
+        let audioContext;
+        let soundIndex = 0;
+        const SOUNDS = [
+            { name: 'OFF', freq: 0 },
+            { name: 'Sound 1', freq: 440 },
+            { name: 'Sound 2', freq: 659 },
+            { name: 'Sound 3', freq: 880 }
+        ];
+        let previousTime = { h1: '', h2: '', m1: '', m2: '', s1: '', s2: '' };
+
+        // 色変更ボタンの処理
+        colorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                clock.style.color = button.dataset.color;
+            });
+        });
+
+        // 音声切り替えボタンの処理
+        soundToggleButton.addEventListener('click', () => {
+            soundIndex = (soundIndex + 1) % SOUNDS.length;
+            soundToggleButton.textContent = `Sound: ${SOUNDS[soundIndex].name}`;
+            if (soundIndex > 0 && !audioContext) {
+                initAudioContext();
+            }
+        });
+
+        // 時計を更新するメインの関数
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+
+            if (previousTime.s2 !== s[1]) updateDigit(digitElements.sec2, s[1]);
+            if (previousTime.s1 !== s[0]) updateDigit(digitElements.sec1, s[0]);
+            if (previousTime.m2 !== m[1]) updateDigit(digitElements.min2, m[1]);
+            if (previousTime.m1 !== m[0]) updateDigit(digitElements.min1, m[0]);
+            if (previousTime.h2 !== h[1]) updateDigit(digitElements.hour2, h[1]);
+            if (previousTime.h1 !== h[0]) updateDigit(digitElements.hour1, h[0]);
+            
+            if (previousTime.s2 && s[1] !== previousTime.s2 && soundIndex > 0) {
+                playTickSound(SOUNDS[soundIndex].freq);
+            }
+
+            previousTime = { h1: h[0], h2: h[1], m1: m[0], m2: m[1], s1: s[0], s2: s[1] };
+            requestAnimationFrame(updateClock);
+        }
+        
+        // 1桁の数字をアニメーションで更新する関数
+        function updateDigit(element, newDigit) {
+            const oldDigitSpan = element.querySelector('span');
+
+            // 古い数字があれば、下に落ちるアニメーションを適用
+            if (oldDigitSpan) {
+                oldDigitSpan.classList.add('is-falling-out');
+                // アニメーションが終わったら要素を削除
+                oldDigitSpan.addEventListener('animationend', () => {
+                    oldDigitSpan.remove();
+                }, { once: true });
+            }
+
+            // 新しい数字を作成し、上から落ちてくるアニメーションを適用
+            const newDigitSpan = document.createElement('span');
+            newDigitSpan.textContent = newDigit;
+            newDigitSpan.classList.add('is-falling-in');
+            element.appendChild(newDigitSpan);
+        }
+        
+        // 時計を開始
+        requestAnimationFrame(updateClock);
+
+        // --- 音声関連の関数 ---
+        function initAudioContext() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const buffer = audioContext.createBuffer(1, 1, 22050);
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                } catch (e) { console.error('Web Audio API is not supported in this browser'); }
+            }
+        }
+        function playTickSound(frequency) {
+            if (!audioContext) return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.1);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+    </script>
+</body>
+</html>

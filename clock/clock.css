@@ -1,0 +1,94 @@
+/* 時計コンテナを画面中央に配置 */
+.clock-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
+/* デジタル時計本体のスタイル */
+#clock {
+    font-family: 'Roboto Mono', monospace, sans-serif;
+    font-size: 10vw;
+    font-weight: 700;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s;
+}
+
+/* 各桁のコンテナ（数字が表示される窓） */
+.digit-col {
+    width: 1ch; /* 1文字分の幅 */
+    height: 1.2em; /* 1文字分の高さ */
+    line-height: 1.2em;
+    overflow: hidden; /* はみ出した数字を隠す */
+    position: relative;
+    text-align: center;
+}
+
+/* 数字のspan要素の基本スタイル */
+.digit-col span {
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
+/* 新しい数字が上から落ちてくるアニメーション */
+@keyframes fall-in {
+    from { transform: translateY(-100%); }
+    to   { transform: translateY(0); }
+}
+.is-falling-in {
+    animation: fall-in 0.3s ease-out forwards;
+}
+
+/* 古い数字が下に落ちていくアニメーション */
+@keyframes fall-out {
+    from { transform: translateY(0); }
+    to   { transform: translateY(100%); }
+}
+.is-falling-out {
+    animation: fall-out 0.3s ease-in forwards;
+}
+
+
+/* コロン(:)は動かず、左右に余白を設ける */
+#clock .separator {
+    width: auto;
+    padding: 0 0.2em; /* 左右に余白を追加して重なりを完全に解消 */
+}
+
+/* 操作パネルのスタイル */
+#controls {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.control-group label {
+    font-weight: bold;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+#controls button {
+    font-size: 0.8em;
+    padding: 8px 15px;
+    width: auto;
+    margin: 0;
+}

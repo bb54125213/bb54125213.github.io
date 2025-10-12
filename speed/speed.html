@@ -14,7 +14,7 @@
     <div class="side-images left" id="side-images-left"></div>
     <div class="side-images right" id="side-images-right"></div>
     <div class="container">
-        <h1>落下速度テスト</h1>
+        <h1>落下スピード感覚テスト</h1>
         
         <div id="step1">
             <p>まず、あなたについて教えてください。</p>
@@ -70,6 +70,10 @@
             <div id="results-summary" class="results-summary hidden"></div>
             <button id="view-results-button" class="home-button">結果を提出して終了</button>
         </div>
+        
+        <div id="trial-overlay" class="trial-overlay hidden">
+            <div id="trial-overlay-text" class="trial-overlay-text"></div>
+        </div>
     </div>
 
     <script>
@@ -77,11 +81,11 @@
         const EXPERIMENT_SETTINGS = { 
             durationA: 1.5, 
             stepFine: 0.05,
-            stepCoarse: 0.10, // stepFineの2倍
+            stepCoarse: 0.10,
         };
         const IMAGE_SETTINGS = { imagesPerSide: 4, imageMaxWidthRatio: 0.5, horizontalOffsetRatio: -0.5, verticalPaddingRatio: 0.01 };
         
-        // --- サイド画像用スクリプト（変更なし） ---
+        // --- サイド画像用スクリプト ---
         const leftImageContainer = document.getElementById('side-images-left');
         const rightImageContainer = document.getElementById('side-images-right');
         function setupSideImages() {
@@ -134,6 +138,7 @@
         window.addEventListener('DOMContentLoaded', () => { setupSideImages(); });
         
         // --- 落下テスト用スクリプト ---
+        const container = document.querySelector('.container');
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
         const step3 = document.getElementById('step3');
@@ -152,6 +157,8 @@
         const adjustmentLog = document.getElementById('adjustment-log');
         const resultsSummary = document.getElementById('results-summary');
         const viewResultsButton = document.getElementById('view-results-button');
+        const trialOverlay = document.getElementById('trial-overlay');
+        const trialOverlayText = document.getElementById('trial-overlay-text');
         const COLORS = { R: '#ff0000', G: '#00ff00', B: '#0000ff', C: '#00ffff', M: '#ff00ff', Y: '#ffff00' };
         const SOUND_FREQUENCIES = { Sound1: 330, Sound2: 440, Sound3: 550 };
         const GRAY_COLOR = '#888';
@@ -190,15 +197,22 @@
                 showEndScreen();
                 return;
             }
-            fasterClicks = 0;
-            slowerClicks = 0;
-            updateLog();
-            const currentTrial = trials[currentTrialIndex];
-            barB.style.backgroundColor = currentTrial.color || GRAY_COLOR;
-            const randomOffset = randomStartOffsets[Math.floor(Math.random() * randomStartOffsets.length)];
-            currentBDuration = EXPERIMENT_SETTINGS.durationA + randomOffset;
-            updateUI(`左(A)と右(B)の棒の落下速度を比べてください。`);
-            resetBars();
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            trialOverlayText.textContent = `第 ${currentTrialIndex + 1} 問`;
+            trialOverlay.classList.remove('hidden');
+            
+            setTimeout(() => {
+                trialOverlay.classList.add('hidden');
+                fasterClicks = 0;
+                slowerClicks = 0;
+                updateLog();
+                const currentTrial = trials[currentTrialIndex];
+                barB.style.backgroundColor = currentTrial.color || GRAY_COLOR;
+                const randomOffset = randomStartOffsets[Math.floor(Math.random() * randomStartOffsets.length)];
+                currentBDuration = EXPERIMENT_SETTINGS.durationA + randomOffset;
+                updateUI(`左(A)と右(B)の棒の落下速度を比べてください。`);
+                resetBars();
+            }, 1500);
         }
 
         function updateUI(message) {
@@ -228,29 +242,18 @@
             playAnimation(barB, currentBDuration, trials[currentTrialIndex].sound);
         });
 
-        // ▼▼▼ 変更点: ボタンのロジックを修正 ▼▼▼
-        choiceSlowerFine.addEventListener('click', () => {
-            adjustBSpeed(EXPERIMENT_SETTINGS.stepFine, 'slower', 1);
-        });
-        choiceSlowerCoarse.addEventListener('click', () => {
-            adjustBSpeed(EXPERIMENT_SETTINGS.stepCoarse, 'slower', 2);
-        });
-        choiceFasterFine.addEventListener('click', () => {
-            adjustBSpeed(-EXPERIMENT_SETTINGS.stepFine, 'faster', 1);
-        });
-        choiceFasterCoarse.addEventListener('click', () => {
-            adjustBSpeed(-EXPERIMENT_SETTINGS.stepCoarse, 'faster', 2);
-        });
+        choiceSlowerFine.addEventListener('click', () => { adjustBSpeed(EXPERIMENT_SETTINGS.stepFine, 'slower', 1); });
+        choiceSlowerCoarse.addEventListener('click', () => { adjustBSpeed(EXPERIMENT_SETTINGS.stepCoarse, 'slower', 2); });
+        choiceFasterFine.addEventListener('click', () => { adjustBSpeed(-EXPERIMENT_SETTINGS.stepFine, 'faster', 1); });
+        choiceFasterCoarse.addEventListener('click', () => { adjustBSpeed(-EXPERIMENT_SETTINGS.stepCoarse, 'faster', 2); });
 
         function adjustBSpeed(step, type, count) {
             if (isPlaying) { stopPlayback(); }
             currentBDuration += step;
             if (currentBDuration < 0.1) currentBDuration = 0.1;
-
             if (type === 'faster') fasterClicks += count;
             if (type === 'slower') slowerClicks += count;
             updateLog();
-
             barB.style.animation = 'none';
             instruction.textContent = "Bの速度を調整しました。もう一度比べてみましょう。";
         }

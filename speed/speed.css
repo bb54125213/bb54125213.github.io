@@ -107,3 +107,31 @@
 .results-summary li:last-child {
     border-bottom: none;
 }
+
+/* 問題開始を通知するオーバーレイのスタイル */
+.trial-overlay {
+    position: fixed; /* 画面全体に固定 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* 半透明の黒背景 */
+    z-index: 1000; /* 最前面に表示 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+.trial-overlay.hidden {
+    opacity: 0;
+    pointer-events: none; /* 非表示中はクリックを無効化 */
+}
+
+/* オーバーレイの中のテキスト */
+.trial-overlay-text {
+    font-size: 5vw;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 10px black;
+}

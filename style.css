@@ -1,7 +1,7 @@
 :root {
     --color-primary: #0071C5;
     --color-text: #404756;
-    --color-background: #FFFFFF;
+    --color-background: #f4f7f6;
     --color-border: #e0e0e0;
 }
 body {
@@ -42,20 +42,39 @@ body {
     50% { transform: scale(1.1) rotate(8deg); }
     100% { transform: scale(1) rotate(-8deg); }
 }
+
+/* ▼▼▼ ここからが今回の修正の核心部です ▼▼▼ */
+
 .container {
-    max-width: 650px;
+    max-width: 700px;
     margin: 0 auto;
-    background-color: var(--color-background);
-    padding: 30px 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    background-color: transparent;
+    padding: 0; /* padding-left を削除 */
+    border-radius: 0;
+    box-shadow: none;
     position: relative;
     z-index: 1;
 }
+
+/* タイムライン本体（縦線）を中央に配置 */
+.container::before {
+    content: '';
+    position: absolute;
+    left: 50%; /* 中央に */
+    transform: translateX(-50%); /* 自身の幅の半分だけ左にずらす */
+    top: 100px;
+    bottom: 0;
+    width: 4px;
+    background-color: var(--color-border);
+    z-index: -1;
+}
+
 h1 {
-    text-align: center;
+    text-align: center; /* 中央揃えに戻す */
     color: var(--color-text);
-    margin-bottom: 20px;
+    margin-bottom: 50px;
+    font-size: 2em;
+    padding-left: 0; /* paddingを削除 */
 }
 p {
     text-align: center;
@@ -180,12 +199,11 @@ button[type="submit"]:disabled {
     display: none;
 }
 .progress-bar-container {
-    position: relative;
     background-color: #f0f0f0;
     border-radius: 8px;
     margin-bottom: 30px;
     border: 3px solid var(--color-primary);
-    height: 28px;
+    height: 18px;
     box-sizing: border-box;
 }
 .progress-bar {
@@ -194,9 +212,6 @@ button[type="submit"]:disabled {
     background-color: var(--color-primary);
     border-radius: 4px;
     transition: width 0.4s ease;
-    /* ▼▼▼ 変更点: 白文字を切り抜くための設定 ▼▼▼ */
-    position: relative;
-    overflow: hidden;
 }
 .progress-text {
     text-align: right;
@@ -206,63 +221,143 @@ button[type="submit"]:disabled {
     margin-bottom: 5px;
     padding-right: 2px;
 }
-.progress-bar-container {
-    background-color: #f0f0f0;
-    border-radius: 8px;
-    margin-bottom: 30px;
-    border: 3px solid var(--color-primary);
-    height: 18px; /* 少し細くする */
-    box-sizing: border-box;
-}
-.progress-bar {
-    width: 0%;
-    height: 100%;
-    background-color: var(--color-primary);
-    border-radius: 4px;
-    transition: width 0.4s ease;
-}
 @media (max-width: 768px) {
     .container {
-        padding: 20px;
+        padding: 0 10px;
+    }
+    .container::before {
+        left: 50%;
     }
     h1 {
-        font-size: 1.5em;
+        font-size: 1.8em;
     }
     .side-images img {
         max-width: 20vw;
     }
+    .card-section::before {
+        width: 15px;
+        height: 15px;
+        top: -11px;
+    }
+    .category-header::before {
+        width: 12px;
+        height: 12px;
+    }
 }
-/* ホームページ用のセクション見出し */
+
+/* 各セクション（カード）の共通スタイル */
+.card-section {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    padding: 30px 35px;
+    margin-bottom: 40px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--color-border);
+    position: relative;
+    width: 80%; /* カード幅を調整 */
+    margin-left: auto; /* 中央揃え */
+    margin-right: auto; /* 中央揃え */
+}
+
+/* カードとタイムラインをつなぐ丸印 */
+.card-section::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -14px; /* カードの上辺中央に */
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background-color: var(--color-primary);
+    border: 4px solid var(--color-background);
+    z-index: 2;
+    /* いびつな丸 */
+    border-radius: 45% 55% 60% 40% / 50% 45% 55% 50%;
+    /* 回転アニメーション */
+    animation: spin 15s linear infinite;
+}
+
+/* カード内の見出し */
 .section-title {
-    font-size: 1.3em;
+    font-size: 1.4em;
     color: var(--color-primary);
     border-bottom: 2px solid var(--color-border);
     padding-bottom: 10px;
-    margin-top: 40px;
+    margin-top: 0;
     margin-bottom: 20px;
-    text-align: center;
+    text-align: center; /* 中央揃え */
 }
 
-/* ホームページ用の本文 */
+/* 本文 */
 .section-body {
     font-size: 1em;
     line-height: 1.9;
     color: var(--color-text);
-    margin-bottom: 30px;
+    margin-bottom: 0;
+    text-align: left; /* 本文は左揃えのまま */
+}
+.section-body em {
+    font-style: normal;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+.section-body.center {
+    text-align: center; /* 中央揃え */
 }
 
-/* 各テストへの導線をまとめるセクション */
-.test-section {
+/* 「テスト」と「デザイン」のカテゴリ見出し */
+.category-header {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--color-text);
     margin-top: 50px;
-    padding: 25px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 0;
+    text-align: center; /* 中央揃え */
+    position: relative;
+}
+
+/* カテゴリ見出しの前の装飾（いびつな丸・緑） */
+.category-header::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -15px; /* 線の上に来るように調整 */
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background-color: #36603C; /* ご指定の緑色 */
+    border: 4px solid var(--color-background);
+    z-index: 2;
+    /* いびつな丸 */
+    border-radius: 55% 45% 40% 60% / 45% 50% 50% 55%;
+    /* 回転アニメーション */
+    animation: spin 20s linear infinite reverse;
+}
+
+/* 各テスト項目が入るカード（card-sectionを流用） */
+.test-card {
     background-color: #f9f9f9;
 }
+.test-card .section-title {
+    color: var(--color-text);
+    text-align: center;
+    font-size: 1.3em;
+    border-bottom: none;
+}
+.test-card p {
+    text-align: center;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+}
+.test-card .home-button {
+    margin: 20px auto 0 auto; /* 中央寄せ */
+    max-width: 300px;
+}
 
-/* モーダルウィンドウの背景（デフォルトは非表示） */
+/* モーダル関連のスタイル */
 .modal {
-    display: none; /* ← 常に表示されていた原因を修正 */
+    display: none;
     position: fixed;
     z-index: 100;
     left: 0;
@@ -272,28 +367,21 @@ button[type="submit"]:disabled {
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.6);
 }
-
-/* JavaScriptでモーダルを表示する際に使うスタイル */
 .modal.show {
     display: flex;
     align-items: center;
     justify-content: center;
 }
-
-/* モーダルのコンテンツ部分 */
 .modal-content {
     background-color: #fefefe;
-    /* ▼▼▼ 変更点: marginをリセットし、幅の計算方法を変更 ▼▼▼ */
     margin: auto;
     padding: 30px;
     border: 1px solid #888;
-    width: 90%; /* 画面幅の90%を基準に */
+    width: 90%;
     max-width: 800px;
     border-radius: 8px;
     position: relative;
 }
-
-/* 閉じるボタン */
 .close-button {
     color: #aaa;
     position: absolute;
@@ -308,8 +396,6 @@ button[type="submit"]:disabled {
     text-decoration: none;
     cursor: pointer;
 }
-
-/* グラフのコンテナとiframe */
 .chart-container {
     margin-top: 20px;
     border: 1px solid var(--color-border);
@@ -320,4 +406,10 @@ button[type="submit"]:disabled {
     width: 100%;
     height: 450px;
     border: none;
+}
+
+/* 回転アニメーションの定義 */
+@keyframes spin {
+    from { transform: translateX(-50%) rotate(0deg); }
+    to { transform: translateX(-50%) rotate(360deg); }
 }

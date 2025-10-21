@@ -16,45 +16,41 @@
     <div class="container">
         <h1>心理的効果を用いた工業デザイン</h1>
         
-        <div class="test-section">
-            <h2 class="section-title">中間発表プレテストのリアルタイム集計結果</h2>
-            <button id="show-chart-button" class="home-button">プレテストの結果表示はこちら</button>
+        <div class="card-section">
+            <h2 class="section-title">プロジェクトの目的</h2>
+            <p class="section-body center">
+                製品の<em>DESIGN</em>が　人々の<em>心理</em>に与える影響を活用して<br>
+                より魅力的で機能的なものづくり
+            </p>
         </div>
 
-        <h2 class="section-title">ねらい</h2>
-        <p class="section-body">
-            製品のデザインが人々の心理に与える影響を活用してより魅力的で機能的なものづくり
-        </p>
-
-        <div class="test-section">
-            <h2 class="section-title">砂時計アニメーションによる心理的効果計測テスト</h2>
-            <a href="sand/sand.html" class="home-button">砂時計のテストを開始する</a>
+        <div class="card-section">
+            <h2 class="section-title">心理的効果とは</h2>
+            <p class="section-body">
+                心理的効果とは、五感や記憶、経験から得た情報が脳で処理されることで、
+                感情や思考、行動、意識などに与える影響のことです。<br>
+                例えば、色は視覚を通して、心理に作用するといった効果があります。
+            </p>
         </div>
 
-        <div class="test-section">
-            <h2 class="section-title">プログレスバーによる心理的効果計測テスト</h2>
-            <a href="progress/progress.html" class="home-button">プログレスバーのテストを開始する</a>
-        </div>
-
-        <div class="test-section">
+        <h2 class="category-header">心理的効果計測テスト</h2>
+        <div class="card-section test-card">
             <h2 class="section-title">落下スピード感覚テスト</h2>
+            <p>色や音が人間の時間感覚にどう影響するかを調べるテストです。</p>
             <a href="speed/speed.html" class="home-button">落下スピードのテストを開始する</a>
         </div>
-        <div class="test-section">
+        <h2 class="category-header">工業デザイン</h2>
+        <div class="card-section test-card">
             <h2 class="section-title">感じ方が変わるデジタル時計</h2>
+            <p>テスト結果を応用し、色や音によって時間の進み方が変わって見えるかもしれない時計のデモです。</p>
             <a href="clock/clock.html" class="home-button">デジタル時計を表示する</a>
         </div>
-    </div>
-
-    <div id="chart-modal" class="modal">
-        <div class="modal-content">
-            <span id="close-modal-button" class="close-button">&times;</span>
-            <h2 class="section-title" style="margin-top: 0; text-align: center;">現在の回答状況</h2>
-            <div class="chart-container">
-                <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQq4wTkbfC2-3rSeuiRJxBj11UssWdC9fPQFRN-6H-WYvytn-xvOd4fqEJM714KsqW2JN30_c_UE2TW/pubchart?oid=360856784&format=interactive"></iframe>
-            </div>
+        <div class="card-section test-card">
+            <h2 class="section-title">（仮）タイマー</h2>
+            <p>今後、こちらにタイマーのデザインを追加する予定です。</p>
+            <a href="#" class="home-button" style="background-color: #aaa; cursor: not-allowed;">準備中</a>
         </div>
-    </div>
+        </div>
 
     <script>
         const IMAGE_SETTINGS = {
@@ -133,23 +129,15 @@
             setupSideImages();
         });
 
+        // モーダル関連のスクリプト（コメントアウト）
+        /*
         const chartModal = document.getElementById('chart-modal');
         const showChartButton = document.getElementById('show-chart-button');
         const closeModalButton = document.getElementById('close-modal-button');
-
-        showChartButton.addEventListener('click', () => {
-            chartModal.classList.add('show');
-        });
-
-        closeModalButton.addEventListener('click', () => {
-            chartModal.classList.remove('show');
-        });
-
-        window.addEventListener('click', (event) => {
-            if (event.target == chartModal) {
-                chartModal.classList.remove('show');
-            }
-        });
+        showChartButton.addEventListener('click', () => { chartModal.classList.add('show'); });
+        closeModalButton.addEventListener('click', () => { chartModal.classList.remove('show'); });
+        window.addEventListener('click', (event) => { if (event.target == chartModal) { chartModal.classList.remove('show'); } });
+        */
     </script>
 </body>
 </html>

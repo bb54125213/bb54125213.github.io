@@ -43,131 +43,92 @@ body {
     100% { transform: scale(1) rotate(-8deg); }
 }
 
-/* ▼▼▼ ここからが今回の修正の核心部です ▼▼▼ */
-
+/* --- コンテナの基本スタイル --- */
 .container {
     max-width: 700px;
     margin: 0 auto;
     background-color: transparent;
-    padding: 0; /* padding-left を削除 */
+    padding: 0;
     border-radius: 0;
     box-shadow: none;
     position: relative;
     z-index: 1;
 }
 
-/* タイムライン本体（縦線）を中央に配置 */
-.container::before {
+/* --- タイムライン（index.html）専用スタイル --- */
+.home-page .container {
+    padding-left: 50px; 
+}
+.home-page .container::before {
     content: '';
     position: absolute;
-    left: 50%; /* 中央に */
-    transform: translateX(-50%); /* 自身の幅の半分だけ左にずらす */
+    left: 20px;
     top: 100px;
     bottom: 0;
     width: 4px;
     background-color: var(--color-border);
     z-index: -1;
 }
-
+.home-page h1 {
+    text-align: left;
+    padding-left: 30px;
+}
+.home-page .card-section::before {
+    content: '';
+    position: absolute;
+    left: -42px;
+    top: 35px;
+    width: 20px;
+    height: 20px;
+    background-color: var(--color-primary);
+    border: 4px solid var(--color-background);
+    z-index: 2;
+    border-radius: 45% 55% 60% 40% / 50% 45% 55% 50%;
+    animation: spin 15s linear infinite;
+}
+.home-page .category-header {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-top: 50px;
+    margin-bottom: 20px;
+    padding-left: 30px;
+    position: relative;
+}
+.home-page .category-header::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 16px;
+    height: 16px;
+    background-color: #36603C;
+    border: 4px solid var(--color-background);
+    z-index: 2;
+    animation: spin 20s linear infinite reverse;
+}
+/* ホームページ以外のh1は中央揃え */
 h1 {
-    text-align: center; /* 中央揃えに戻す */
+    text-align: center;
     color: var(--color-text);
     margin-bottom: 50px;
     font-size: 2em;
-    padding-left: 0; /* paddingを削除 */
 }
 p {
     text-align: center;
     margin-bottom: 30px;
 }
-.video-container {
-    position: relative;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
-    margin-bottom: 40px;
-    border-radius: 8px;
-}
-.video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-fieldset {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-}
-legend {
-    font-size: 1.2em;
-    font-weight: 700;
-    color: var(--color-primary);
-    padding: 0 10px;
-}
-.form-group {
-    margin-bottom: 20px;
-}
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 700;
-}
-label.question-title {
-    font-size: 1.1em;
-}
-input[type="text"],
-select,
-textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 1em;
-}
-textarea {
-    resize: vertical;
-}
-.radio-group,
-.radio-group-vertical {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-.radio-group-vertical {
-    flex-direction: column;
-}
-.radio-group input[type="radio"],
-.radio-group-vertical input[type="radio"] {
-    display: none;
+.video-container, fieldset, legend, .form-group, label, input, textarea,
+.radio-group, .radio-group-vertical {
+    /* 共通フォーム要素 */
 }
 .radio-group label,
 .radio-group-vertical label {
-    display: block;
-    padding: 12px 20px;
-    border: 2px solid #ddd;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 500;
-    text-align: center;
     flex-grow: 1;
 }
-.radio-group label:hover,
-.radio-group-vertical label:hover {
-    background-color: #f0f8ff;
-    border-color: var(--color-primary);
-}
-.radio-group input[type="radio"]:checked + label,
-.radio-group-vertical input[type="radio"]:checked + label {
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
-    color: white;
-    font-weight: 700;
-}
+
+/* --- ボタン共通スタイル --- */
 button[type="submit"],
 #nextButton ,
 .home-button {
@@ -188,16 +149,21 @@ button[type="submit"],
     box-sizing: border-box;
 }
 button[type="submit"]:hover,
-#nextButton:hover {
+#nextButton:hover,
+.home-button:hover {
     background-color: #005a9e;
 }
 button[type="submit"]:disabled {
     background-color: #bdc3c7;
     cursor: not-allowed;
 }
+
+/* --- 汎用クラス --- */
 .hidden {
     display: none;
 }
+
+/* --- プログレスバー（sand.html用）--- */
 .progress-bar-container {
     background-color: #f0f0f0;
     border-radius: 8px;
@@ -221,31 +187,8 @@ button[type="submit"]:disabled {
     margin-bottom: 5px;
     padding-right: 2px;
 }
-@media (max-width: 768px) {
-    .container {
-        padding: 0 10px;
-    }
-    .container::before {
-        left: 50%;
-    }
-    h1 {
-        font-size: 1.8em;
-    }
-    .side-images img {
-        max-width: 20vw;
-    }
-    .card-section::before {
-        width: 15px;
-        height: 15px;
-        top: -11px;
-    }
-    .category-header::before {
-        width: 12px;
-        height: 12px;
-    }
-}
 
-/* 各セクション（カード）の共通スタイル */
+/* --- index.html用カードスタイル --- */
 .card-section {
     background-color: #FFFFFF;
     border-radius: 12px;
@@ -254,30 +197,12 @@ button[type="submit"]:disabled {
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--color-border);
     position: relative;
-    width: 80%; /* カード幅を調整 */
-    margin-left: auto; /* 中央揃え */
-    margin-right: auto; /* 中央揃え */
 }
-
-/* カードとタイムラインをつなぐ丸印 */
-.card-section::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: -14px; /* カードの上辺中央に */
-    transform: translateX(-50%);
-    width: 20px;
-    height: 20px;
-    background-color: var(--color-primary);
-    border: 4px solid var(--color-background);
-    z-index: 2;
-    /* いびつな丸 */
-    border-radius: 45% 55% 60% 40% / 50% 45% 55% 50%;
-    /* 回転アニメーション */
-    animation: spin 15s linear infinite;
+.home-page .card-section {
+    width: auto;
+    margin-left: 0;
+    margin-right: 0;
 }
-
-/* カード内の見出し */
 .section-title {
     font-size: 1.4em;
     color: var(--color-primary);
@@ -285,16 +210,18 @@ button[type="submit"]:disabled {
     padding-bottom: 10px;
     margin-top: 0;
     margin-bottom: 20px;
-    text-align: center; /* 中央揃え */
+    text-align: left;
 }
-
-/* 本文 */
+.home-page .section-title,
+.home-page .card-section .section-title {
+    text-align: center;
+}
 .section-body {
     font-size: 1em;
     line-height: 1.9;
     color: var(--color-text);
     margin-bottom: 0;
-    text-align: left; /* 本文は左揃えのまま */
+    text-align: left;
 }
 .section-body em {
     font-style: normal;
@@ -302,60 +229,37 @@ button[type="submit"]:disabled {
     color: var(--color-primary);
 }
 .section-body.center {
-    text-align: center; /* 中央揃え */
+    text-align: center;
 }
-
-/* 「テスト」と「デザイン」のカテゴリ見出し */
-.category-header {
-    font-size: 1.8em;
-    font-weight: 700;
-    color: var(--color-text);
-    margin-top: 50px;
-    margin-bottom: 20px;
-    padding: 0;
-    text-align: center; /* 中央揃え */
-    position: relative;
-}
-
-/* カテゴリ見出しの前の装飾（いびつな丸・緑） */
-.category-header::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: -15px; /* 線の上に来るように調整 */
-    transform: translateX(-50%);
-    width: 20px;
-    height: 20px;
-    background-color: #36603C; /* ご指定の緑色 */
-    border: 4px solid var(--color-background);
-    z-index: 2;
-    /* いびつな丸 */
-    border-radius: 55% 45% 40% 60% / 45% 50% 50% 55%;
-    /* 回転アニメーション */
-    animation: spin 20s linear infinite reverse;
-}
-
-/* 各テスト項目が入るカード（card-sectionを流用） */
 .test-card {
     background-color: #f9f9f9;
 }
 .test-card .section-title {
     color: var(--color-text);
-    text-align: center;
+    text-align: left;
     font-size: 1.3em;
     border-bottom: none;
 }
-.test-card p {
+.home-page .test-card .section-title {
     text-align: center;
+}
+.test-card p {
+    text-align: left;
     font-size: 0.9em;
     margin-bottom: 20px;
 }
+.home-page .test-card p {
+    text-align: center;
+}
 .test-card .home-button {
-    margin: 20px auto 0 auto; /* 中央寄せ */
+    margin-left: 0;
     max-width: 300px;
 }
+.home-page .test-card .home-button {
+    margin: 20px auto 0 auto;
+}
 
-/* モーダル関連のスタイル */
+/* --- モーダル（グラフ）用スタイル --- */
 .modal {
     display: none;
     position: fixed;
@@ -408,8 +312,36 @@ button[type="submit"]:disabled {
     border: none;
 }
 
-/* 回転アニメーションの定義 */
+/* --- 回転アニメーション --- */
 @keyframes spin {
     from { transform: translateX(-50%) rotate(0deg); }
     to { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* --- スマホ表示の調整 --- */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 10px;
+    }
+    /* ... (中略) ... */
+    .home-page .container {
+        padding-left: 30px;
+    }
+    .home-page .container::before {
+        left: 10px;
+    }
+    .home-page h1 {
+        padding-left: 15px;
+    }
+    .home-page .card-section::before {
+        left: -20px;
+        width: 15px;
+        height: 15px;
+    }
+    .home-page .category-header {
+        padding-left: 15px;
+    }
+    .home-page .category-header::before {
+        left: -20px;
+    }
 }

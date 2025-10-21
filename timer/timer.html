@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>感じ方が変わるタイマー</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="timer.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container timer-container">
+        <h1>感じ方が変わるタイマー</h1>
+
+        <div id="timer-display">
+            <svg id="donut-timer" viewBox="0 0 100 100">
+                <circle class="donut-bg" cx="50" cy="50" r="45"></circle>
+                <circle class="donut-fg" id="donut-fg" cx="50" cy="50" r="45"></circle>
+            </svg>
+            <div id="digital-time">
+                <div class="digit-col" id="min1">0</div>
+                <div class="digit-col" id="min2">5</div>
+                <span class="separator">:</span>
+                <div class="digit-col" id="sec1">0</div>
+                <div class="digit-col" id="sec2">0</div>
+            </div>
+        </div>
+
+        <div id="time-input-area">
+            <input type="number" id="input-min" min="0" max="59" value="5">
+            <span>分</span>
+            <input type="number" id="input-sec" min="0" max="59" value="0">
+            <span>秒</span>
+        </div>
+
+        <div id="timer-buttons">
+            <button id="start-button" class="home-button">スタート</button>
+            <button id="reset-button" class="home-button color-3">リセット</button>
+        </div>
+
+        <div id="controls">
+            <div class="control-group">
+                <label>色の変更:</label>
+                <button data-color="#404756">Default</button>
+                <button data-color="#ff0000">Red</button>
+                <button data-color="#00ff00">Green</button>
+                <button data-color="#0000ff">Blue</button>
+                <button data-color="#00ffff">Cyan</button>
+                <button data-color="#ff00ff">Magenta</button>
+                <button data-color="#ffff00">Yellow</button>
+            </div>
+            <div class="control-group">
+                <label>音の変更:</label>
+                <button id="sound-toggle">Sound: OFF</button>
+            </div>
+        </div>
+        <a href="../index.html" class="home-button">ホームページに戻る</a>
+    </div>
+
+    <script>
+        // --- DOM要素の取得 ---
+        const timerDisplay = document.getElementById('digital-time');
+        const donutFg = document.getElementById('donut-fg');
+        const inputMin = document.getElementById('input-min');
+        const inputSec = document.getElementById('input-sec');
+        const startButton = document.getElementById('start-button');
+        const resetButton = document.getElementById('reset-button');
+        const soundToggleButton = document.getElementById('sound-toggle');
+        const colorButtons = document.querySelectorAll('#controls button[data-color]');
+        const digitElements = {
+            // ▼▼▼ 変更点: .querySelector('span') を削除 ▼▼▼
+            min1: document.getElementById('min1'),
+            min2: document.getElementById('min2'),
+            sec1: document.getElementById('sec1'),
+            sec2: document.getElementById('sec2'),
+        };
+
+        let audioContext, soundIndex = 0;
+        const SOUNDS = [
+            { name: 'OFF', freq: 0 },
+            { name: 'Sound 1', freq: 440 },
+            { name: 'Sound 2', freq: 659 },
+            { name: 'Sound 3', freq: 880 }
+        ];
+        let timerInterval = null;
+        let totalSeconds = 300;
+        let remainingSeconds = 300;
+        let startTime = 0;
+        const circumference = 2 * Math.PI * 45;
+
+        // --- イベントリスナー ---
+        colorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const color = button.dataset.color;
+                timerDisplay.style.color = color;
+                donutFg.style.stroke = color;
+            });
+        });
+
+        soundToggleButton.addEventListener('click', () => {
+            soundIndex = (soundIndex + 1) % SOUNDS.length;
+            soundToggleButton.textContent = `Sound: ${SOUNDS[soundIndex].name}`;
+            if (soundIndex > 0 && !audioContext) initAudioContext();
+        });
+
+        startButton.addEventListener('click', () => {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                startButton.textContent = '再開';
+            } else {
+                if (remainingSeconds === totalSeconds || remainingSeconds <= 0) {
+                    totalSeconds = (parseInt(inputMin.value, 10) * 60) + parseInt(inputSec.value, 10);
+                    remainingSeconds = totalSeconds;
+                }
+                if (remainingSeconds <= 0) return;
+                
+                startTime = Date.now() - ((totalSeconds - remainingSeconds) * 1000);
+                timerInterval = setInterval(updateTimer, 100);
+                startButton.textContent = '一時停止';
+            }
+        });
+
+        resetButton.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            totalSeconds = (parseInt(inputMin.value, 10) * 60) + parseInt(inputSec.value, 10);
+            remainingSeconds = totalSeconds;
+            updateDisplay(remainingSeconds);
+            updateDonut(1);
+            startButton.textContent = 'スタート';
+        });
+
+        // --- タイマーロジック ---
+        function updateTimer() {
+            const elapsedSinceStart = (Date.now() - startTime) / 1000;
+            let newRemaining = totalSeconds - elapsedSinceStart;
+
+            if (newRemaining <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                newRemaining = 0;
+                startButton.textContent = 'スタート';
+                if (soundIndex > 0) playTickSound(SOUNDS[soundIndex].freq, 0.5);
+            }
+            
+            updateDisplay(newRemaining);
+            updateDonut(newRemaining / totalSeconds);
+            remainingSeconds = newRemaining;
+        }
+
+        function updateDisplay(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.ceil(seconds % 60);
+
+            if (s === 60) {
+                const m_next = String(m + 1).padStart(2, '0');
+                updateDigit(digitElements.min1, m_next[0]);
+                updateDigit(digitElements.min2, m_next[1]);
+                updateDigit(digitElements.sec1, '0');
+                updateDigit(digitElements.sec2, '0');
+            } else {
+                const m_str = String(m).padStart(2, '0');
+                const s_str = String(s).padStart(2, '0');
+                updateDigit(digitElements.min1, m_str[0]);
+                updateDigit(digitElements.min2, m_str[1]);
+                updateDigit(digitElements.sec1, s_str[0]);
+                updateDigit(digitElements.sec2, s_str[1]);
+            }
+        }
+
+        function updateDonut(fraction) {
+            const offset = circumference * (1 - fraction);
+            donutFg.style.strokeDashoffset = offset;
+        }
+
+        // ▼▼▼ 変更点: 直接textContentを更新するように変更。アニメーションは無し。 ▼▼▼
+        function updateDigit(element, newDigit) {
+            if (element.textContent !== newDigit) {
+                element.textContent = newDigit;
+            }
+        }
+        
+        // --- 初期化 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            donutFg.style.strokeDasharray = circumference;
+            donutFg.style.strokeDashoffset = 0; // 満タンから開始
+            updateDisplay(totalSeconds); // 初期表示
+        });
+
+        // --- 音声関連の関数 ---
+        function initAudioContext() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const buffer = audioContext.createBuffer(1, 1, 22050);
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                } catch (e) { console.error('Web Audio API is not supported'); }
+            }
+        }
+        function playTickSound(frequency, duration = 0.1) {
+            if (!audioContext) return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+    </script>
+</body>
+</html>

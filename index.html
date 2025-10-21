@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="home-page"> 
     <div class="side-images left" id="side-images-left"></div>
     <div class="side-images right" id="side-images-right"></div>
 
@@ -32,13 +32,14 @@
                 例えば、色は視覚を通して、心理に作用するといった効果があります。
             </p>
         </div>
-
+        
         <h2 class="category-header">心理的効果計測テスト</h2>
         <div class="card-section test-card">
             <h2 class="section-title">落下スピード感覚テスト</h2>
             <p>色や音が人間の時間感覚にどう影響するかを調べるテストです。</p>
             <a href="speed/speed.html" class="home-button">落下スピードのテストを開始する</a>
         </div>
+
         <h2 class="category-header">工業デザイン</h2>
         <div class="card-section test-card">
             <h2 class="section-title">感じ方が変わるデジタル時計</h2>
@@ -46,49 +47,32 @@
             <a href="clock/clock.html" class="home-button">デジタル時計を表示する</a>
         </div>
         <div class="card-section test-card">
-            <h2 class="section-title">（仮）タイマー</h2>
-            <p>今後、こちらにタイマーのデザインを追加する予定です。</p>
-            <a href="#" class="home-button" style="background-color: #aaa; cursor: not-allowed;">準備中</a>
+            <h2 class="section-title">感じ方が変わるタイマー</h2>
+            <p>色や音で時間の感じ方が変わるタイマーのデモです。</p>
+            <a href="timer/timer.html" class="home-button">タイマーを表示する</a>
         </div>
-        </div>
+    </div>
 
     <script>
-        const IMAGE_SETTINGS = {
-            imagesPerSide: 4,
-            imageMaxWidthRatio: 0.5,
-            horizontalOffsetRatio: -0.5,
-            verticalPaddingRatio: 0.01,
-        };
+        // --- 設定エリア ---
+        const IMAGE_SETTINGS = { imagesPerSide: 4, imageMaxWidthRatio: 0.5, horizontalOffsetRatio: -0.5, verticalPaddingRatio: 0.01 };
         
+        // --- サイド画像用スクリプト（変更なし） ---
         const leftImageContainer = document.getElementById('side-images-left');
         const rightImageContainer = document.getElementById('side-images-right');
-
         function setupSideImages() {
             const imageBaseUrl = 'https://bb54125213.github.io/image/';
             const originalSources = [
-                { src: `${imageBaseUrl}image11.png`, color: 1 },
-                { src: `${imageBaseUrl}image21.png`, color: 2 },
-                { src: `${imageBaseUrl}image31.png`, color: 3 }
+                { src: `${imageBaseUrl}image11.png`, color: 1 }, { src: `${imageBaseUrl}image21.png`, color: 2 }, { src: `${imageBaseUrl}image31.png`, color: 3 }
             ];
             let imageSources = [];
-            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) {
-                imageSources.push(originalSources[i % originalSources.length]);
-            }
+            for (let i = 0; i < IMAGE_SETTINGS.imagesPerSide; i++) { imageSources.push(originalSources[i % originalSources.length]); }
             imageSources = [...imageSources, ...imageSources];
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                return array;
-            }
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
             const shuffledImages = shuffleArray(imageSources);
             const leftImagesData = shuffledImages.slice(0, IMAGE_SETTINGS.imagesPerSide);
             const rightImagesData = shuffledImages.slice(IMAGE_SETTINGS.imagesPerSide);
-            const sideImageContainers = [
-                { container: leftImageContainer, images: leftImagesData, isLeft: true },
-                { container: rightImageContainer, images: rightImagesData, isLeft: false }
-            ];
+            const sideImageContainers = [ { container: leftImageContainer, images: leftImagesData, isLeft: true }, { container: rightImageContainer, images: rightImagesData, isLeft: false } ];
             const totalImages = IMAGE_SETTINGS.imagesPerSide;
             if (totalImages <= 0) return;
             const padding = window.innerHeight * IMAGE_SETTINGS.verticalPaddingRatio;
@@ -97,17 +81,17 @@
             sideImageContainers.forEach(side => {
                 const { container, images, isLeft } = side;
                 container.innerHTML = '';
-                shuffleArray(images).forEach((imgData, index) => {
+                shuffleArray(images).forEach(imgData => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'image-wrapper';
                     const img = document.createElement('img');
                     img.src = imgData.src;
                     img.dataset.color = imgData.color;
                     img.style.animationDelay = `-${(Math.random() * 20).toFixed(2)}s`;
-                    img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`; 
+                    img.style.animationDuration = `${(15 + Math.random() * 10).toFixed(2)}s`;
                     img.style.maxWidth = `${IMAGE_SETTINGS.imageMaxWidthRatio * 100}vw`;
                     wrapper.appendChild(img);
-                    const verticalPosition = padding + (index * slotHeight) + (slotHeight / 2);
+                    const verticalPosition = padding + (images.indexOf(imgData) * slotHeight) + (slotHeight / 2);
                     wrapper.style.top = `${verticalPosition}px`;
                     if (isLeft) {
                         wrapper.style.left = '0';
@@ -120,24 +104,10 @@
                 });
             });
         }
-        
         let resizeTimer;
         window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupSideImages, 250); });
         window.addEventListener('scroll', () => { const scrollY = window.scrollY; leftImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; rightImageContainer.style.transform = `translateY(-${scrollY * 0.3}px)`; });
-        
-        window.addEventListener('DOMContentLoaded', () => {
-            setupSideImages();
-        });
-
-        // モーダル関連のスクリプト（コメントアウト）
-        /*
-        const chartModal = document.getElementById('chart-modal');
-        const showChartButton = document.getElementById('show-chart-button');
-        const closeModalButton = document.getElementById('close-modal-button');
-        showChartButton.addEventListener('click', () => { chartModal.classList.add('show'); });
-        closeModalButton.addEventListener('click', () => { chartModal.classList.remove('show'); });
-        window.addEventListener('click', (event) => { if (event.target == chartModal) { chartModal.classList.remove('show'); } });
-        */
+        window.addEventListener('DOMContentLoaded', () => { setupSideImages(); });
     </script>
 </body>
 </html>

@@ -1,0 +1,158 @@
+/* 時計コンテナを画面中央に配置 */
+.timer-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 90vh;
+}
+
+/* --- ドーナツタイマー --- */
+#timer-display {
+    position: relative;
+    width: 60vw;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#donut-timer {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg); /* 12時の位置から開始 */
+}
+#donut-timer .donut-bg {
+    fill: none;
+    stroke: #e0e0e0;
+    stroke-width: 8;
+}
+#donut-timer .donut-fg {
+    fill: none;
+    stroke: var(--color-text); /* 初期色をデフォルトの文字色に */
+    stroke-width: 8;
+    stroke-linecap: round; /* 線の端を丸く */
+    transition: stroke-dashoffset 0.1s linear, stroke 0.3s;
+}
+
+/* --- デジタル時計（中央） --- */
+#digital-time {
+    font-family: 'Roboto Mono', monospace, sans-serif;
+    /* ▼▼▼ 変更点: 数字をドーナツ内に収めるため、さらに小さく調整 ▼▼▼ */
+    font-size: 6vw; 
+    font-weight: 700;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s;
+    
+    /* ドーナツの真ん中に配置 */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* 各桁のコンテナ（数字が表示される窓） */
+.digit-col {
+    width: 1ch; /* 1文字分の幅 */
+    height: 1.2em; /* 1文字分の高さ */
+    line-height: 1.2em;
+    /* overflow: hidden; */ /* アニメーションしないので不要 */
+    /* position: relative; */ /* アニメーションしないので不要 */
+    text-align: center;
+}
+
+/* 数字のspan要素の基本スタイル */
+.digit-col span {
+    /* position: absolute; */ /* アニメーションしないので不要 */
+    /* left: 0; */
+    /* right: 0; */
+    display: inline-block; /* span要素自体をブロック要素のように扱い、余分なスペースをなくす */
+    width: 100%; /* 親要素(digit-col)の幅に合わせる */
+}
+
+/* ▼▼▼ 変更点: アニメーション関連のスタイルを完全に削除 ▼▼▼ */
+/* @keyframes fall-in, .is-falling-in, @keyframes fall-out, .is-falling-out を削除 */
+
+/* コロン(:)は動かず、左右に余白を設ける */
+#digital-time .separator {
+    width: auto;
+    padding: 0 0.2em; /* 左右に余白を追加して重なりを完全に解消 */
+}
+
+/* --- 時間設定エリア --- */
+#time-input-area {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+#time-input-area input {
+    width: 70px;
+    font-size: 1.5em;
+    text-align: center;
+    border: 2px solid var(--color-border);
+    border-radius: 5px;
+}
+#time-input-area span {
+    font-size: 1.2em;
+}
+
+/* --- 操作ボタン --- */
+#timer-buttons {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 400px;
+    margin-top: 20px;
+}
+#timer-buttons .home-button {
+    flex: 1;
+    font-size: 1.1em;
+    margin: 0;
+}
+.color-3 {
+    background-color: #265F5B;
+}
+.color-3:hover {
+    background-color: #1e4a46;
+}
+
+/* --- コントロールパネル --- */
+#controls {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+.control-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+.control-group label {
+    font-weight: bold;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 5px;
+}
+#controls button {
+    font-size: 0.8em;
+    padding: 8px 15px;
+    width: auto;
+    margin: 0;
+}
+
+/* スマホ対応 */
+@media (max-width: 768px) {
+    #digital-time {
+        /* ▼▼▼ 変更点: スマホでのサイズを調整 ▼▼▼ */
+        font-size: 10vw; 
+    }
+}

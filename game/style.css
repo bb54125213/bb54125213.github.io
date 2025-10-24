@@ -1,0 +1,405 @@
+/* 基本設定 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", "Original Yu Gothic", "Yu Gothic", sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+#app-container {
+    width: 90%;
+    max-width: 800px;
+    margin: 20px;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden; /* 画面切り替え用 */
+}
+
+/* 画面切り替えの基本設定 */
+.screen {
+    display: none; /* すべての画面を一旦隠す */
+}
+
+.screen.active {
+    display: block; /* .active が付いた画面だけ表示 */
+}
+
+/* 見出し */
+h1 {
+    color: #005f73;
+    text-align: center;
+    border-bottom: 2px solid #94d2bd;
+    padding-bottom: 10px;
+}
+h2 {
+    color: #0a9396;
+    text-align: center;
+    margin-top: 0;
+}
+h3 {
+    color: #005f73;
+    border-left: 4px solid #94d2bd;
+    padding-left: 8px;
+}
+
+/* ゲーム共通 */
+.game-arena {
+    width: 100%;
+    height: 200px;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.controls {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* ボタン */
+.btn-primary, .btn-secondary {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #0a9396;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #005f73;
+}
+
+.btn-secondary {
+    background-color: #e9ecef;
+    color: #333;
+}
+.btn-secondary:hover {
+    background-color: #ced4da;
+}
+
+.choice-buttons button {
+    margin: 0 10px;
+}
+
+/* スライダー */
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.slider-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.slider-item input[type="range"] {
+    flex-grow: 1;
+    cursor: pointer;
+}
+.slider-item span {
+    width: 60px;
+    text-align: center;
+    font-size: 14px;
+}
+
+
+/* ゲーム1: スピード・チューナー */
+#game-1-arena {
+    justify-content: space-around;
+}
+.stimulus {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    top: 0;
+    /* アニメーションはJSで追加 */
+}
+#stimulus-a {
+    background-color: #888;
+    left: 30%;
+}
+#stimulus-b {
+    background-color: #e63946; /* 例: 赤色 */
+    left: 70%;
+}
+
+
+/* 結果画面 */
+.product-card {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+/* --- ゲーム1: アニメーションと刺激スタイル (追記) --- */
+
+/* 落下アニメーションの定義 */
+@keyframes fall {
+    from {
+        transform: translateY(-100%); /* 開始位置 (画面上部外) */
+    }
+    to {
+        transform: translateY(200px); /* 終了位置 (アリーナの高さ分) */
+    }
+}
+
+/* 刺激の基本スタイル調整 */
+#game-1-arena {
+    position: relative;
+    overflow: hidden; /* アリーナ外は見えなくする */
+}
+
+.stimulus {
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    top: 0; /* アニメーションの開始基点 */
+    
+    /* アニメーションを適用 */
+    animation-name: fall;
+    animation-iteration-count: infinite; /* 無限ループ */
+    animation-timing-function: linear; /* 一定速度 */
+    
+    /* アニメーションの初期設定 (JSで上書き) */
+    animation-duration: 4s;
+    
+    /* 中央揃えのための微調整 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: white;
+    border-radius: 8px;
+}
+
+/* Bのバリエーション用クラス */
+.stimulus-b-red {
+    background-color: #e63946; /* 赤 */
+}
+.stimulus-b-blue {
+    background-color: #457b9d; /* 青 */
+}
+.stimulus-b-green {
+    background-color: #2a9d8f; /* 緑 */
+}
+
+/* 模様: 横縞 (CSSグラデーションで表現) */
+.pattern-stripe {
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 5px,
+        rgba(0, 0, 0, 0.3) 5px,
+        rgba(0, 0, 0, 0.3) 10px
+    );
+}
+
+/* 模様: なし (デフォルト) */
+.pattern-none {
+    background-image: none;
+}
+
+/* --- ゲーム1: UI変更と新スタイル (追記) --- */
+
+/* 落下アニメーションの定義 (変更なし) */
+@keyframes fall {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(200px);
+    }
+}
+
+/* 刺激の基本スタイル調整 (変更) */
+#game-1-arena {
+    position: relative;
+    overflow: hidden; /* アリーナ外は見えなくする */
+    justify-content: center; /* 中央に配置 */
+}
+
+.stimulus {
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    top: 0;
+    
+    /* アニメーションはJSで制御するため、デフォルトOFF */
+    animation: none; 
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: white;
+    border-radius: 8px;
+    
+    /* 刺激が見えないように初期状態は隠す */
+    opacity: 0;
+}
+
+/* 刺激(A)のスタイル */
+.stimulus-a-style {
+    background-color: #888;
+    opacity: 1; /* 表示 */
+}
+
+/* 刺激(B)のスタイル (JSで色クラスと複合) */
+.stimulus-b-style {
+    opacity: 1; /* 表示 */
+}
+
+/* Bのバリエーション用クラス (変更) */
+.stimulus-b-red    { background-color: #FF0000; } /* R */
+.stimulus-b-green  { background-color: #00FF00; } /* G */
+.stimulus-b-blue   { background-color: #0000FF; } /* B */
+.stimulus-b-cyan   { background-color: #00FFFF; } /* C */
+.stimulus-b-magenta{ background-color: #FF00FF; } /* M */
+.stimulus-b-yellow { background-color: #FFFF00; color: #333; } /* Y (文字色変更) */
+
+
+/* 模様: 横縞 */
+.pattern-stripe {
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent, transparent 5px,
+        rgba(0, 0, 0, 0.3) 5px, rgba(0, 0, 0, 0.3) 10px
+    );
+}
+
+/* 模様: なし */
+.pattern-none {
+    background-image: none;
+}
+
+/* ゲーム1: 操作パネルのレイアウト */
+.controls-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.control-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap; /* スマホ表示で折り返し */
+}
+
+/* 調整ボタン */
+.btn-adjust {
+    font-size: 18px;
+    font-weight: bold;
+    background-color: #e9ecef;
+    color: #333;
+    border: none;
+    border-radius: 50%; /* 丸ボタン */
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+}
+.btn-adjust:hover {
+    background-color: #ced4da;
+}
+
+/* 速度表示 */
+.speed-display {
+    font-size: 16px;
+    font-weight: bold;
+    color: #005f73;
+    width: 70px; /* 幅を固定 */
+    text-align: left;
+}
+
+/* 次へボタン */
+.btn-next-trial {
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* --- ゲーム2: アニメーションとスタイル (追記) --- */
+
+#game-2-arena {
+    position: relative;
+    overflow: hidden;
+    justify-content: flex-start; /* 左寄せ */
+    padding: 0 5%;
+}
+
+/* 荷物を押すアニメーション */
+@keyframes push {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(100px); /* 100px移動 */
+    }
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+    background-color: #888; /* 基準色 */
+    position: absolute;
+    left: 30%;
+    bottom: 40%;
+    /* アニメーションはJSで適用 */
+}
+.box {
+    width: 40px;
+    height: 40px;
+    background-color: #d2b48c; /* 段ボール色 */
+    position: absolute;
+    left: calc(30% + 50px); /* アバターの右側 */
+    bottom: 40%;
+    /* アニメーションはJSで適用 */
+}
+
+/* 形状 (企画書より) */
+.shape-round {
+    border-radius: 50%;
+}
+.shape-sharp {
+    border-radius: 0;
+    /* 鋭さを表現 (例: 三角形にする。今回は四角で代用) */
+    /* clip-path: polygon(50% 0%, 0% 100%, 100% 100%); */
+}
+
+/* 基準(A) / 比較(B) の表示 */
+.status-text {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* ゲーム2 回答ボタン */
+#choice-buttons {
+    display: none; /* JSで表示を切り替え */
+    margin-top: 15px;
+}

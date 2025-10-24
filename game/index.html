@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>感覚アトリエ - あなたの知覚診断ゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <main id="app-container">
+
+        <section id="screen-intro" class="screen active">
+            <h1>感覚アトリエ</h1>
+            <p class="subtitle">あなたの"感じ方"を、あなただけの"体験"に変える。</p>
+            <p>これは、あなたの「知覚のクセ」を測定するWeb診断ゲームです。<br>
+                3つのミニゲームに挑戦し、あなただけの「感覚の設計図」を完成させましょう。</p>
+            <button id="start-button" class="btn-primary">診断をはじめる</button>
+        </section>
+
+        <section id="screen-game-1" class="screen">
+            <h2>ミニゲーム①：『スピード・チューナー』</h2>
+            <p>【A】と【B】の「体感速度」が同じになるように、ボタンで【B】の速度を調整してください。</p>
+            <p id="game-1-trial-counter">試行 1 / 10</p>
+
+            <div id="game-1-arena" class="game-arena">
+                <div id="stimulus-object" class="stimulus"></div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <button id="play-a-button" class="btn-secondary">【A】基準 を再生</button>
+                    <button id="play-b-button" class="btn-secondary">【B】比較 を再生</button>
+                </div>
+                
+                <div class="control-group">
+                    <label>【B】の速度調整:</label>
+                    <button id="slower-button" class="btn-adjust">- 遅くする</button>
+                    <button id="faster-button" class="btn-adjust">+ 速める</button>
+                    </div>
+            </div>
+            
+            <button id="submit-game-1" class="btn-primary btn-next-trial">決定 (次の試行へ)</button>
+        </section>
+
+        <section id="screen-game-2" class="screen">
+            <h2>ミニゲーム②：『エフォート・ジャッジ』</h2>
+            <p id="game-2-instruction">【A】、次に【B】のアニメーションが再生されます。【B】は【A】より「楽そう」か「大変そう」かを選んでください。</p>
+            <p id="game-2-trial-counter">試行 1 / 8</p>
+            
+            <div id="game-2-arena" class="game-arena">
+                <div id="avatar" class="avatar shape-round"></div>
+                <div id="box" class="box"></div>
+                <div id="status-text" class="status-text"></div>
+            </div>
+
+            <div class="controls">
+                <button id="play-comparison-button" class="btn-primary">比較を再生</button>
+                
+                <div id="choice-buttons" class="choice-buttons" style="display: none;">
+                    <button id="choice-easier" class="btn-secondary">楽そう</button>
+                    <button id="choice-harder" class="btn-secondary">大変そう</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-game-3" class="screen">
+            <h2>（ゲーム③：未実装）</h2>
+            <button id="goto-results-temp" class="btn-primary">（仮）結果画面へ</button>
+        </section>
+
+        <section id="screen-results" class="screen">
+            <h2>診断結果：『パーソナル知覚プロファイル』</h2>
+            <div id="profile-output">
+                </div>
+            <button id="restart-button" class="btn-secondary">もう一度診断する</button>
+        </section>
+
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>

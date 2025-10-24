@@ -2,7 +2,7 @@
 body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow: hidden; 
     background-color: #111;
     color: white;
     font-family: 'Helvetica Neue', sans-serif;
@@ -13,15 +13,18 @@ body {
 }
 
 /* --- 2. ゲーム画面全体 --- */
-#game-container {
+#game-wrapper {
     width: 800px;
     height: 600px;
-    background-color: #000;
-    border: 2px solid #555;
     position: relative;
-    perspective: 500px; /* ★これが機能するには http:// が必要 */
-    overflow: hidden;
-    background: linear-gradient(to top, #222, #555);
+    border: 2px solid #555;
+    background-color: #000;
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 /* --- 3. 情報表示エリア --- */
@@ -42,138 +45,195 @@ body {
     text-align: center;
 }
 
-/* --- 4. スタート画面 --- */
+#game-message {
+    position: absolute;
+    top: 65px; 
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    color: white; 
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+    padding: 5px 15px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    text-align: center;
+}
+#game-message.hidden {
+    display: none;
+}
+
+#results-log {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 20;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 120px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    max-height: 150px;
+    overflow: hidden; 
+}
+#results-log .log-entry {
+    padding: 3px 0;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.2);
+    display: block;
+}
+#results-log .log-entry:last-child {
+    border-bottom: none;
+}
+#results-log.hidden {
+    display: none;
+}
+
+/* --- 4. スタート/結果画面 --- */
 #start-screen {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.9); /* 少し濃くした */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 10;
+    z-index: 30;
+    overflow-y: auto; 
+    padding: 20px;
+    box-sizing: border-box; /* パディングを考慮 */
 }
-#start-button {
+
+/* (変更なし) */
+#start-button, #submit-button {
     padding: 15px 30px;
     font-size: 20px;
+    font-weight: bold;
     cursor: pointer;
+    margin-top: 20px; 
+    border: none;
+    border-radius: 8px;
+    background-color: #007BFF;
+    color: white;
+    transition: background-color 0.2s;
 }
+#start-button:hover, #submit-button:hover {
+    background-color: #0056b3;
+}
+#submit-button {
+    background-color: #28a745; /* 送信ボタンは緑色 */
+}
+#submit-button:hover {
+    background-color: #218838;
+}
+#submit-button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
 #instructions {
-    margin-top: 20px;
+    margin-top: 15px;
     font-size: 18px;
     text-align: center;
+    line-height: 1.5;
+    width: 90%; 
+    max-width: 600px;
 }
 
-/* --- 5. 3D空間の地面と道路 --- */
-#world {
+/* --- 5. ★(新規) フォーム関連のスタイル --- */
+.form-group {
+    margin: 15px 0;
+    width: 90%;
+    max-width: 400px;
+    text-align: left;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+.form-group select, .form-group textarea {
     width: 100%;
-    height: 100%;
-    position: absolute;
-    transform-style: preserve-3d; /* ★これが機能するには http:// が必要 */
-    transform: translateY(150px);
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: white;
+}
+.form-group textarea {
+    resize: vertical; /* 縦方向のみリサイズ可 */
 }
 
-#ground {
-    width: 2000px;
-    height: 3000px;
-    background: #3a3a3a;
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%) rotateX(90deg) translateZ(-100px);
+#form-error-message {
+    color: #FF4444;
+    font-weight: bold;
+    margin-top: 10px;
+}
+#submit-status-message {
+    font-weight: bold;
+    margin-top: 10px;
 }
 
-#road {
-    width: 400px;
-    height: 3000px;
-    background: #555;
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%) rotateX(90deg) translateZ(-99px);
+.hidden {
+    display: none;
 }
 
-#center-line {
-    width: 20px;
-    height: 100%;
-    background: repeating-linear-gradient(
-        to bottom,
-        white 0px,
-        white 40px,
-        transparent 40px,
-        transparent 100px
-    );
+
+/* --- 6. 回避ボタン (変更なし) --- */
+#dodge-button {
     position: absolute;
+    bottom: 170px; 
     left: 50%;
     transform: translateX(-50%);
-    animation: move-lines 0.1s linear infinite;
+    z-index: 20;
+    padding: 12px 25px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background-color: #ff4500;
+    border: 2px solid #ff8c00;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: background-color 0.2s;
+}
+#dodge-button:hover {
+    background-color: #ff6347;
+}
+#dodge-button:active {
+    transform: translateX(-50%) translateY(2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 
-@keyframes move-lines {
-    from { background-position-y: 0px; }
-    to { background-position-y: -140px; }
-}
-
-/* --- 6. 3Dキューブ --- */
-#cube-container {
-    width: 100px;
-    height: 100px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform-style: preserve-3d; /* ★これが機能するには http:// が必要 */
-    --z: -3000px;
-    --scale: 0.1;
-    transform: translateX(-50%) translateY(0%) translateZ(calc(var(--z) + 50px)) scale(var(--scale));
-}
-
-.face {
-    width: 100px;
-    height: 100px;
-    position: absolute;
-    opacity: 0.95;
-    border: 1px solid rgba(0,0,0,0.2);
-    box-sizing: border-box;
-}
-
-.front {
-    background-color: red;
-    transform: translateZ(50px);
-    transition: background-color 0.5s;
-}
-.back {
-    background-color: #444;
-    transform: rotateY(180deg) translateZ(50px);
-}
-.left {
-    background-color: #555;
-    transform: rotateY(-90deg) translateZ(50px);
-}
-.right {
-    background-color: #555;
-    transform: rotateY(90deg) translateZ(50px);
-}
-.top {
-    background-color: #666;
-    transform: rotateX(90deg) translateZ(50px);
-}
-.bottom {
-    background-color: #444;
-    transform: rotateX(-90deg) translateZ(50px);
-}
-
-/* --- 7. 衝突判定ライン --- */
-#collision-line {
+/* --- 7. 結果テーブルのスタイル (変更なし) --- */
+#instructions table {
     width: 100%;
-    height: 600px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: rgba(255, 0, 0, 0.2);
-    transform: translateZ(0px); /* 3D空間のZ=0 (一番手前) */
-    pointer-events: none;
-    z-index: 5;
+    margin-top: 20px;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+#instructions th, #instructions td {
+    border: 1px solid #777;
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+#instructions th {
+    background-color: #333;
+}
+#instructions td {
+    background-color: #222;
+    height: 30px;
+}
+.color-chip {
+    width: 25px;
+    height: 25px;
+    border: 1px solid #fff;
+    margin: 0 auto;
+    box-sizing: border-box;
 }

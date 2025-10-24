@@ -3,61 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>接近感覚テストゲーム (CSS分離版)</title>
+    <title>接近感覚テストゲーム (Canvas 3D版 - 改良版)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="game-container">
-        
-        <div id="world">
-            <div id="ground"></div>
-            <div id="road">
-                <div id="center-line"></div>
-            </div>
-        </div>
-
-        <div id="cube-container">
-            <div class="face front" id="cube-front"></div>
-            <div class="face back"></div>
-            <div class="face left"></div>
-            <div class="face right"></div>
-            <div class="face top"></div>
-            <div class="face bottom"></div>
-        </div>
-
-        <div id="collision-line"></div> 
+    <div id="game-wrapper">
+        <canvas id="game-canvas" width="800" height="600"></canvas>
         <div id="info-display">第1問</div>
-
+        <div id="game-message">ぎりぎりで避けよう！</div> 
+        <div id="results-log"></div> 
+        <button id="dodge-button" class="hidden">回避</button> 
+        
         <div id="start-screen">
-            <h1>接近感覚テスト (バグ修正版)</h1>
-            <p id="instructions">物体が迫ってきます。<br>限界だと思った瞬間に [スペースキー] を押してください。<br><br>画面の最も手前にある<span style="color: rgba(255, 0, 0, 0.6); text-shadow: none;">赤い半透明の壁</span>が衝突ラインです。</p>
+            <h1>接近感覚テスト (Canvas 3D版)</h1>
+            
+            <div id="user-info-form">
+                <div class="form-group">
+                    <label for="age-select">年代:</label>
+                    <select id="age-select">
+                        <option value="">選択してください</option>
+                        <option value="10s">10代</option>
+                        <option value="20s">20代</option>
+                        <option value="30s">30代</option>
+                        <option value="40s">40代</option>
+                        <option value="50s">50代</option>
+                        <option value="60s+">60代以上</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="gender-select">性別:</label>
+                    <select id="gender-select">
+                        <option value="">選択してください</option>
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                        <option value="other">その他</option>
+                        <option value="prefer_not_to_say">回答しない</option>
+                    </select>
+                </div>
+                <p id="form-error-message" class="hidden">年代と性別を選択してください。</p>
+            </div>
+
+            <div id="instructions">
+                <p>
+                    物体が迫ってきます。<br>
+                    下のハンドルにぶつかると思った瞬間に<br>
+                    [スペースキー] または [回避ボタン] を押してください。
+                </p>
+            </div>
+
+            <div id="feedback-form" class="hidden">
+                <div class="form-group">
+                    <label for="feedback-text">ご協力ありがとうございました。よろしければご意見・ご感想をお聞かせください：</label>
+                    <textarea id="feedback-text" rows="3" placeholder="（例：赤色の時が一番速く感じた、など）"></textarea>
+                </div>
+                <button id="submit-button">データを送信</button>
+                <p id="submit-status-message" class="hidden"></p>
+            </div>
+            
             <button id="start-button">スタート</button>
         </div>
     </div>
 
     <script>
         // --- 1. 定数・変数の設定 ---
-        const cubeContainer = document.getElementById('cube-container');
-        const cubeFront = document.getElementById('cube-front');
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzn08w-nj5gLoxniFgUReRpv8EUlQ7ugbF8gcs1bZO8QSolhCu274D1oye1JUceK8o6GA/exec';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
         const startScreen = document.getElementById('start-screen');
         const startButton = document.getElementById('start-button');
         const infoDisplay = document.getElementById('info-display');
+        const gameMessage = document.getElementById('game-message'); 
+        const instructionsDiv = document.getElementById('instructions');
+        const dodgeButton = document.getElementById('dodge-button'); 
+        const resultsLog = document.getElementById('results-log'); 
+        const userInfoForm = document.getElementById('user-info-form');
+        const ageSelect = document.getElementById('age-select');
+        const genderSelect = document.getElementById('gender-select');
+        const formErrorMessage = document.getElementById('form-error-message');
+        const feedbackForm = document.getElementById('feedback-form');
+        const feedbackText = document.getElementById('feedback-text');
+        const submitButton = document.getElementById('submit-button');
+        const submitStatusMessage = document.getElementById('submit-status-message');
 
-        const BASE_COLOR = '#808080';
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
+        const CAMERA_Z = -100;
+        const FIELD_OF_VIEW = 500;
+        const HORIZON_OFFSET = 50; 
+
+        const BASE_COLOR = '#FFFFFF';
         const NO_SOUND = null;
         const colors = ['#FF0000', '#00FF00', '#0000FF', '#00FFFF', '#FF00FF', '#FFFF00'];
         const soundNames = ['White Noise', 'Pink Noise', 'Brown Noise'];
-
+        const ENGINE_SOUND_NAME = 'Engine Sound'; 
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         let audioBuffers = {};
         let currentSoundSource = null;
         let gainNode = null; 
 
-        const CUBE_SIZE_HALF = 50;
-        const START_Z_OFFSET = -3000;
-        const END_Z_OFFSET = 0;
-        const SPEED = 10;
+        const CUBE_SIZE = 100;
+        const CUBE_HALF = CUBE_SIZE / 2;
+        const START_Z = 3000;
+        const END_Z = 0;
+        const CUBE_SPEED = 15; 
+        const LINE_SPEED = 3; 
         const TOTAL_QUESTIONS = 10;
         const METER_CONVERSION_RATIO = 10;
 
@@ -66,10 +117,49 @@
         let currentQuestionIndex = 0;
         let results = [];
         let gameRunning = false;
-        let currentCubeZ = 0;
+        let currentCubeZ = START_Z;
+        let dodgeOffset = 0;
+        let isDodging = false;
+        let isWaitingToReturn = false;
+        let isReturning = false;
+        let centerLineOffset = 0;
+        let isCollided = false;
+        let collisionTimer = 0;
+        const COLLISION_ANIMATION_DURATION = 60; 
+        let isWaitingToStart = false;
+        let startDelayTimer = 0; 
+        
+        let userAge = '';
+        let userGender = '';
+        let gameStartTime = null;
+        let gameElapsedTime = 0;
 
-        // --- 2. 音声の生成 ---
+
+        // --- 2. 音声の生成 (変更なし) ---
         const bufferDuration = 2;
+        function createEngineSound() {
+            try {
+                const frameCount = audioContext.sampleRate * bufferDuration;
+                const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                const freq = 80; 
+                const sampleRate = audioContext.sampleRate;
+                let lastVal = 0;
+                for (let i = 0; i < frameCount; i++) {
+                    let t = i / sampleRate;
+                    let saw = 2 * (t * freq - Math.floor(0.5 + t * freq));
+                    let noise = (Math.random() * 2 - 1) * 0.05; 
+                    let val = saw + noise;
+                    let filteredVal = val * 0.1 + lastVal * 0.9; 
+                    lastVal = filteredVal;
+                    data[i] = filteredVal * 0.5; 
+                }
+                return buffer;
+            } catch (e) {
+                console.error("エンジン音の生成に失敗:", e);
+                return null;
+            }
+        }
         function createWhiteNoise() {
             const frameCount = audioContext.sampleRate * bufferDuration;
             const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
@@ -110,6 +200,7 @@
         }
         function generateSounds() {
             try {
+                audioBuffers[ENGINE_SOUND_NAME] = createEngineSound();
                 audioBuffers[soundNames[0]] = createWhiteNoise();
                 audioBuffers[soundNames[1]] = createPinkNoise();
                 audioBuffers[soundNames[2]] = createBrownNoise();
@@ -119,7 +210,7 @@
             }
         }
 
-        // --- 3. 問題の準備 ---
+        // --- 3. 問題の準備 (変更なし) ---
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -127,15 +218,15 @@
             }
         }
         function createTrialSet() {
-            currentTrialSettings = [];
-            currentTrialSettings.push({ 
+            const standardTrial = { 
                 color: BASE_COLOR, 
                 sound: NO_SOUND, 
                 type: '基準' 
-            });
+            };
+            let remainingTrials = [];
             let colorTrials = colors.map(c => ({
                 color: c,
-                sound: NO_SOUND,
+                sound: NO_SOUND, 
                 type: '色'
             }));
             let soundTrials = soundNames.map(s => ({
@@ -143,152 +234,650 @@
                 sound: s,
                 type: '音'
             }));
-            let remainingTrials = [...colorTrials, ...soundTrials];
-            shuffleArray(remainingTrials);
-            currentTrialSettings = [...currentTrialSettings, ...remainingTrials];
+            remainingTrials = [...colorTrials, ...soundTrials];
+            shuffleArray(remainingTrials); 
+            currentTrialSettings = [standardTrial, ...remainingTrials];
         }
 
-        // --- 4. 音声制御 ---
-        function playSound(soundName) {
-            if (currentSoundSource) {
-                currentSoundSource.stop();
+
+        // --- 4. 音声制御 (変更なし) ---
+        function stopCurrentSound(fadeOut = false) {
+            const sourceToStop = currentSoundSource;
+            const gainToFade = gainNode;
+            currentSoundSource = null;
+            gainNode = null;
+            
+            if (sourceToStop && gainToFade) {
+                try {
+                    if (fadeOut) {
+                        gainToFade.gain.linearRampToValueAtTime(0.0001, audioContext.currentTime + 0.5);
+                        sourceToStop.stop(audioContext.currentTime + 0.51);
+                    } else {
+                        sourceToStop.stop();
+                    }
+                } catch (e) {
+                    console.warn("Audio stop error (ignorable):", e.message);
+                }
             }
-            if (soundName === NO_SOUND) {
-                gainNode = null;
+        }
+
+        function playSound(soundName) {
+            stopCurrentSound(false); 
+            const soundToPlay = (soundName === NO_SOUND) ? ENGINE_SOUND_NAME : soundName;
+            const buffer = audioBuffers[soundToPlay];
+            if (!buffer) {
+                console.warn(`音声バッファが見つかりません: ${soundToPlay}`);
                 return;
             }
-            const buffer = audioBuffers[soundName];
-            if (!buffer) return;
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
             currentSoundSource = audioContext.createBufferSource();
             currentSoundSource.buffer = buffer;
-            gainNode = audioContext.createGain();
+            gainNode = audioContext.createGain(); 
             currentSoundSource.connect(gainNode);
             gainNode.connect(audioContext.destination);
             currentSoundSource.loop = true;
             const randomStartTime = Math.random() * bufferDuration;
             currentSoundSource.start(0, randomStartTime);
-        }
-        function updateVolume(z) {
-            if (!gainNode) return;
-            let volume = 1.0 - (z / START_Z_OFFSET);
-            volume = Math.max(0, Math.min(1, volume));
-            gainNode.gain.value = volume;
+            
+            if (isWaitingToStart) {
+                gainNode.gain.value = 0;
+            } else {
+                updateVolume(currentCubeZ);
+            }
         }
 
-        // --- 5. ゲームロジック ---
+        function updateVolume(z) {
+            if (!gainNode) return;
+            let volume = 1.0 - (z / START_Z);
+            volume = Math.max(0, Math.min(1, volume));
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+        }
+
+        // --- 5. 3D描画エンジン (変更なし) ---
+        function project(x, y, z) {
+            const x_rel = x - dodgeOffset; 
+            const y_rel = y;
+            const z_rel = z - CAMERA_Z;
+            if (z_rel <= 1) return null;
+            const scale = FIELD_OF_VIEW / z_rel;
+            const screenX = (WIDTH / 2) + (x_rel * scale);
+            const screenY = (HEIGHT / 2) + (HORIZON_OFFSET * scale) + (y_rel * scale); 
+            return { x: screenX, y: screenY, z: z_rel };
+        }
+        function drawRoad(lineOffset) {
+            const roadY = 0; 
+            const roadWidth = 300;
+            const laneWidth = 100;
+            const zNear = 1; 
+            const zFar = 3000; 
+            const p1 = project(-roadWidth, roadY, zNear);
+            const p2 = project(roadWidth, roadY, zNear);
+            const p3 = project(roadWidth, roadY, zFar);
+            const p4 = project(-roadWidth, roadY, zFar);
+            if (!p1 || !p2 || !p3 || !p4) return;
+            ctx.fillStyle = '#555';
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.closePath();
+            ctx.fill();
+            const l_p1 = project(-laneWidth, roadY, zNear); 
+            const l_p2 = project(-laneWidth, roadY, zFar);
+            const r_p1 = project(laneWidth, roadY, zNear); 
+            const r_p2 = project(laneWidth, roadY, zFar);
+            if (!l_p1 || !l_p2 || !r_p1 || !r_p2) return;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 5;
+            ctx.setLineDash([20, 30]);
+            ctx.lineDashOffset = lineOffset; 
+            ctx.beginPath();
+            ctx.moveTo(l_p1.x, l_p1.y);
+            ctx.lineTo(l_p2.x, l_p2.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(r_p1.x, r_p1.y);
+            ctx.lineTo(r_p2.x, r_p2.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        const cubeVertices = [
+            [-CUBE_HALF, -CUBE_SIZE, -CUBE_HALF], [ CUBE_HALF, -CUBE_SIZE, -CUBE_HALF], [ CUBE_HALF, 0, -CUBE_HALF], [-CUBE_HALF, 0, -CUBE_HALF], 
+            [-CUBE_HALF, -CUBE_SIZE, CUBE_HALF], [ CUBE_HALF, -CUBE_SIZE, CUBE_HALF], [ CUBE_HALF, 0, CUBE_HALF], [-CUBE_HALF, 0, CUBE_HALF]  
+        ];
+        const cubeFaces = [
+            { v: [0, 1, 2, 3], type: 'front' }, { v: [1, 5, 6, 2], type: 'side' },  { v: [5, 4, 7, 6], type: 'back' },  
+            { v: [4, 0, 3, 7], type: 'side' },  { v: [4, 5, 1, 0], type: 'top' },   
+        ];
+        function drawCube(z, baseColor) {
+            let projectedVertices = [];
+            let facesToDraw = [];
+            for (const v of cubeVertices) {
+                const projected = project(v[0], v[1], v[2] + z );
+                if (projected === null) return; 
+                projectedVertices.push(projected);
+            }
+            const p3 = projectedVertices[3];
+            const p2 = projectedVertices[2];
+            const p6 = projectedVertices[6];
+            const p7 = projectedVertices[7];
+            if (p3 && p2 && p6 && p7) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.beginPath();
+                ctx.moveTo(p3.x, p3.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.lineTo(p6.x, p6.y);
+                ctx.lineTo(p7.x, p7.y);
+                ctx.closePath();
+                ctx.fill();
+            }
+            for (const face of cubeFaces) {
+                const p1 = projectedVertices[face.v[0]];
+                const p2 = projectedVertices[face.v[1]];
+                const p3 = projectedVertices[face.v[2]];
+                const p4 = projectedVertices[face.v[3]];
+                const avgZ = (p1.z + p2.z + p3.z + p4.z) / 4;
+                facesToDraw.push({ type: face.type, points: [p1, p2, p3, p4], depth: avgZ });
+            }
+            facesToDraw.sort((a, b) => b.depth - a.depth);
+            for (const face of facesToDraw) {
+                let color;
+                if (face.type === 'front') {
+                    color = baseColor;
+                } else if (face.type === 'side') {
+                    let r = parseInt(baseColor.substr(1, 2), 16); let g = parseInt(baseColor.substr(3, 2), 16); let b = parseInt(baseColor.substr(5, 2), 16);
+                    color = `rgb(${r * 0.7}, ${g * 0.7}, ${b * 0.7})`;
+                } else if (face.type === 'top') {
+                    color = 'rgba(255, 255, 255, 0.3)';
+                } else {
+                    color = 'gray'; 
+                }
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(face.points[0].x, face.points[0].y);
+                ctx.lineTo(face.points[1].x, face.points[1].y);
+                ctx.lineTo(face.points[2].x, face.points[2].y);
+                ctx.lineTo(face.points[3].x, face.points[3].y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        function drawHandlebar() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.beginPath();
+            ctx.moveTo(0, HEIGHT);
+            ctx.bezierCurveTo(WIDTH * 0.2, HEIGHT - 150, WIDTH * 0.8, HEIGHT - 150, WIDTH, HEIGHT);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#1a1a1a';
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(WIDTH / 2 - 120, HEIGHT - 130, 240, 100, 15);
+            ctx.fill();
+            ctx.stroke();
+            ctx.strokeStyle = '#00BFFF';
+            ctx.fillStyle = '#111';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(WIDTH / 2 - 60, HEIGHT - 75, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.strokeStyle = '#FF4500';
+            ctx.beginPath();
+            ctx.arc(WIDTH / 2 + 60, HEIGHT - 75, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#00FF00'; 
+            ctx.beginPath();
+            ctx.arc(WIDTH / 2 - 100, HEIGHT - 45, 5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#FF0000'; 
+            ctx.beginPath();
+            ctx.arc(WIDTH / 2 + 100, HEIGHT - 45, 5, 0, Math.PI*2);
+            ctx.fill();
+            const gripGrad = ctx.createLinearGradient(0, HEIGHT - 80, 0, HEIGHT - 50);
+            gripGrad.addColorStop(0, '#555');
+            gripGrad.addColorStop(1, '#111');
+            ctx.fillStyle = gripGrad;
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.roundRect(50, HEIGHT - 80, 150, 30, 10);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.roundRect(WIDTH - 200, HEIGHT - 80, 150, 30, 10);
+            ctx.fill();
+            ctx.stroke();
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(50, HEIGHT - 80);
+            ctx.lineTo(100, HEIGHT - 160);
+            ctx.stroke();
+            const mirrorGradL = ctx.createLinearGradient(70, HEIGHT - 195, 130, HEIGHT - 155);
+            mirrorGradL.addColorStop(0, '#5F85AD');
+            mirrorGradL.addColorStop(1, '#B0C4DE');
+            ctx.fillStyle = mirrorGradL;
+            ctx.beginPath();
+            ctx.ellipse(100, HEIGHT - 175, 30, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(WIDTH - 50, HEIGHT - 80);
+            ctx.lineTo(WIDTH - 100, HEIGHT - 160);
+            ctx.stroke();
+            const mirrorGradR = ctx.createLinearGradient(WIDTH - 130, HEIGHT - 195, WIDTH - 70, HEIGHT - 155);
+            mirrorGradR.addColorStop(0, '#5F85AD');
+            mirrorGradR.addColorStop(1, '#B0C4DE');
+            ctx.fillStyle = mirrorGradR;
+            ctx.beginPath();
+            ctx.ellipse(WIDTH - 100, HEIGHT - 175, 30, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+        function draw() {
+            ctx.fillStyle = '#5F85AD'; 
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = '#3a3a3a'; 
+            ctx.fillRect(0, HEIGHT / 2, WIDTH, HEIGHT / 2);
+            centerLineOffset = (centerLineOffset + LINE_SPEED) % 50; 
+            drawRoad(centerLineOffset);
+            const trial = currentTrialSettings[currentQuestionIndex];
+            if (!trial) return; 
+            drawCube(currentCubeZ, trial.color);
+            drawHandlebar();
+        }
+
+        // --- 6. gameLoop ---
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            // 衝突アニメーション
+            if (isCollided) {
+                collisionTimer--;
+                draw(); 
+                const shakeIntensity = 20 * (collisionTimer / COLLISION_ANIMATION_DURATION);
+                const shakeX = (Math.random() - 0.5) * shakeIntensity;
+                const shakeY = (Math.random() - 0.5) * shakeIntensity;
+                ctx.save();
+                ctx.translate(shakeX, shakeY);
+                ctx.fillStyle = '#5F85AD'; 
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+                ctx.fillStyle = '#3a3a3a'; 
+                ctx.fillRect(0, HEIGHT / 2, WIDTH, HEIGHT / 2);
+                drawRoad(centerLineOffset);
+                const trial = currentTrialSettings[currentQuestionIndex];
+                if(trial) drawCube(END_Z, trial.color); 
+                ctx.restore();
+                drawHandlebar();
+                ctx.fillStyle = `rgba(255, 0, 0, ${Math.max(0, collisionTimer / COLLISION_ANIMATION_DURATION)})`; 
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+                if (collisionTimer <= 0) {
+                    isCollided = false;
+                    currentCubeZ = START_Z;
+                    prepareNextTrial();
+                }
+                animationFrameId = requestAnimationFrame(gameLoop);
+                return; 
+            }
+            
+            // 回避アニメーション
+            if (isDodging) {
+                dodgeOffset += DODGE_SPEED;
+                if (dodgeOffset >= DODGE_MAX_OFFSET) {
+                    dodgeOffset = DODGE_MAX_OFFSET;
+                    isDodging = false;
+                    isWaitingToReturn = true;
+                }
+            } else if (isWaitingToReturn) {
+                
+                // ★★★ 修正箇所 ★★★
+                if (currentCubeZ < CAMERA_Z) { 
+                    // 状態フラグを先に変更し、二重呼び出しを防ぐ
+                    isWaitingToReturn = false;
+                    isReturning = true;
+                    
+                    // gainNode が存在する場合 (＝まだ停止処理が呼ばれていない場合) のみ
+                    // 音の停止を呼び出す
+                    if (gainNode) {
+                        stopCurrentSound(true); 
+                    }
+                }
+                // ★★★ 修正ここまで ★★★
+
+            } else if (isReturning) {
+                dodgeOffset -= DODGE_SPEED;
+                if (dodgeOffset <= 0) {
+                    dodgeOffset = 0;
+                    isReturning = false;
+                    currentCubeZ = START_Z;
+                    prepareNextTrial();
+                }
+            }
+            
+            // (変更なし) キューブの移動と音量更新
+            if (isWaitingToStart) {
+                startDelayTimer--;
+                if (startDelayTimer <= 0) {
+                    isWaitingToStart = false;
+                    updateVolume(currentCubeZ); 
+                }
+            } else if (!isDodging && !isWaitingToReturn && !isReturning) {
+                currentCubeZ -= CUBE_SPEED;
+                updateVolume(currentCubeZ);
+                gameMessage.textContent = "ぎりぎりで避けよう！";
+                gameMessage.style.color = "white";
+            } else {
+                currentCubeZ -= CUBE_SPEED;
+            }
+            
+            // (変更なし) 描画と衝突判定
+            draw(); 
+            if (!isWaitingToStart && !isDodging && !isWaitingToReturn && !isReturning) {
+                if (currentCubeZ <= END_Z) {
+                    handleCollision(); 
+                }
+            }
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- 7. ユーザー入力とフィードバック (変更なし) ---
         startButton.addEventListener('click', () => {
+            if (gameRunning === false && results.length > 0) {
+                resetStartScreen(); 
+                return;
+            }
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
-            if (Object.keys(audioBuffers).length < soundNames.length) {
+            if (Object.keys(audioBuffers).length < soundNames.length + 1) { 
                 alert("まだ音声データを生成しています。"); return;
             }
+            const age = ageSelect.value;
+            const gender = genderSelect.value;
+            if (!age || !gender) {
+                formErrorMessage.classList.remove('hidden');
+                return;
+            }
+            formErrorMessage.classList.add('hidden');
+            userAge = age;
+            userGender = gender;
             startGame();
         });
+        
         function startGame() {
             startScreen.style.display = 'none';
-            gameRunning = true;
+            dodgeButton.classList.remove('hidden'); 
+            gameMessage.classList.remove('hidden'); 
+            resultsLog.classList.remove('hidden');  
+            infoDisplay.style.display = 'block'; 
             currentQuestionIndex = 0;
             results = [];
-            createTrialSet();
-            runNextTrial();
+            dodgeOffset = 0;
+            isDodging = false;
+            isWaitingToReturn = false;
+            isReturning = false;
+            isCollided = false; 
+            collisionTimer = 0; 
+            currentCubeZ = START_Z;
+            gameStartTime = new Date(); 
+            createTrialSet(); 
+            startFirstTrial();
         }
-        function runNextTrial() {
+
+        function startFirstTrial() {
+            const trial = currentTrialSettings[currentQuestionIndex];
+            if (!trial) return; 
+            isWaitingToStart = true;
+            startDelayTimer = 30 + Math.random() * 60; 
+            playSound(trial.sound);
+            infoDisplay.innerText = `第 1 問`;
+            infoDisplay.style.color = 'white';
+            gameMessage.textContent = "ぎりぎりで避けよう！"; 
+            gameMessage.style.color = "white"; 
+            resultsLog.innerHTML = ''; 
+            gameRunning = true;
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function prepareNextTrial() {
+            currentQuestionIndex++;
             if (currentQuestionIndex >= TOTAL_QUESTIONS) {
                 finishGame();
                 return;
             }
             const trial = currentTrialSettings[currentQuestionIndex];
-            currentCubeZ = START_Z_OFFSET; 
-            updateCubePosition(currentCubeZ);
-            cubeFront.style.backgroundColor = trial.color;
-            playSound(trial.sound);
-            updateVolume(currentCubeZ);
+            if (!trial) {
+                finishGame();
+                return;
+            }
+            isWaitingToStart = true;
+            startDelayTimer = 30 + Math.random() * 60; 
             infoDisplay.innerText = `第 ${currentQuestionIndex + 1} 問`;
             infoDisplay.style.color = 'white';
-            gameRunning = true;
-            animationFrameId = requestAnimationFrame(gameLoop);
+            gameMessage.textContent = "ぎりぎりで避けよう！"; 
+            gameMessage.style.color = "white"; 
+            playSound(trial.sound);
         }
-        function updateCubePosition(z) {
-            const scale = 0.1 + (0.9 * (1.0 - (z / START_Z_OFFSET)));
-            cubeContainer.style.setProperty('--z', `${z}px`);
-            cubeContainer.style.setProperty('--scale', scale);
-        }
-        function gameLoop() {
-            if (!gameRunning) return;
-            currentCubeZ += SPEED;
-            updateCubePosition(currentCubeZ);
-            updateVolume(currentCubeZ);
-            if (currentCubeZ + CUBE_SIZE_HALF >= END_Z_OFFSET) {
-                handleCollision();
-            } else {
-                animationFrameId = requestAnimationFrame(gameLoop);
+
+        function handleDodgeInput() {
+            if (!gameRunning || isDodging || isWaitingToReturn || isReturning || isCollided || isWaitingToStart) {
+                return;
             }
+            const remainingDistance = Math.max(0, currentCubeZ - END_Z);
+            const scoreMeters = remainingDistance / METER_CONVERSION_RATIO;
+            infoDisplay.innerText = `結果: 残り ${scoreMeters.toFixed(1)} m`;
+            infoDisplay.style.color = '#00FF00';
+            gameMessage.textContent = "回避成功！"; 
+            gameMessage.style.color = "#00FF00"; 
+            recordResult(scoreMeters, false);
+            updateResultsLog(scoreMeters, false); 
+            isDodging = true;
         }
 
-        // --- 6. ユーザー入力とフィードバック (バグ修正済み) ---
         document.addEventListener('keydown', (event) => {
-            if (gameRunning && event.code === 'Space') {
+            if (event.code === 'Space') { 
                 event.preventDefault(); 
-                gameRunning = false;
-                
-                cancelAnimationFrame(animationFrameId);
-                if (currentSoundSource) {
-                    currentSoundSource.stop();
-                }
-
-                // 衝突ライン(0) と キューブの前面 (負の値) との距離を計算
-                const remainingDistance = Math.max(0, END_Z_OFFSET - (currentCubeZ + CUBE_SIZE_HALF));
-                const scoreMeters = remainingDistance / METER_CONVERSION_RATIO;
-
-                infoDisplay.innerText = `結果: 残り ${scoreMeters.toFixed(1)} m`;
-                infoDisplay.style.color = '#00FF00';
-
-                recordResult(scoreMeters, false);
-
-                currentQuestionIndex++;
-                setTimeout(runNextTrial, 2000);
+                handleDodgeInput();
             }
         });
-
-        // --- 7. 衝突・終了処理 ---
-        function handleCollision() {
-            gameRunning = false;
-            if (currentSoundSource) {
-                currentSoundSource.stop();
+        
+        dodgeButton.addEventListener('click', () => {
+             if (audioContext.state === 'suspended') {
+                audioContext.resume();
             }
+            handleDodgeInput();
+        });
+
+        function handleCollision() {
+            if (isCollided) return; 
+            isCollided = true;
+            collisionTimer = COLLISION_ANIMATION_DURATION; 
             infoDisplay.innerText = `衝突 (残り 0.0 m)`;
             infoDisplay.style.color = '#FF0000';
+            gameMessage.textContent = "衝突！"; 
+            gameMessage.style.color = "#FF0000"; 
             recordResult(0, true);
-            currentQuestionIndex++;
-            setTimeout(runNextTrial, 2000);
+            updateResultsLog(0, true); 
+            stopCurrentSound(true); 
         }
+
         function recordResult(scoreMeters, collided) {
             const trial = currentTrialSettings[currentQuestionIndex];
+            if (!trial) return;
             const resultData = {
                 question: currentQuestionIndex + 1,
                 type: trial.type,
                 color: trial.color,
-                sound: trial.sound,
+                sound: (trial.sound === NO_SOUND) ? ENGINE_SOUND_NAME : trial.sound, 
                 scoreMeters: scoreMeters,
                 collided: collided
             };
             results.push(resultData);
             console.log(`【記録 ${resultData.question}】`, resultData);
         }
-        function finishGame() {
-            gameRunning = false;
-            startScreen.style.display = 'flex';
-            document.getElementById('instructions').innerHTML = 'テスト終了。お疲れ様でした。<br>（結果はコンソールを確認してください）<br><br>画面の最も手前にある<span style="color: rgba(255, 0, 0, 0.6); text-shadow: none;">赤い半透明の壁</span>が衝突ラインです。';
-            startButton.innerText = 'もう一度行う';
-            console.log("--- 全試行結果 ---");
-            console.table(results);
+
+        function updateResultsLog(scoreMeters, collided) {
+            const newLogEntry = document.createElement('div');
+            newLogEntry.classList.add('log-entry');
+            if (collided) {
+                newLogEntry.style.color = '#FF4444'; 
+                newLogEntry.textContent = `Q${currentQuestionIndex + 1}: 衝突!`;
+            } else {
+                newLogEntry.style.color = '#88FF88'; 
+                newLogEntry.textContent = `Q${currentQuestionIndex + 1}: ${scoreMeters.toFixed(1)} m`;
+            }
+            resultsLog.prepend(newLogEntry); 
+            while (resultsLog.children.length > 5) {
+                resultsLog.removeChild(resultsLog.lastChild);
+            }
         }
 
+        function finishGame() {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            stopCurrentSound(false); 
+            gameElapsedTime = (new Date() - gameStartTime) / 1000; 
+            startScreen.style.display = 'flex';
+            startButton.innerText = 'もう一度行う';
+            startButton.classList.add('hidden'); 
+            dodgeButton.classList.add('hidden'); 
+            gameMessage.classList.add('hidden'); 
+            resultsLog.classList.add('hidden');  
+            infoDisplay.style.display = 'none'; 
+            userInfoForm.classList.add('hidden'); 
+            instructionsDiv.style.textAlign = 'left'; 
+            feedbackForm.classList.remove('hidden'); 
+            submitStatusMessage.classList.add('hidden'); 
+            submitButton.disabled = false; 
+            submitButton.innerText = "データを送信";
+            console.log("--- 全試行結果 ---");
+            console.table(results);
+            let resultHTML = '<h2>全試行結果</h2>';
+            let totalScore = 0;
+            results.forEach(res => {
+                totalScore += res.scoreMeters;
+            });
+            let averageScore = totalScore / results.length;
+            resultHTML += `<h3 style="color: #00FF00;">平均スコア: ${averageScore.toFixed(1)} m (経過時間: ${gameElapsedTime.toFixed(1)} 秒)</h3>`;
+            resultHTML += '<table>';
+            resultHTML += '<tr><th>問</th><th>タイプ</th><th>条件</th><th>スコア (m)</th></tr>';
+            results.forEach(res => {
+                resultHTML += '<tr>';
+                resultHTML += `<td>${res.question}</td>`;
+                resultHTML += `<td>${res.type}</td>`;
+                let condition = '';
+                if (res.type === '色') {
+                    condition = `<div class="color-chip" style="background-color:${res.color};"></div>`;
+                } else if (res.type === '音') {
+                    condition = res.sound.replace(' Noise', '');
+                } else { 
+                    condition = '基準';
+                }
+                resultHTML += `<td>${condition}</td>`;
+                resultHTML += `<td>${res.collided ? '<span style="color:red;">衝突 (0.0)</span>' : res.scoreMeters.toFixed(1)}</td>`;
+                resultHTML += '</tr>';
+            });
+            resultHTML += '</table>';
+            instructionsDiv.innerHTML = resultHTML;
+        }
+
+        function resetStartScreen() {
+            instructionsDiv.innerHTML = `
+                <p>
+                    物体が迫ってきます。<br>
+                    下のハンドルにぶつかると思った瞬間に<br>
+                    [スペースキー] または [回避ボタン] を押してください。
+                </p>`;
+            instructionsDiv.style.textAlign = 'center';
+            feedbackForm.classList.add('hidden');
+            userInfoForm.classList.remove('hidden');
+            startButton.innerText = 'スタート';
+            startButton.classList.remove('hidden');
+            feedbackText.value = ''; 
+        }
+
+        // --- 8. GASへのデータ送信 (変更なし) ---
+        submitButton.addEventListener('click', () => {
+            const feedback = feedbackText.value;
+            const processedResults = processResultsForGAS(results);
+            const payload = {
+                elapsedTime: gameElapsedTime.toFixed(1),
+                age: userAge,
+                gender: userGender,
+                results: processedResults,
+                feedback: feedback
+            };
+            sendDataToGAS(payload);
+        });
+
+        function processResultsForGAS(resultsArray) {
+            const data = {};
+            const colorMap = {
+                '#FFFFFF': 'QBase', '#FF0000': 'QR', '#00FF00': 'QG', '#0000FF': 'QB',
+                '#00FFFF': 'QC', '#FF00FF': 'QM', '#FFFF00': 'QY'
+            };
+            const soundMap = {
+                'White Noise': 'Qm1', 'Pink Noise': 'Qm2', 'Brown Noise': 'Qm3'
+            };
+            resultsArray.forEach(res => {
+                let key = null;
+                if (res.type === '基準') {
+                    key = 'QBase';
+                } else if (res.type === '色') {
+                    key = colorMap[res.color];
+                } else if (res.type === '音') {
+                    key = soundMap[res.sound];
+                }
+                if (key) {
+                    data[key] = res.collided ? 0.0 : res.scoreMeters;
+                }
+            });
+            return data;
+        }
+
+        async function sendDataToGAS(payload) {
+            submitButton.disabled = true;
+            submitButton.innerText = "送信中...";
+            submitStatusMessage.classList.remove('hidden');
+            submitStatusMessage.style.color = '#FFFF00';
+            submitStatusMessage.textContent = 'サーバーにデータを送信しています...';
+            console.log("Sending payload to GAS:", payload);
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(payload) 
+                });
+
+                console.log("Data send request finished.");
+                submitStatusMessage.style.color = '#00FF00';
+                submitStatusMessage.textContent = '送信完了！ご協力ありがとうございました。';
+                submitButton.classList.add('hidden'); 
+                startButton.classList.remove('hidden'); 
+
+            } catch (error) {
+                console.error('Error sending data to GAS:', error);
+                submitStatusMessage.style.color = '#FF0000';
+                submitStatusMessage.textContent = '送信に失敗しました。もう一度お試しください。';
+                submitButton.disabled = false; 
+                submitButton.innerText = "データを送信";
+            }
+        }
+
+        // --- 実行 ---
         generateSounds();
+        draw(); 
+
     </script>
 </body>
 </html>

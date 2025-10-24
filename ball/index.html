@@ -10,9 +10,10 @@
 
     <div id="game-wrapper">
         <canvas id="game-canvas" width="800" height="600"></canvas>
-        <div id="info-display">第1問</div>
-        <div id="game-message">ぎりぎりで避けよう！</div> 
-        <div id="results-log"></div> 
+        
+        <div id="info-display" class="hidden">第1問</div>
+        <div id="game-message" class="hidden">ぎりぎりで避けよう！</div> 
+        <div id="results-log" class="hidden"></div> 
         <button id="dodge-button" class="hidden">回避</button> 
         
         <div id="start-screen">
@@ -57,9 +58,7 @@
                     <label for="feedback-text">ご協力ありがとうございました。よろしければご意見・ご感想をお聞かせください：</label>
                     <textarea id="feedback-text" rows="3" placeholder="（例：赤色の時が一番速く感じた、など）"></textarea>
                 </div>
-                <button id="submit-button">データを送信</button>
-                <p id="submit-status-message" class="hidden"></p>
-            </div>
+                </div>
             
             <button id="start-button">スタート</button>
         </div>
@@ -84,8 +83,7 @@
         const formErrorMessage = document.getElementById('form-error-message');
         const feedbackForm = document.getElementById('feedback-form');
         const feedbackText = document.getElementById('feedback-text');
-        const submitButton = document.getElementById('submit-button');
-        const submitStatusMessage = document.getElementById('submit-status-message');
+        // ★(削除) submitButton, submitStatusMessage
 
         const WIDTH = canvas.width;
         const HEIGHT = canvas.height;
@@ -536,19 +534,14 @@
                 }
             } else if (isWaitingToReturn) {
                 
-                // ★★★ 修正箇所 ★★★
+                // ★(変更) フリーズバグ修正
+                // キューブが通り過ぎたら、状態フラグを変更する「だけ」にする
                 if (currentCubeZ < CAMERA_Z) { 
-                    // 状態フラグを先に変更し、二重呼び出しを防ぐ
                     isWaitingToReturn = false;
                     isReturning = true;
-                    
-                    // gainNode が存在する場合 (＝まだ停止処理が呼ばれていない場合) のみ
-                    // 音の停止を呼び出す
-                    if (gainNode) {
-                        stopCurrentSound(true); 
-                    }
+                    // ★(削除) stopCurrentSound(true); をここから削除
                 }
-                // ★★★ 修正ここまで ★★★
+                // ★(変更) ここまで
 
             } else if (isReturning) {
                 dodgeOffset -= DODGE_SPEED;
@@ -560,7 +553,7 @@
                 }
             }
             
-            // (変更なし) キューブの移動と音量更新
+            // キューブの移動と音量更新
             if (isWaitingToStart) {
                 startDelayTimer--;
                 if (startDelayTimer <= 0) {
@@ -576,7 +569,7 @@
                 currentCubeZ -= CUBE_SPEED;
             }
             
-            // (変更なし) 描画と衝突判定
+            // 描画と衝突判定
             draw(); 
             if (!isWaitingToStart && !isDodging && !isWaitingToReturn && !isReturning) {
                 if (currentCubeZ <= END_Z) {
@@ -586,12 +579,46 @@
             animationFrameId = requestAnimationFrame(gameLoop);
         }
 
-        // --- 7. ユーザー入力とフィードバック (変更なし) ---
-        startButton.addEventListener('click', () => {
+        // --- 7. ユーザー入力とフィードバック ---
+        
+        // ★(変更) 「もう一度行う」ボタンに送信機能を追加
+        startButton.addEventListener('click', async () => { // ★ async に変更
+            
+            // 「もう一度行う」ボタンとして押された場合
             if (gameRunning === false && results.length > 0) {
-                resetStartScreen(); 
+                
+                // ★(新規) 送信処理を開始
+                startButton.disabled = true;
+                startButton.innerText = "送信中...";
+
+                const feedback = feedbackText.value;
+                const processedResults = processResultsForGAS(results);
+                const payload = {
+                    elapsedTime: gameElapsedTime.toFixed(1),
+                    age: userAge,
+                    gender: userGender,
+                    results: processedResults,
+                    feedback: feedback
+                };
+                
+                const success = await sendDataToGAS(payload);
+                
+                if (success) {
+                    // 送信成功
+                    resetStartScreen(); 
+                    startButton.disabled = false;
+                    // startButton.innerText = "スタート"; (resetStartScreenが実行)
+                } else {
+                    // 送信失敗
+                    startButton.disabled = false;
+                    startButton.innerText = "送信失敗 - 再試行";
+                    // ★(追加) エラーメッセージを表示
+                    alert("データの送信に失敗しました。インターネット接続を確認して再度お試しください。");
+                }
                 return;
             }
+
+            // (変更なし) 通常のスタート処理
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
@@ -615,7 +642,7 @@
             dodgeButton.classList.remove('hidden'); 
             gameMessage.classList.remove('hidden'); 
             resultsLog.classList.remove('hidden');  
-            infoDisplay.style.display = 'block'; 
+            infoDisplay.classList.remove('hidden'); // ★ .style.displayから変更
             currentQuestionIndex = 0;
             results = [];
             dodgeOffset = 0;
@@ -646,6 +673,11 @@
         }
 
         function prepareNextTrial() {
+            // ★(変更) 音の停止をここに移動
+            // 回避/衝突アニメーションが終わり、次の問題準備に入る
+            // このタイミングで、まだ鳴っている可能性のある音を（フェードなしで）停止する
+            stopCurrentSound(false);
+
             currentQuestionIndex++;
             if (currentQuestionIndex >= TOTAL_QUESTIONS) {
                 finishGame();
@@ -704,7 +736,7 @@
             gameMessage.style.color = "#FF0000"; 
             recordResult(0, true);
             updateResultsLog(0, true); 
-            stopCurrentSound(true); 
+            stopCurrentSound(true); // 衝突時は即フェードアウト
         }
 
         function recordResult(scoreMeters, collided) {
@@ -738,6 +770,7 @@
             }
         }
 
+        // ★(変更) 送信ボタン関連のロジックを削除
         function finishGame() {
             gameRunning = false;
             cancelAnimationFrame(animationFrameId);
@@ -745,17 +778,17 @@
             gameElapsedTime = (new Date() - gameStartTime) / 1000; 
             startScreen.style.display = 'flex';
             startButton.innerText = 'もう一度行う';
-            startButton.classList.add('hidden'); 
+            startButton.classList.remove('hidden'); // ★(変更) 「もう一度行う」をすぐに表示
             dodgeButton.classList.add('hidden'); 
             gameMessage.classList.add('hidden'); 
             resultsLog.classList.add('hidden');  
-            infoDisplay.style.display = 'none'; 
+            infoDisplay.classList.add('hidden'); // ★ .style.displayから変更
             userInfoForm.classList.add('hidden'); 
             instructionsDiv.style.textAlign = 'left'; 
             feedbackForm.classList.remove('hidden'); 
-            submitStatusMessage.classList.add('hidden'); 
-            submitButton.disabled = false; 
-            submitButton.innerText = "データを送信";
+            
+            // ★(削除) submitButton, submitStatusMessage 関連の行を削除
+
             console.log("--- 全試行結果 ---");
             console.table(results);
             let resultHTML = '<h2>全試行結果</h2>';
@@ -802,20 +835,8 @@
             feedbackText.value = ''; 
         }
 
-        // --- 8. GASへのデータ送信 (変更なし) ---
-        submitButton.addEventListener('click', () => {
-            const feedback = feedbackText.value;
-            const processedResults = processResultsForGAS(results);
-            const payload = {
-                elapsedTime: gameElapsedTime.toFixed(1),
-                age: userAge,
-                gender: userGender,
-                results: processedResults,
-                feedback: feedback
-            };
-            sendDataToGAS(payload);
-        });
-
+        // --- 8. GASへのデータ送信 ---
+        // (変更なし)
         function processResultsForGAS(resultsArray) {
             const data = {};
             const colorMap = {
@@ -841,12 +862,8 @@
             return data;
         }
 
+        // ★(変更) UIロジックを削除し、成否を返すように
         async function sendDataToGAS(payload) {
-            submitButton.disabled = true;
-            submitButton.innerText = "送信中...";
-            submitStatusMessage.classList.remove('hidden');
-            submitStatusMessage.style.color = '#FFFF00';
-            submitStatusMessage.textContent = 'サーバーにデータを送信しています...';
             console.log("Sending payload to GAS:", payload);
 
             try {
@@ -858,19 +875,12 @@
                     },
                     body: JSON.stringify(payload) 
                 });
-
                 console.log("Data send request finished.");
-                submitStatusMessage.style.color = '#00FF00';
-                submitStatusMessage.textContent = '送信完了！ご協力ありがとうございました。';
-                submitButton.classList.add('hidden'); 
-                startButton.classList.remove('hidden'); 
+                return true; // 送信リクエストが完了したことを伝える
 
             } catch (error) {
                 console.error('Error sending data to GAS:', error);
-                submitStatusMessage.style.color = '#FF0000';
-                submitStatusMessage.textContent = '送信に失敗しました。もう一度お試しください。';
-                submitButton.disabled = false; 
-                submitButton.innerText = "データを送信";
+                return false; // 送信に失敗したことを伝える
             }
         }
 

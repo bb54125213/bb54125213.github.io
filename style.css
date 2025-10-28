@@ -119,14 +119,122 @@ p {
     text-align: center;
     margin-bottom: 30px;
 }
-.video-container, fieldset, legend, .form-group, label, input, textarea,
-.radio-group, .radio-group-vertical {
-    /* 共通フォーム要素 */
+
+/* ★★★★★★★★★★★★★★ 修正箇所 (ここから) ★★★★★★★★★★★★★★ */
+/* 元の空のルールセットと、
+   .radio-group label { flex-grow: 1; } 
+   を削除し、以下のコードに差し替えます。
+   
+   #step1 をセレクタの先頭につけることで、
+   speed.html のフォームにだけスタイルが適用されるようにします。
+*/
+
+/* --- フォーム要素の基本スタイル (speed.html #step1 専用) --- */
+#step1 fieldset {
+    background-color: #FFFFFF;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 25px 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
+
+#step1 legend {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: var(--color-primary);
+    padding: 0 10px;
+    margin-left: 0;
+}
+
+#step1 .form-group {
+    margin-bottom: 25px;
+}
+#step1 .form-group:last-child {
+    margin-bottom: 0;
+}
+
+#step1 select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-border); /* 枠線を他の要素と合わせる */
+    border-radius: 5px; /* ボタンの角丸と合わせる */
+    box-sizing: border-box;
+    font-size: 1em;
+    font-family: inherit; /* bodyのフォントを継承 */
+    color: var(--color-text);
+    background-color: #FFFFFF;
+    
+    /* ↓ ブラウザ標準の矢印を消す */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    /* ↓ カスタム矢印（下向きの矢印アイコン） */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23404756%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px; /* 矢印のスペースを確保 */
+    cursor: pointer;
+}
+
+#step1 select:hover {
+    border-color: #aaa; /* ホバー時の枠線色 */
+}
+
+/* --- ラジオボタンのボタンスタイル (speed.html #step1 専用) --- */
+#step1 .radio-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* 元のラジオボタンを非表示にする (step1 の中だけ) */
+#step1 .radio-group input[type="radio"] {
+    display: none;
+}
+
+/* ラベルをボタンにする (step1 の中だけ) */
+#step1 .radio-group label {
+    flex: 1; /* 均等幅 */
+    display: block;
+    text-align: center;
+    padding: 12px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    background-color: #FFFFFF;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    margin-bottom: 0; /* 共通labelスタイルのmargin-bottomをリセット */
+}
+
+/* 選択されたラジオボタンの隣のラベルのスタイル (step1 の中だけ) */
+#step1 .radio-group input[type="radio"]:checked + label {
+    background-color: var(--color-primary);
+    color: #FFFFFF;
+    border-color: var(--color-primary);
+    font-weight: 700;
+}
+
+/* ホバー効果 (step1 の中だけ) */
+#step1 .radio-group input[type="radio"]:not(:checked) + label:hover {
+    background-color: #f4f7f6;
+    border-color: #aaa;
+}
+
+/* 他のページで .radio-group が使われていた場合の
+   互換性のための（古い）スタイル定義。
+   flex-grow: 1; は #step1 .radio-group label で上書きされます。
+*/
 .radio-group label,
 .radio-group-vertical label {
     flex-grow: 1;
 }
+/* ★★★★★★★★★★★★★★ 修正箇所 (ここまで) ★★★★★★★★★★★★★★ */
+
 
 /* --- ボタン共通スタイル --- */
 button[type="submit"],

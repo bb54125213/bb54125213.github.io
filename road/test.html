@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドライビング・アニメーション (修正版 v3)</title>
+    <style>
+        :root {
+            --road-color: #444;
+            --building-color: #888;
+            --tree-color: #2a882a;
+            --sky-color: #87CEEB;
+            --line-color: #FFF;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden; 
+            background-color: #333;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scene {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            perspective: 800px; 
+            overflow: hidden;
+            perspective-origin: 50% 100%; 
+        }
+
+        .sky {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--sky-color);
+            z-index: 0;
+        }
+
+        /* === 修正点 2: 道路本体のアニメーションを削除 === */
+        .road {
+            position: absolute;
+            width: 500px; 
+            height: 2000px; /* 奥行きは静的に確保 */
+            background: var(--road-color);
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%) rotateX(80deg);
+            transform-origin: bottom center;
+            z-index: 1;
+            /* animation: move-road 3s linear infinite; <-- この行を削除 */
+        }
+
+        /* move-road の @keyframes 自体も不要なため削除 */
+
+        .road::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                var(--line-color),
+                var(--line-color) 30px,
+                transparent 30px,
+                transparent 60px
+            );
+            left: 50%;
+            transform: translateX(-50%);
+            animation: move-lines 0.3s linear infinite;
+        }
+
+        /* === 修正点 3: 中央線の進行方向を逆にする === */
+        @keyframes move-lines {
+            0% { background-position: 0 60px; } /* 開始位置をオフセット */
+            100% { background-position: 0 0; }   /* 終了位置を原点に */
+        }
+
+        .landscape {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transform: translateY(0) rotateX(80deg);
+            transform-origin: bottom center;
+            bottom: 0;
+            z-index: 2;
+        }
+
+        .object {
+            position: absolute;
+            background: var(--building-color);
+            bottom: 0;
+            transform-origin: bottom center;
+            animation: move-object 5s linear infinite;
+        }
+
+        .tree {
+            width: 40px;
+            height: 100px;
+            background: var(--tree-color);
+            z-index: 3;
+        }
+
+        .building {
+            width: 150px;
+            height: 250px;
+            background: var(--building-color);
+            z-index: 2;
+        }
+
+        .object.left {
+            left: 50%;
+            --x-offset: -350px; 
+            transform: translateX(var(--x-offset));
+        }
+        
+        .object.right {
+            left: 50%;
+            --x-offset: 350px;
+            transform: translateX(var(--x-offset));
+        }
+
+        /* === 修正点 1: アニメーションの終点をカメラ手前からカメラ位置に変更 === */
+        @keyframes move-object {
+            0% {
+                transform: translateX(var(--x-offset)) translateZ(-2000px);
+                opacity: 0;
+            }
+            1% { 
+                transform: translateX(var(--x-offset)) translateZ(-1980px);
+                opacity: 1; 
+            }
+            99% { 
+                /* 変更: +190px (手前) -> -10px (奥) */
+                transform: translateX(var(--x-offset)) translateZ(-10px); 
+                opacity: 1; 
+            }
+            100% {
+                /* 変更: +200px (手前) -> 0px (カメラ位置) */
+                transform: translateX(var(--x-offset)) translateZ(0px); 
+                opacity: 0;
+            }
+        }
+        
+        .object.delay-1 { animation-delay: -1.25s; }
+        .object.delay-2 { animation-delay: -2.5s; }
+        .object.delay-3 { animation-delay: -3.75s; }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+            white-space: nowrap;
+        }
+        .controls label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div class="sky"></div>
+        <div class="road"></div>
+        
+        <div class="landscape">
+            <div class="object building left"></div>
+            <div class="object tree left delay-1"></div>
+            <div class="object building left delay-2"></div>
+            <div class="object tree left delay-3"></div>
+            
+            <div class="object building right"></div>
+            <div class="object tree right delay-1"></div>
+            <div class="object building right delay-2"></div>
+            <div class="object tree right delay-3"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label>
+            道路の色:
+            <input type="color" id="road-color-picker" value="#444444">
+        </label>
+        <label>
+            建物の色:
+            <input type="color" id="building-color-picker" value="#888888">
+        </label>
+        <label>
+            街路樹の色:
+            <input type="color" id="tree-color-picker" value="#2a882a">
+        </label>
+    </div>
+
+    <script>
+        const root = document.documentElement;
+        
+        document.getElementById('road-color-picker').addEventListener('input', (e) => {
+            root.style.setProperty('--road-color', e.target.value);
+        });
+
+        document.getElementById('building-color-picker').addEventListener('input', (e) => {
+            root.style.setProperty('--building-color', e.target.value);
+        });
+
+        document.getElementById('tree-color-picker').addEventListener('input', (e) => {
+            root.style.setProperty('--tree-color', e.target.value);
+        });
+    </script>
+
+</body>
+</html>

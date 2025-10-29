@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>縞模様の道路アニメーション（コントラスト調整付き）</title>
+    <style>
+        /* ページの基本設定 */
+        body, html {
+            height: 100%;
+            margin: 0;
+            background-color: #7f7f7f; /* デフォルトはグレー */
+            overflow: hidden;
+            font-family: sans-serif;
+            transition: background-color 0.1s linear;
+        }
+
+        /* 3D空間（シーン）のコンテナ */
+        .scene {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            perspective: 400px; 
+        }
+
+        /* 道路本体 */
+        #road {
+            width: 300px;
+            height: 100%;
+            background-size: 100px 100px;
+            animation: moveRoad 0.5s linear infinite;
+            transform-origin: bottom; 
+            transform: rotateX(60deg);
+            
+            /* CSSフィルター。JSで上書きされる (デフォルトは 100%) */
+            filter: contrast(100%); 
+        }
+
+        /* 道路を動かすアニメーション */
+        @keyframes moveRoad {
+            from { background-position: 0 0; }
+            to   { background-position: 0 100px; }
+        }
+
+        /* 操作パネル */
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        /* ボタンのコンテナ */
+        .button-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        /* ボタンのスタイル */
+        .button-group button {
+            padding: 10px 15px;
+            margin: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .button-group button:active {
+            transform: scale(0.95);
+        }
+
+        /* 各ボタンの色 */
+        #btn-r { background-color: #f00; color: white; }
+        #btn-g { background-color: #0f0; color: black; }
+        #btn-b { background-color: #00f; color: white; }
+        #btn-c { background-color: #0ff; color: black; }
+        #btn-m { background-color: #f0f; color: white; }
+        #btn-y { background-color: #ff0; color: black; }
+
+        /* スライダーのコンテナ */
+        .slider-group {
+            display: grid;
+            grid-template-columns: 140px 1fr; /* ラベル幅 */
+            gap: 10px;
+            align-items: center;
+        }
+
+        .slider-group label {
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .slider-group input[type="range"] {
+            width: 150px;
+            margin: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div id="road"></div>
+    </div>
+
+    <div id="controls">
+        
+        <div class="button-group">
+            <button id="btn-r">Red</button>
+            <button id="btn-g">Green</button>
+            <button id="btn-b">Blue</button>
+            <button id="btn-c">Cyan</button>
+            <button id="btn-m">Magenta</button>
+            <button id="btn-y">Yellow</button>
+        </div>
+
+        <div class="slider-group">
+            <label for="main-lightness-slider">メイン縞：明度<br>(黒 ⇔ 純色 ⇔ 白)</label>
+            <input type="range" id="main-lightness-slider" min="0" max="100" value="50"> <label for="stripe-slider">サブ縞：明度 (白 ⇔ 黒)</label>
+            <input type="range" id="stripe-slider" min="0" max="100" value="86"> <label for="bg-slider">背景：明度 (白 ⇔ 黒)</label>
+            <input type="range" id="bg-slider" min="0" max="100" value="50">
+
+            <label for="contrast-slider">道路コントラスト</label>
+            <input type="range" id="contrast-slider" min="0" max="200" value="100"> </div>
+
+    </div>
+
+    <script>
+        // === 要素の取得 ===
+        const road = document.getElementById('road');
+        const body = document.body;
+        const bgSlider = document.getElementById('bg-slider');
+        const stripeSlider = document.getElementById('stripe-slider');
+        const mainLightnessSlider = document.getElementById('main-lightness-slider');
+        const contrastSlider = document.getElementById('contrast-slider'); // ★ 追加
+
+        // === 色相 (Hue) の定義 ===
+        const mainHues = {
+            'r': 0, 'g': 120, 'b': 240, 'c': 180, 'm': 300, 'y': 60
+        };
+
+        // === 状態を保持する変数 ===
+        let currentStripeMainHue = mainHues['r']; 
+        let currentStripeMainLightness = mainLightnessSlider.value; 
+        let currentStripeSubColor = valueToGrayscaleHex(stripeSlider.value);
+        let currentBgColor = valueToGrayscaleHex(bgSlider.value);
+
+        // === ユーティリティ関数 ===
+        /**
+         * スライダーの値（0-100）をグレースケールの16進数コード（#FFFFFF - #000000）に変換
+         */
+        function valueToGrayscaleHex(value) {
+            const grayValue = Math.round(255 - (Number(value) * 2.55));
+            const hex = grayValue.toString(16).padStart(2, '0');
+            return `#${hex}${hex}${hex}`;
+        }
+
+        // === 描画更新関数 ===
+        /**
+         * 現在の色相・明度・サブカラーに基づいて道路のグラデーションを更新
+         */
+        function updateRoadGradient() {
+            const mainColorHSL = `hsl(${currentStripeMainHue}, 100%, ${currentStripeMainLightness}%)`;
+            const gradient = `linear-gradient(
+                ${mainColorHSL} 0%, ${mainColorHSL} 50%, 
+                ${currentStripeSubColor} 50%, ${currentStripeSubColor} 100%
+            )`;
+            road.style.backgroundImage = gradient;
+        }
+
+        /**
+         * 現在の背景スライダーの値に基づいて背景色を更新
+         */
+        function updateBackgroundColor() {
+            currentBgColor = valueToGrayscaleHex(bgSlider.value);
+            body.style.backgroundColor = currentBgColor;
+        }
+
+        // === イベントリスナー ===
+
+        // 1. 道路のメインカラー色相変更（ボタン）
+        document.querySelector('.button-group').addEventListener('click', function(event) {
+            if (event.target.tagName === 'BUTTON') {
+                const colorKey = event.target.id.slice(-1); 
+                if (mainHues[colorKey] !== undefined) {
+                    currentStripeMainHue = mainHues[colorKey];
+                    updateRoadGradient();
+                }
+            }
+        });
+
+        // 2. 背景色の変更（スライダー）
+        bgSlider.addEventListener('input', updateBackgroundColor);
+
+        // 3. 縞模様のサブカラー変更（スライダー）
+        stripeSlider.addEventListener('input', function() {
+            currentStripeSubColor = valueToGrayscaleHex(stripeSlider.value);
+            updateRoadGradient();
+        });
+
+        // 4. 道路のメインカラー明度変更（スライダー）
+        mainLightnessSlider.addEventListener('input', function() {
+            currentStripeMainLightness = mainLightnessSlider.value;
+            updateRoadGradient();
+        });
+        
+        // 5. 道路のコントラスト変更（スライダー）★ 追加
+        contrastSlider.addEventListener('input', function() {
+            // road要素にCSSのfilterプロパティを適用
+            // 値は % (パーセント) で指定
+            road.style.filter = `contrast(${contrastSlider.value}%)`;
+        });
+
+        // === 初期化 ===
+        updateBackgroundColor();
+        updateRoadGradient();
+        // コントラストスライダーの初期値(100)はCSSのデフォルトと同じなので、
+        // road.style.filter の初期設定は省略可能です。
+
+    </script>
+
+</body>
+</html>

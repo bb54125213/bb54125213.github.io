@@ -5,84 +5,339 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>デジタル砂時計</title>
     <style>
+        :root {
+            --primary-blue: #007bff;
+            --secondary-gray: #6c757d;
+            --light-gray: #f8f9fa;
+            --dark-gray: #343a40;
+            --border-color: #dee2e6;
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --shadow-dark: rgba(0, 0, 0, 0.2);
+
+            /* Accent Colors */
+            --accent-purple: #6f42c1;
+            --accent-teal: #20c997;
+            --accent-orange: #fd7e14;
+            --accent-pink: #e83e8c;
+            --accent-green: #28a745;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            /* ★バグ修正: 'align' を 'align-items' に修正し、中央揃えを確実にします */
             align-items: center; 
-            background-color: #f4f4f4;
-            color: #333;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
         }
         h1 {
-            font-weight: 300;
+            font-weight: 400;
+            color: var(--dark-gray);
+            margin-bottom: 30px;
         }
         
         #canvas-container {
             display: inline-block;
-            border: 1px solid #ccc;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden; /* 角丸に合わせて内容を隠す */
             background-color: #000;
-            padding: 0;
-            margin: 0;
-            line-height: 0;
+            box-shadow: 0 8px 25px var(--shadow-dark);
+            transition: box-shadow 0.3s ease;
+            margin-bottom: 30px;
         }
         canvas {
             width: 100%;
-            max-width: 500px;
+            max-width: 180px; 
             display: block;
         }
         video {
             display: none; 
         }
 
-        .controls {
-            margin-top: 20px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            max-width: 500px;
-            width: 100%;
-        }
-        .control-group {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-        }
-        .control-group h3 {
-            margin-top: 0;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .control-group button {
-            padding: 8px 12px;
-            margin: 4px;
-            border: 1px solid #ccc;
-            background-color: #f9f9f9;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .control-group button.active {
-            background-color: #007bff;
-            color: white;
-            border-color: #007bff;
+        #main-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
         }
         #main-controls button {
             font-size: 1.1em;
-            padding: 12px 20px;
-            min-width: 100px;
+            padding: 12px 25px;
+            margin: 0 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            font-weight: 500;
+            box-shadow: 0 4px 10px var(--shadow-light);
         }
+        #play-pause-btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+        }
+        #play-pause-btn:hover {
+            background-color: #0056b3;
+            box-shadow: 0 6px 15px var(--shadow-dark);
+            transform: translateY(-2px);
+        }
+        #fullscreen-btn {
+            background-color: var(--secondary-gray);
+            color: white;
+            border: none;
+        }
+        #fullscreen-btn:hover {
+            background-color: #5a6268;
+            box-shadow: 0 6px 15px var(--shadow-dark);
+            transform: translateY(-2px);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* 柔軟なカラム */
+            gap: 25px;
+            max-width: 700px; /* コントロール全体の幅を広げた */
+            width: 100%;
+            padding: 10px;
+        }
+        .control-group {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px var(--shadow-light);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            position: relative; /* アクセントカラー用 */
+            overflow: hidden; /* アクセントカラーがはみ出さないように */
+        }
+        .control-group::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px; /* アクセントラインの高さ */
+            background-color: var(--accent-color, var(--primary-blue)); /* デフォルト色 */
+            transition: background-color 0.2s ease;
+        }
+        /* 各グループに固有のアクセントカラーを適用 */
+        .control-group[data-accent-color="purple"]::before { background-color: var(--accent-purple); }
+        .control-group[data-accent-color="teal"]::before { background-color: var(--accent-teal); }
+        .control-group[data-accent-color="orange"]::before { background-color: var(--accent-orange); }
+        .control-group[data-accent-color="pink"]::before { background-color: var(--accent-pink); }
+        .control-group[data-accent-color="green"]::before { background-color: var(--accent-green); }
+
+
+        .control-group:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-dark);
+        }
+
+        .control-group h3 {
+            margin-top: 5px; /* 上部のアクセントラインと被らないように */
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            color: var(--dark-gray);
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+        .control-group button {
+            padding: 8px 15px;
+            margin: 5px 3px;
+            border: 1px solid var(--border-color);
+            background-color: var(--light-gray);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px var(--shadow-light);
+        }
+        .control-group button:hover:not(.active) {
+            background-color: #e2e6ea;
+            transform: translateY(-1px);
+        }
+        .control-group button.active {
+            background-color: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+            box-shadow: 0 3px 8px var(--primary-blue), var(--shadow-dark);
+            font-weight: 600;
+        }
+        /* Colorボタンのアクセント */
+        .control-group[data-accent-color="purple"] button.active { background-color: var(--accent-purple); border-color: var(--accent-purple); box-shadow: 0 3px 8px rgba(111, 66, 193, 0.4); }
+        .control-group[data-accent-color="teal"] button.active { background-color: var(--accent-teal); border-color: var(--accent-teal); box-shadow: 0 3px 8px rgba(32, 201, 151, 0.4); }
+        .control-group[data-accent-color="orange"] button.active { background-color: var(--accent-orange); border-color: var(--accent-orange); box-shadow: 0 3px 8px rgba(253, 126, 20, 0.4); }
+        .control-group[data-accent-color="pink"] button.active { background-color: var(--accent-pink); border-color: var(--accent-pink); box-shadow: 0 3px 8px rgba(232, 62, 140, 0.4); }
+        .control-group[data-accent-color="green"] button.active { background-color: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 3px 8px rgba(40, 167, 69, 0.4); }
+
+
         #duration-controls {
             display: flex;
             align-items: center;
+            justify-content: center; /* 中央寄せ */
+            padding-top: 10px;
         }
         #duration-controls input {
-            width: 60px;
+            width: 70px;
             font-size: 1em;
-            padding: 8px;
+            padding: 10px;
             margin-right: 10px;
             text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
+        #duration-controls input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+        #duration-controls label {
+            color: var(--dark-gray);
+            font-weight: 500;
+        }
+        
+        .control-group .slider-container, .control-group .texture-size-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: var(--dark-gray);
+            padding: 10px 0;
+        }
+        .control-group .slider {
+            flex-grow: 1;
+            margin: 0 12px;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px; /* スライダーの高さ */
+            background: #e0e0e0; /* レールの色 */
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.8;
+            transition: opacity .2s;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .control-group .slider:hover {
+            opacity: 1;
+        }
+        .control-group .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px; /* サムの大きさ */
+            height: 20px;
+            background: var(--accent-color, var(--primary-blue)); /* デフォルト色 */
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 2px 5px var(--shadow-dark);
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .control-group .slider::-webkit-slider-thumb:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        .control-group .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color, var(--primary-blue));
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 2px 5px var(--shadow-dark);
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .control-group .slider::-moz-range-thumb:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        /* スライダーのアクセントカラーを親グループから継承 */
+        .control-group[data-accent-color="purple"] .slider::-webkit-slider-thumb,
+        .control-group[data-accent-color="purple"] .slider::-moz-range-thumb { background: var(--accent-purple); }
+        .control-group[data-accent-color="teal"] .slider::-webkit-slider-thumb,
+        .control-group[data-accent-color="teal"] .slider::-moz-range-thumb { background: var(--accent-teal); }
+        .control-group[data-accent-color="orange"] .slider::-webkit-slider-thumb,
+        .control-group[data-accent-color="orange"] .slider::-moz-range-thumb { background: var(--accent-orange); }
+        .control-group[data-accent-color="pink"] .slider::-webkit-slider-thumb,
+        .control-group[data-accent-color="pink"] .slider::-moz-range-thumb { background: var(--accent-pink); }
+        .control-group[data-accent-color="green"] .slider::-webkit-slider-thumb,
+        .control-group[data-accent-color="green"] .slider::-moz-range-thumb { background: var(--accent-green); }
+
+
+        .control-group .texture-control {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* 中央寄せ */
+            padding-top: 10px;
+            margin-bottom: 10px;
+        }
+        .control-group .texture-control label {
+            margin-left: 10px;
+            cursor: pointer;
+            user-select: none; 
+            color: var(--dark-gray);
+            font-weight: 500;
+        }
+        .control-group .texture-control input[type="checkbox"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .control-group .texture-control input[type="checkbox"]:checked {
+            background-color: var(--accent-color, var(--primary-blue));
+            border-color: var(--accent-color, var(--primary-blue));
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+        /* チェックマーク */
+        .control-group .texture-control input[type="checkbox"]:checked::after {
+            content: '✔';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            color: white;
+            font-weight: bold;
+        }
+        /* チェックボックスのアクセントカラーを親グループから継承 */
+        .control-group[data-accent-color="purple"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-purple); border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.25); }
+        .control-group[data-accent-color="teal"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-teal); border-color: var(--accent-teal); box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.25); }
+        .control-group[data-accent-color="orange"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-orange); border-color: var(--accent-orange); box-shadow: 0 0 0 3px rgba(253, 126, 20, 0.25); }
+        .control-group[data-accent-color="pink"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-pink); border-color: var(--accent-pink); box-shadow: 0 0 0 3px rgba(232, 62, 140, 0.25); }
+        .control-group[data-accent-color="green"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25); }
+
+
+        /* 全画面表示時のスタイル */
+        #canvas-container:fullscreen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--dark-gray); /* 全画面時は背景を暗く */
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        #canvas-container:fullscreen canvas {
+            max-width: none;
+            object-fit: contain; /* アスペクト比を保持して最大化 */
+            width: auto; /* object-fit を機能させるため */
+            height: 100%;
+        }
+
     </style>
 </head>
 <body>
@@ -91,6 +346,7 @@
 
     <div id="main-controls">
         <button id="play-pause-btn">再生</button>
+        <button id="fullscreen-btn">全画面</button>
     </div>
 
     <div id="canvas-container">
@@ -101,17 +357,20 @@
         id="sand-video" 
         src="/movie/sandmovie.mp4" 
         playsinline
-        crossorigin="anonymous"> 
-    </video>
+        crossorigin="anonymous"
+        preload="auto"> </video>
 
     <div class="controls">
-        <div class="control-group" id="duration-controls">
-            <input type="number" id="duration-input" value="10" min="1">
-            <label for="duration-input">秒で完了</label>
+        <div class="control-group" id="duration-controls" data-accent-color="blue">
+            <h3>時間 (Duration)</h3>
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <input type="number" id="duration-input" value="10" min="1">
+                <label for="duration-input">秒で完了</label>
+            </div>
         </div>
-        <div class="control-group">
-            <h3>色 (Color)</h3>
-            <div id="color-buttons">
+        <div class="control-group" data-accent-color="purple">
+            <h3>砂の色 (Color)</h3>
+            <div id="color-buttons" style="display: flex; flex-wrap: wrap; justify-content: center;">
                 <button data-color="gray" class="active">Gray</button>
                 <button data-color="red">R</button>
                 <button data-color="green">G</button>
@@ -121,13 +380,36 @@
                 <button data-color="yellow">Y</button>
             </div>
         </div>
-        <div class="control-group">
+        <div class="control-group" data-accent-color="teal">
             <h3>音 (Noise)</h3>
-            <div id="sound-buttons">
+            <div id="sound-buttons" style="display: flex; flex-wrap: wrap; justify-content: center;">
                 <button data-sound="off" class="active">Off</button>
                 <button data-sound="white">White</button>
                 <button data-sound="pink">Pink</button>
                 <button data-sound="brown">Brown</button>
+            </div>
+        </div>
+        
+        <div class="control-group" data-accent-color="orange">
+            <h3>ガラス内部 (Glass)</h3>
+            <div class="slider-container">
+                <span>暗い</span>
+                <input type="range" id="glass-color-slider" min="0" max="255" value="228" class="slider">
+                <span>明るい</span>
+            </div>
+        </div>
+
+        <div class="control-group" data-accent-color="green">
+            <h3>砂の質感 (Texture)</h3>
+            <div class="texture-control">
+                <input type="checkbox" id="texture-toggle">
+                <label for="texture-toggle">斑点をつける</label>
+            </div>
+            
+            <div class="texture-size-control">
+                <span>細かい</span>
+                <input type="range" id="texture-size-slider" min="1" max="10" value="2" class="slider">
+                <span>粗い</span>
             </div>
         </div>
     </div>
@@ -136,22 +418,49 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
-            // ----- 1. 要素の取得 -----
             const video = document.getElementById('sand-video');
             const canvas = document.getElementById('sand-canvas');
+            const canvasContainer = document.getElementById('canvas-container');
             const ctx = canvas.getContext('2d');
 
             const playPauseBtn = document.getElementById('play-pause-btn');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
             const durationInput = document.getElementById('duration-input');
             const colorButtons = document.getElementById('color-buttons');
             const soundButtons = document.getElementById('sound-buttons');
+            const glassColorSlider = document.getElementById('glass-color-slider');
+            const textureToggle = document.getElementById('texture-toggle');
+            const textureSizeSlider = document.getElementById('texture-size-slider');
             
-            const ORIGINAL_DURATION = 18.0;
+            let ORIGINAL_DURATION = 18.0; 
+            
+            video.addEventListener('loadedmetadata', () => {
+                ORIGINAL_DURATION = video.duration;
+                canvas.width = video.videoWidth / 3; 
+                canvas.height = video.videoHeight;
+                
+                // 0秒時点ではなく、0.05秒時点のフレームを読み込む
+                video.currentTime = 0.05; 
+            }, { once: true });
+
+            // seekが完了したら最初のフレームを描画
+            video.addEventListener('seeked', (e) => {
+                // アニメーションループが動いていない（＝停止中）場合のみ描画
+                if (!animationFrameId) {
+                    drawFrameAndStop(); 
+                    setPlaybackSpeed(); // 速度もこのタイミングで初期化
+                }
+            }, { once: true }); // 最初のseek時のみ実行
 
             let animationFrameId = null;
             let targetColor = 'gray'; 
+            let targetGlassColor = 228; 
+            let isTextureEnabled = false;
+            let NOISE_BLOCK_SIZE = 2; 
+            
+            let persistentNoiseCache = new Map();
 
-            // ----- 2. Web Audio API (変更なし) -----
+            // Web Audio API (変更なし)
             let audioCtx;
             let whiteNoiseNode, pinkNoiseNode, brownNoiseNode;
             let currentNoiseNode = null;
@@ -217,58 +526,118 @@
                 }
             }
             
-            // ----- 3. Canvas描画とピクセル処理 (変更なし) -----
-            video.addEventListener('loadedmetadata', () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            });
-            
-            function drawFrame() {
-                if (video.paused || video.ended) return;
+            // Canvas描画
+            function drawFrameAndStop() {
+                const sx = video.videoWidth / 3;
+                const sWidth = video.videoWidth / 3;
+                ctx.drawImage(video, sx, 0, sWidth, video.videoHeight, 0, 0, canvas.width, canvas.height);
                 
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                applyPixelProcessing();
                 
-                if (targetColor !== 'gray') {
+                if (animationFrameId) cancelAnimationFrame(animationFrameId); 
+                animationFrameId = null;
+            }
+
+            // ★変更: ピクセル処理（staticBoundaryY の調整）
+            function applyPixelProcessing() {
+                if (targetColor !== 'gray' || targetGlassColor !== 228 || isTextureEnabled) {
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data; 
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    
+                    const duration = ORIGINAL_DURATION || 18.0;
+                    const progress = Math.min(1, video.currentTime / duration);
+                    
+                    // ★変更: 境界Y座標を動的に計算 (下から1/10から下から3/10へ移動)
+                    // progressが0のとき、 staticStart = 1 - 1/10 = 9/10
+                    // progressが1のとき、 staticEnd = 1 - 3/10 = 7/10
+                    // interpolate = (9/10) * (1 - progress) + (7/10) * progress
+                    const staticBoundaryY = imgHeight * ( (1 - (1/10)) * (1 - progress) + (1 - (3/10)) * progress );
+
+                    const noiseCache = new Map();
 
                     for (let i = 0; i < data.length; i += 4) {
                         const r = data[i];
                         const g = data[i+1];
                         const b = data[i+2];
 
-                        const isGray = Math.abs(r - g) < 20 && Math.abs(g - b) < 20;
-                        const isTargetBrightness = r > 30 && r < 100;
+                        const isSandGray = Math.abs(r - g) < 20 && Math.abs(g - b) < 20;
+                        const isSandBrightness = r > 30 && r < 100;
+                        
+                        // ガラス(#E4E4E4)の判定を厳密化 (許容範囲を少し広げた)
+                        const tolerance = 20; // 許容範囲を20に設定 (228 +/- 20)
+                        const isGlass = (r > (228 - tolerance) && r < (228 + tolerance)) && 
+                                      (g > (228 - tolerance) && g < (228 + tolerance)) && 
+                                      (b > (228 - tolerance) && b < (228 + tolerance)) && 
+                                      (Math.abs(r - g) < 15) && 
+                                      (Math.abs(g - b) < 15);  
 
-                        if (isGray && isTargetBrightness) {
-                            const brightness = (r + g + b) / 3;
-                            const mappedL = 50 + (brightness * 1.5);
+                        if (isSandGray && isSandBrightness) {
+                            let mappedL = 50 + ((r + g + b) / 3) * 1.5;
+                            
+                            if (isTextureEnabled) {
+                                const pixelIndex = i / 4;
+                                const x = pixelIndex % imgWidth;
+                                const y = Math.floor(pixelIndex / imgWidth);
 
-                            switch (targetColor) {
-                                case 'red':
-                                    data[i] = mappedL; data[i+1] = 0; data[i+2] = 0;
-                                    break;
-                                case 'green':
-                                    data[i] = 0; data[i+1] = mappedL; data[i+2] = 0;
-                                    break;
-                                case 'blue':
-                                    data[i] = 0; data[i+1] = 0; data[i+2] = mappedL;
-                                    break;
-                                case 'cyan':
-                                    data[i] = 0; data[i+1] = mappedL; data[i+2] = mappedL;
-                                    break;
-                                case 'magenta':
-                                    data[i] = mappedL; data[i+1] = 0; data[i+2] = mappedL;
-                                    break;
-                                case 'yellow':
-                                    data[i] = mappedL; data[i+1] = mappedL; data[i+2] = 0;
-                                    break;
+                                const blockX = Math.floor(x / NOISE_BLOCK_SIZE) * NOISE_BLOCK_SIZE;
+                                const blockY = Math.floor(y / NOISE_BLOCK_SIZE) * NOISE_BLOCK_SIZE;
+                                const blockKey = `${blockX},${blockY}`;
+
+                                let randomNoise;
+
+                                if (y > staticBoundaryY) {
+                                    // 静的ノイズ（積もった砂）
+                                    if (!persistentNoiseCache.has(blockKey)) {
+                                        persistentNoiseCache.set(blockKey, (Math.random() * 40) - 20);
+                                    }
+                                    randomNoise = persistentNoiseCache.get(blockKey);
+                                } else {
+                                    // 動的ノイズ（落ちている砂）
+                                    if (noiseCache.has(blockKey)) {
+                                        randomNoise = noiseCache.get(blockKey);
+                                    } else {
+                                        randomNoise = (Math.random() * 40) - 20;
+                                        noiseCache.set(blockKey, randomNoise);
+                                    }
+                                }
+                                
+                                mappedL = Math.max(0, Math.min(255, mappedL + randomNoise));
                             }
+                            
+                            if (targetColor !== 'gray') {
+                                switch (targetColor) {
+                                    case 'red': data[i] = mappedL; data[i+1] = 0; data[i+2] = 0; break;
+                                    case 'green': data[i] = 0; data[i+1] = mappedL; data[i+2] = 0; break;
+                                    case 'blue': data[i] = 0; data[i+1] = 0; data[i+2] = mappedL; break;
+                                    case 'cyan': data[i] = 0; data[i+1] = mappedL; data[i+2] = mappedL; break;
+                                    case 'magenta': data[i] = mappedL; data[i+1] = 0; data[i+2] = mappedL; break;
+                                    case 'yellow': data[i] = mappedL; data[i+1] = mappedL; data[i+2] = 0; break;
+                                }
+                            } else { 
+                                data[i] = mappedL; data[i+1] = mappedL; data[i+2] = mappedL;
+                            }
+
+                        } else if (isGlass) { 
+                            data[i] = targetGlassColor;
+                            data[i+1] = targetGlassColor;
+                            data[i+2] = targetGlassColor;
                         }
                     }
                     ctx.putImageData(imageData, 0, 0);
                 }
+            }
+            
+            function drawFrame() {
+                if (video.paused || video.ended) return;
+                
+                const sx = video.videoWidth / 3;
+                const sWidth = video.videoWidth / 3;
+                ctx.drawImage(video, sx, 0, sWidth, video.videoHeight, 0, 0, canvas.width, canvas.height);
+                
+                applyPixelProcessing();
+                
                 animationFrameId = requestAnimationFrame(drawFrame);
             }
 
@@ -281,23 +650,24 @@
                 animationFrameId = null;
             }
 
-            // ----- 4. 再生速度のロジック (変更なし) -----
+            // 再生速度のロジック
             function setPlaybackSpeed() {
-                if (video.currentTime > 0 && video.paused) {
-                    video.currentTime = 0;
+                if (video.currentTime > 0.05 && video.paused) { 
+                    video.currentTime = 0.05; 
                     if (!animationFrameId) {
-                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                         drawFrameAndStop();
                     }
                 }
                 const targetTime = parseFloat(durationInput.value);
+                const duration = ORIGINAL_DURATION || 18.0;
                 if (targetTime > 0) {
-                    video.playbackRate = ORIGINAL_DURATION / targetTime;
+                    video.playbackRate = duration / targetTime;
                 }
             }
             durationInput.addEventListener('change', setPlaybackSpeed);
-            setPlaybackSpeed();
+            
 
-            // ----- 5. メイン再生/停止ロジック (変更なし) -----
+            // メイン再生/停止ロジック
             playPauseBtn.addEventListener('click', togglePlayPause);
 
             function togglePlayPause() {
@@ -315,9 +685,7 @@
                 startCanvasLoop();
                 if (currentNoiseNode) {
                     const targetTime = parseFloat(durationInput.value);
-                    const originalPlaybackRate = ORIGINAL_DURATION / targetTime;
-                    const videoCurrentTimeReal = video.currentTime / originalPlaybackRate;
-                    const remainingTime = targetTime - videoCurrentTimeReal;
+                    const remainingTime = targetTime - video.currentTime; 
                     if (remainingTime > 0) {
                         scheduleNoiseFade(currentNoiseNode.gainNode, remainingTime);
                     }
@@ -338,25 +706,22 @@
             video.addEventListener('ended', () => {
                 playPauseBtn.textContent = '再生';
                 stopCanvasLoop();
-                video.currentTime = 0; 
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                video.currentTime = 0.05; 
+                drawFrameAndStop(); 
             });
 
-            // ----- 6. 色変更ロジック (変更なし) -----
+            // 色変更ロジック
             colorButtons.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON') {
                     targetColor = e.target.dataset.color;
-                    
                     if (video.paused && !animationFrameId) {
-                        drawFrame(); 
-                        if (animationFrameId) cancelAnimationFrame(animationFrameId); 
-                        animationFrameId = null;
+                        drawFrameAndStop(); 
                     }
                     updateActiveButton(colorButtons, e.target);
                 }
             });
 
-            // ----- 7. ノイズ変更ロジック (変更なし) -----
+            // ノイズ変更ロジック
             soundButtons.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON') {
                     initAudio();
@@ -370,14 +735,12 @@
 
                     if (oldNoiseNode) {
                         oldNoiseNode.gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-                        oldNoiseNode.gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                        oldNoiseNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
                     }
                     
                     if (currentNoiseNode && !video.paused) {
                         const targetTime = parseFloat(durationInput.value);
-                        const originalPlaybackRate = ORIGINAL_DURATION / targetTime;
-                        const videoCurrentTimeReal = video.currentTime / originalPlaybackRate;
-                        const remainingTime = targetTime - videoCurrentTimeReal;
+                        const remainingTime = targetTime - video.currentTime;
                         if (remainingTime > 0) {
                             scheduleNoiseFade(currentNoiseNode.gainNode, remainingTime);
                         }
@@ -392,6 +755,50 @@
                 });
                 activeButton.classList.add('active');
             }
+            
+            // ガラス色変更ロジック
+            glassColorSlider.addEventListener('input', (e) => {
+                targetGlassColor = parseInt(e.target.value, 10);
+                if (video.paused && !animationFrameId) {
+                    drawFrameAndStop(); 
+                }
+            });
+            
+            // テクスチャ（斑点）切り替えロジック
+            textureToggle.addEventListener('change', () => {
+                isTextureEnabled = textureToggle.checked;
+                persistentNoiseCache.clear(); 
+                if (video.paused && !animationFrameId) {
+                    drawFrameAndStop();
+                }
+            });
+
+            // テクスチャサイズ変更ロジック
+            textureSizeSlider.addEventListener('input', (e) => {
+                NOISE_BLOCK_SIZE = parseInt(e.target.value, 10);
+                persistentNoiseCache.clear(); 
+                if (video.paused && !animationFrameId) {
+                    drawFrameAndStop();
+                }
+            });
+
+            // 全画面切り替えロジック
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    if (canvasContainer.requestFullscreen) {
+                        canvasContainer.requestFullscreen();
+                    } else if (canvasContainer.webkitRequestFullscreen) { 
+                        canvasContainer.webkitRequestFullscreen();
+                    } else if (canvasContainer.msRequestFullscreen) { 
+                        canvasContainer.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            });
+
         });
     </script>
 

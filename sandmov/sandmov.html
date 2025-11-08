@@ -20,7 +20,7 @@
             --accent-orange: #fd7e14;
             --accent-pink: #e83e8c;
             --accent-green: #28a745;
-            --accent-red: #dc3545; /* ★録画ボタン用 */
+            --accent-red: #dc3545; /* ★ダウンロードボタン用 */
         }
 
         body {
@@ -61,7 +61,7 @@
 
         #main-controls {
             display: flex;
-            flex-wrap: wrap; /* ★録画ボタン追加のため */
+            flex-wrap: wrap; /* ★ボタン追加のため */
             justify-content: center;
             align-items: center;
             margin-bottom: 25px;
@@ -97,18 +97,18 @@
             transform: translateY(-2px);
         }
         
-        /* ★新規追加: 録画ボタンのスタイル */
-        #record-btn {
+        /* ★変更: 録画ボタン -> ダウンロードボタンのスタイル */
+        #download-btn {
             background-color: var(--accent-red);
             color: white;
             border: none;
         }
-        #record-btn:hover {
+        #download-btn:hover {
             background-color: #c82333;
             box-shadow: 0 6px 15px var(--shadow-dark);
             transform: translateY(-2px);
         }
-        #record-btn[disabled] {
+        #download-btn[disabled] {
             background-color: var(--secondary-gray);
             opacity: 0.7;
             cursor: wait;
@@ -361,7 +361,7 @@
     <div id="main-controls">
         <button id="play-pause-btn">再生</button>
         <button id="fullscreen-btn">全画面</button>
-        <button id="record-btn">録画</button>
+        <button id="download-btn">ダウンロード</button>
     </div>
 
     <div id="canvas-container">
@@ -440,7 +440,8 @@
 
             const playPauseBtn = document.getElementById('play-pause-btn');
             const fullscreenBtn = document.getElementById('fullscreen-btn');
-            const recordBtn = document.getElementById('record-btn'); // ★録画ボタン取得
+            // ★変更: 録画ボタン -> ダウンロードボタン取得
+            const downloadBtn = document.getElementById('download-btn'); 
             const durationInput = document.getElementById('duration-input');
             const colorButtons = document.getElementById('color-buttons');
             const soundButtons = document.getElementById('sound-buttons');
@@ -472,7 +473,7 @@
             
             let persistentNoiseCache = new Map();
 
-            // ★録画用変数
+            // ★録画(ダウンロード)用変数
             let mediaRecorder;
             let recordedChunks = [];
 
@@ -580,10 +581,10 @@
                         
                         const tolerance = 20; 
                         const isGlass = (r > (228 - tolerance) && r < (228 + tolerance)) && 
-                                      (g > (228 - tolerance) && g < (228 + tolerance)) && 
-                                      (b > (228 - tolerance) && b < (228 + tolerance)) && 
-                                      (Math.abs(r - g) < 15) && 
-                                      (Math.abs(g - b) < 15);  
+                                        (g > (228 - tolerance) && g < (228 + tolerance)) && 
+                                        (b > (228 - tolerance) && b < (228 + tolerance)) && 
+                                        (Math.abs(r - g) < 15) && 
+                                        (Math.abs(g - b) < 15);  
 
                         if (isSandGray && isSandBrightness) {
                             let mappedL = 50 + ((r + g + b) / 3) * 1.5;
@@ -677,11 +678,11 @@
             durationInput.addEventListener('change', setPlaybackSpeed);
             
 
-            // メイン再生/停止ロジック (変更なし)
+            // メイン再生/停止ロジック
             playPauseBtn.addEventListener('click', togglePlayPause);
 
             function togglePlayPause() {
-                // 録画中は再生/停止を無効化
+                // ★変更: 録画(ダウンロード)中は再生/停止を無効化
                 if (mediaRecorder && mediaRecorder.state === 'recording') return;
                 initAudio();
                 if (video.paused) {
@@ -714,10 +715,13 @@
                     }
                 });
                 
-                // ★追加: 録画中にもし手動で停止されたら、録画を強制停止
+                // ★変更: 録画(ダウンロード)中に手動で停止されたら、強制停止
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
-                    // UIリセットは 'ended' イベントハンドラに任せる
+                    // UIリセットは 'onstop' に任せるが、念のためこちらも
+                    downloadBtn.textContent = 'ダウンロード';
+                    downloadBtn.disabled = false;
+                    playPauseBtn.disabled = false;
                 }
             });
 
@@ -728,13 +732,13 @@
                 video.currentTime = 0.05; 
                 drawFrameAndStop(); 
                 
-                // ★追加: 録画中なら停止してダウンロード処理へ
+                // ★追加: 録画(ダウンロード)中なら停止して処理へ
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
                 }
-                // ★追加: 録画ボタンのUIをリセット
-                recordBtn.textContent = '録画';
-                recordBtn.disabled = false;
+                // ★変更: ダウンロードボタンのUIをリセット
+                downloadBtn.textContent = 'ダウンロード';
+                downloadBtn.disabled = false;
                 playPauseBtn.disabled = false;
             });
 
@@ -761,7 +765,7 @@
 
                     if (oldNoiseNode) {
                         oldNoiseNode.gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-                        oldNoiseNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                        oldNoiseNode.gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
                     }
                     
                     if (currentNoiseNode && !video.paused) {
@@ -817,31 +821,75 @@
             });
 
 
-            // ----- 12. ★新規追加: 録画ロジック -----
-            recordBtn.addEventListener('click', () => {
+            // ----- 12. ★変更: 録画ロジック -> ダウンロードロジック -----
+
+            /**
+             * サポートされているMIMEタイプと拡張子を決定する
+             * @returns {{mimeType: string, extension: string} | null} サポートされている形式、またはnull
+             */
+            function getSupportedMimeType() {
+                const candidates = [
+                    // 1. MP4 (H.264) - 最優先 (iOS/Android/Desktop)
+                    { mimeType: 'video/mp4; codecs=avc1.42E01E', extension: 'mp4' },
+                    // 2. WebM (H.264) - 次点 (Android/Desktop)
+                    { mimeType: 'video/webm; codecs=h264', extension: 'webm' },
+                    // 3. WebM (VP9) - (Android/Desktop)
+                    { mimeType: 'video/webm; codecs=vp9', extension: 'webm' },
+                    // 4. WebM (VP8) - フォールバック
+                    { mimeType: 'video/webm; codecs=vp8', extension: 'webm' },
+                    // 5. デフォルト
+                    { mimeType: 'video/webm', extension: 'webm' }
+                ];
+
+                for (const candidate of candidates) {
+                    if (MediaRecorder.isTypeSupported(candidate.mimeType)) {
+                        return candidate; // 見つかった最初のサポート形式を返す
+                    }
+                }
+                // 何もサポートされていない場合
+                return null;
+            }
+
+            downloadBtn.addEventListener('click', () => {
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    // 録画中の場合は停止（通常は'ended'で停止するが、手動停止用）
+                    // 処理中（録画中）の場合は停止（通常は'ended'で停止するが、手動停止用）
                     mediaRecorder.stop();
-                    recordBtn.textContent = '録画';
-                    recordBtn.disabled = false;
+                    downloadBtn.textContent = 'ダウンロード';
+                    downloadBtn.disabled = false;
                     playPauseBtn.disabled = false;
                     return;
                 }
 
-                // 録画の準備
-                recordedChunks = [];
-                // 30fps を要求（ただし、処理負荷により下回る可能性が高い）
-                const stream = canvas.captureStream(30); 
-                
-                // WebM形式を指定
-                const options = { mimeType: 'video/webm; codecs=vp9' };
-                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                    console.error('video/webm; codecs=vp9 はサポートされていません。');
-                    alert('お使いのブラウザでは録画がサポートされていません。');
+                // ★サポートされている形式をチェック
+                const supportedType = getSupportedMimeType();
+
+                if (!supportedType) {
+                    alert('お使いのブラウザは動画のキャプチャ（ダウンロード）機能に対応していません。');
                     return;
                 }
 
-                mediaRecorder = new MediaRecorder(stream, options);
+                if (supportedType.extension !== 'mp4') {
+                    // MP4がサポートされていない場合 (WebMになる場合)
+                    if (!confirm('MP4形式での保存がサポートされていません。\nWebM形式でダウンロードしますか？\n(一部のスマートフォンでは再生できません)')) {
+                        return; // ユーザーがキャンセル
+                    }
+                }
+
+                // ダウンロード処理の準備
+                recordedChunks = [];
+                // 30fps を要求
+                const stream = canvas.captureStream(30); 
+                
+                const options = { mimeType: supportedType.mimeType };
+
+                try {
+                    mediaRecorder = new MediaRecorder(stream, options);
+                } catch (e) {
+                    console.error('MediaRecorderの初期化に失敗:', e);
+                    alert('動画のキャプチャ準備に失敗しました。');
+                    return;
+                }
+
 
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
@@ -850,30 +898,31 @@
                 };
 
                 mediaRecorder.onstop = () => {
-                    // 録画が停止したらダウンロード処理
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    // 処理が停止したらダウンロード
+                    const blob = new Blob(recordedChunks, { type: supportedType.mimeType });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'digital-hourglass.webm'; // ファイル名を .webm に
+                    // ★ファイル名を動的に変更
+                    a.download = `digital-hourglass.${supportedType.extension}`; 
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                     
                     // UIリセット (endedイベントでも実行されるが、念のため)
-                    recordBtn.textContent = '録画';
-                    recordBtn.disabled = false;
+                    downloadBtn.textContent = 'ダウンロード';
+                    downloadBtn.disabled = false;
                     playPauseBtn.disabled = false;
                 };
 
-                // 録画開始
+                // 処理開始
                 mediaRecorder.start();
 
                 // UIを変更
-                recordBtn.textContent = '録画中...';
-                recordBtn.disabled = true;
-                playPauseBtn.disabled = true; // 録画中は再生/停止を操作させない
+                downloadBtn.textContent = '処理中...';
+                downloadBtn.disabled = true;
+                playPauseBtn.disabled = true; // 処理中は再生/停止を操作させない
 
                 // ビデオを最初から再生
                 video.currentTime = 0.05;

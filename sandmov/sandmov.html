@@ -20,6 +20,7 @@
             --accent-orange: #fd7e14;
             --accent-pink: #e83e8c;
             --accent-green: #28a745;
+            --accent-red: #dc3545; /* ★録画ボタン用 */
         }
 
         body {
@@ -43,7 +44,7 @@
             display: inline-block;
             border: 2px solid var(--border-color);
             border-radius: 12px;
-            overflow: hidden; /* 角丸に合わせて内容を隠す */
+            overflow: hidden; 
             background-color: #000;
             box-shadow: 0 8px 25px var(--shadow-dark);
             transition: box-shadow 0.3s ease;
@@ -60,6 +61,7 @@
 
         #main-controls {
             display: flex;
+            flex-wrap: wrap; /* ★録画ボタン追加のため */
             justify-content: center;
             align-items: center;
             margin-bottom: 25px;
@@ -67,7 +69,7 @@
         #main-controls button {
             font-size: 1.1em;
             padding: 12px 25px;
-            margin: 0 8px;
+            margin: 5px 8px; /* ★マージン調整 */
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
@@ -94,12 +96,30 @@
             box-shadow: 0 6px 15px var(--shadow-dark);
             transform: translateY(-2px);
         }
+        
+        /* ★新規追加: 録画ボタンのスタイル */
+        #record-btn {
+            background-color: var(--accent-red);
+            color: white;
+            border: none;
+        }
+        #record-btn:hover {
+            background-color: #c82333;
+            box-shadow: 0 6px 15px var(--shadow-dark);
+            transform: translateY(-2px);
+        }
+        #record-btn[disabled] {
+            background-color: var(--secondary-gray);
+            opacity: 0.7;
+            cursor: wait;
+        }
+
 
         .controls {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* 柔軟なカラム */
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 25px;
-            max-width: 700px; /* コントロール全体の幅を広げた */
+            max-width: 700px;
             width: 100%;
             padding: 10px;
         }
@@ -110,8 +130,8 @@
             padding: 20px;
             box-shadow: 0 4px 15px var(--shadow-light);
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            position: relative; /* アクセントカラー用 */
-            overflow: hidden; /* アクセントカラーがはみ出さないように */
+            position: relative; 
+            overflow: hidden; 
         }
         .control-group::before {
             content: '';
@@ -119,11 +139,10 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 5px; /* アクセントラインの高さ */
-            background-color: var(--accent-color, var(--primary-blue)); /* デフォルト色 */
+            height: 5px; 
+            background-color: var(--accent-color, var(--primary-blue)); 
             transition: background-color 0.2s ease;
         }
-        /* 各グループに固有のアクセントカラーを適用 */
         .control-group[data-accent-color="purple"]::before { background-color: var(--accent-purple); }
         .control-group[data-accent-color="teal"]::before { background-color: var(--accent-teal); }
         .control-group[data-accent-color="orange"]::before { background-color: var(--accent-orange); }
@@ -137,7 +156,7 @@
         }
 
         .control-group h3 {
-            margin-top: 5px; /* 上部のアクセントラインと被らないように */
+            margin-top: 5px; 
             margin-bottom: 15px;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 12px;
@@ -167,7 +186,6 @@
             box-shadow: 0 3px 8px var(--primary-blue), var(--shadow-dark);
             font-weight: 600;
         }
-        /* Colorボタンのアクセント */
         .control-group[data-accent-color="purple"] button.active { background-color: var(--accent-purple); border-color: var(--accent-purple); box-shadow: 0 3px 8px rgba(111, 66, 193, 0.4); }
         .control-group[data-accent-color="teal"] button.active { background-color: var(--accent-teal); border-color: var(--accent-teal); box-shadow: 0 3px 8px rgba(32, 201, 151, 0.4); }
         .control-group[data-accent-color="orange"] button.active { background-color: var(--accent-orange); border-color: var(--accent-orange); box-shadow: 0 3px 8px rgba(253, 126, 20, 0.4); }
@@ -178,7 +196,7 @@
         #duration-controls {
             display: flex;
             align-items: center;
-            justify-content: center; /* 中央寄せ */
+            justify-content: center; 
             padding-top: 10px;
         }
         #duration-controls input {
@@ -215,8 +233,8 @@
             margin: 0 12px;
             -webkit-appearance: none;
             width: 100%;
-            height: 10px; /* スライダーの高さ */
-            background: #e0e0e0; /* レールの色 */
+            height: 10px;
+            background: #e0e0e0;
             border-radius: 5px;
             outline: none;
             opacity: 0.8;
@@ -229,9 +247,9 @@
         .control-group .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px; /* サムの大きさ */
+            width: 20px;
             height: 20px;
-            background: var(--accent-color, var(--primary-blue)); /* デフォルト色 */
+            background: var(--accent-color, var(--primary-blue));
             border-radius: 50%;
             cursor: grab;
             box-shadow: 0 2px 5px var(--shadow-dark);
@@ -254,7 +272,6 @@
             cursor: grabbing;
             transform: scale(1.1);
         }
-        /* スライダーのアクセントカラーを親グループから継承 */
         .control-group[data-accent-color="purple"] .slider::-webkit-slider-thumb,
         .control-group[data-accent-color="purple"] .slider::-moz-range-thumb { background: var(--accent-purple); }
         .control-group[data-accent-color="teal"] .slider::-webkit-slider-thumb,
@@ -270,7 +287,7 @@
         .control-group .texture-control {
             display: flex;
             align-items: center;
-            justify-content: center; /* 中央寄せ */
+            justify-content: center;
             padding-top: 10px;
             margin-bottom: 10px;
         }
@@ -300,7 +317,6 @@
             border-color: var(--accent-color, var(--primary-blue));
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
         }
-        /* チェックマーク */
         .control-group .texture-control input[type="checkbox"]:checked::after {
             content: '✔';
             position: absolute;
@@ -311,7 +327,6 @@
             color: white;
             font-weight: bold;
         }
-        /* チェックボックスのアクセントカラーを親グループから継承 */
         .control-group[data-accent-color="purple"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-purple); border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.25); }
         .control-group[data-accent-color="teal"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-teal); border-color: var(--accent-teal); box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.25); }
         .control-group[data-accent-color="orange"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-orange); border-color: var(--accent-orange); box-shadow: 0 0 0 3px rgba(253, 126, 20, 0.25); }
@@ -319,22 +334,21 @@
         .control-group[data-accent-color="green"] .texture-control input[type="checkbox"]:checked { background-color: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25); }
 
 
-        /* 全画面表示時のスタイル */
         #canvas-container:fullscreen {
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: var(--dark-gray); /* 全画面時は背景を暗く */
+            background-color: var(--dark-gray); 
             border: none;
             border-radius: 0;
             box-shadow: none;
         }
         #canvas-container:fullscreen canvas {
             max-width: none;
-            object-fit: contain; /* アスペクト比を保持して最大化 */
-            width: auto; /* object-fit を機能させるため */
+            object-fit: contain; 
+            width: auto; 
             height: 100%;
         }
 
@@ -347,6 +361,7 @@
     <div id="main-controls">
         <button id="play-pause-btn">再生</button>
         <button id="fullscreen-btn">全画面</button>
+        <button id="record-btn">録画</button>
     </div>
 
     <div id="canvas-container">
@@ -425,6 +440,7 @@
 
             const playPauseBtn = document.getElementById('play-pause-btn');
             const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const recordBtn = document.getElementById('record-btn'); // ★録画ボタン取得
             const durationInput = document.getElementById('duration-input');
             const colorButtons = document.getElementById('color-buttons');
             const soundButtons = document.getElementById('sound-buttons');
@@ -438,19 +454,15 @@
                 ORIGINAL_DURATION = video.duration;
                 canvas.width = video.videoWidth / 3; 
                 canvas.height = video.videoHeight;
-                
-                // 0秒時点ではなく、0.05秒時点のフレームを読み込む
                 video.currentTime = 0.05; 
             }, { once: true });
 
-            // seekが完了したら最初のフレームを描画
             video.addEventListener('seeked', (e) => {
-                // アニメーションループが動いていない（＝停止中）場合のみ描画
                 if (!animationFrameId) {
                     drawFrameAndStop(); 
-                    setPlaybackSpeed(); // 速度もこのタイミングで初期化
+                    setPlaybackSpeed(); 
                 }
-            }, { once: true }); // 最初のseek時のみ実行
+            }, { once: true }); 
 
             let animationFrameId = null;
             let targetColor = 'gray'; 
@@ -459,6 +471,10 @@
             let NOISE_BLOCK_SIZE = 2; 
             
             let persistentNoiseCache = new Map();
+
+            // ★録画用変数
+            let mediaRecorder;
+            let recordedChunks = [];
 
             // Web Audio API (変更なし)
             let audioCtx;
@@ -538,7 +554,7 @@
                 animationFrameId = null;
             }
 
-            // ★変更: ピクセル処理（staticBoundaryY の調整）
+            // ピクセル処理 (変更なし)
             function applyPixelProcessing() {
                 if (targetColor !== 'gray' || targetGlassColor !== 228 || isTextureEnabled) {
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -549,10 +565,7 @@
                     const duration = ORIGINAL_DURATION || 18.0;
                     const progress = Math.min(1, video.currentTime / duration);
                     
-                    // ★変更: 境界Y座標を動的に計算 (下から1/10から下から3/10へ移動)
-                    // progressが0のとき、 staticStart = 1 - 1/10 = 9/10
-                    // progressが1のとき、 staticEnd = 1 - 3/10 = 7/10
-                    // interpolate = (9/10) * (1 - progress) + (7/10) * progress
+                    // 境界Y座標を動的に計算 (下から1/10から下から3/10へ移動)
                     const staticBoundaryY = imgHeight * ( (1 - (1/10)) * (1 - progress) + (1 - (3/10)) * progress );
 
                     const noiseCache = new Map();
@@ -565,8 +578,7 @@
                         const isSandGray = Math.abs(r - g) < 20 && Math.abs(g - b) < 20;
                         const isSandBrightness = r > 30 && r < 100;
                         
-                        // ガラス(#E4E4E4)の判定を厳密化 (許容範囲を少し広げた)
-                        const tolerance = 20; // 許容範囲を20に設定 (228 +/- 20)
+                        const tolerance = 20; 
                         const isGlass = (r > (228 - tolerance) && r < (228 + tolerance)) && 
                                       (g > (228 - tolerance) && g < (228 + tolerance)) && 
                                       (b > (228 - tolerance) && b < (228 + tolerance)) && 
@@ -588,13 +600,11 @@
                                 let randomNoise;
 
                                 if (y > staticBoundaryY) {
-                                    // 静的ノイズ（積もった砂）
                                     if (!persistentNoiseCache.has(blockKey)) {
                                         persistentNoiseCache.set(blockKey, (Math.random() * 40) - 20);
                                     }
                                     randomNoise = persistentNoiseCache.get(blockKey);
                                 } else {
-                                    // 動的ノイズ（落ちている砂）
                                     if (noiseCache.has(blockKey)) {
                                         randomNoise = noiseCache.get(blockKey);
                                     } else {
@@ -650,7 +660,7 @@
                 animationFrameId = null;
             }
 
-            // 再生速度のロジック
+            // 再生速度のロジック (変更なし)
             function setPlaybackSpeed() {
                 if (video.currentTime > 0.05 && video.paused) { 
                     video.currentTime = 0.05; 
@@ -667,10 +677,12 @@
             durationInput.addEventListener('change', setPlaybackSpeed);
             
 
-            // メイン再生/停止ロジック
+            // メイン再生/停止ロジック (変更なし)
             playPauseBtn.addEventListener('click', togglePlayPause);
 
             function togglePlayPause() {
+                // 録画中は再生/停止を無効化
+                if (mediaRecorder && mediaRecorder.state === 'recording') return;
                 initAudio();
                 if (video.paused) {
                     setPlaybackSpeed(); 
@@ -701,16 +713,32 @@
                         node.gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
                     }
                 });
+                
+                // ★追加: 録画中にもし手動で停止されたら、録画を強制停止
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    // UIリセットは 'ended' イベントハンドラに任せる
+                }
             });
 
+            // ★変更: 'ended' イベントに録画停止処理を追加
             video.addEventListener('ended', () => {
                 playPauseBtn.textContent = '再生';
                 stopCanvasLoop();
                 video.currentTime = 0.05; 
                 drawFrameAndStop(); 
+                
+                // ★追加: 録画中なら停止してダウンロード処理へ
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+                // ★追加: 録画ボタンのUIをリセット
+                recordBtn.textContent = '録画';
+                recordBtn.disabled = false;
+                playPauseBtn.disabled = false;
             });
 
-            // 色変更ロジック
+            // コントロールのイベントリスナー (変更なし)
             colorButtons.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON') {
                     targetColor = e.target.dataset.color;
@@ -720,8 +748,6 @@
                     updateActiveButton(colorButtons, e.target);
                 }
             });
-
-            // ノイズ変更ロジック
             soundButtons.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON') {
                     initAudio();
@@ -748,23 +774,18 @@
                     updateActiveButton(soundButtons, e.target);
                 }
             });
-
             function updateActiveButton(container, activeButton) {
                 container.querySelectorAll('button').forEach(btn => {
                     btn.classList.remove('active');
                 });
                 activeButton.classList.add('active');
             }
-            
-            // ガラス色変更ロジック
             glassColorSlider.addEventListener('input', (e) => {
                 targetGlassColor = parseInt(e.target.value, 10);
                 if (video.paused && !animationFrameId) {
                     drawFrameAndStop(); 
                 }
             });
-            
-            // テクスチャ（斑点）切り替えロジック
             textureToggle.addEventListener('change', () => {
                 isTextureEnabled = textureToggle.checked;
                 persistentNoiseCache.clear(); 
@@ -772,8 +793,6 @@
                     drawFrameAndStop();
                 }
             });
-
-            // テクスチャサイズ変更ロジック
             textureSizeSlider.addEventListener('input', (e) => {
                 NOISE_BLOCK_SIZE = parseInt(e.target.value, 10);
                 persistentNoiseCache.clear(); 
@@ -781,8 +800,6 @@
                     drawFrameAndStop();
                 }
             });
-
-            // 全画面切り替えロジック
             fullscreenBtn.addEventListener('click', () => {
                 if (!document.fullscreenElement) {
                     if (canvasContainer.requestFullscreen) {
@@ -797,6 +814,71 @@
                         document.exitFullscreen();
                     }
                 }
+            });
+
+
+            // ----- 12. ★新規追加: 録画ロジック -----
+            recordBtn.addEventListener('click', () => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    // 録画中の場合は停止（通常は'ended'で停止するが、手動停止用）
+                    mediaRecorder.stop();
+                    recordBtn.textContent = '録画';
+                    recordBtn.disabled = false;
+                    playPauseBtn.disabled = false;
+                    return;
+                }
+
+                // 録画の準備
+                recordedChunks = [];
+                // 30fps を要求（ただし、処理負荷により下回る可能性が高い）
+                const stream = canvas.captureStream(30); 
+                
+                // WebM形式を指定
+                const options = { mimeType: 'video/webm; codecs=vp9' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    console.error('video/webm; codecs=vp9 はサポートされていません。');
+                    alert('お使いのブラウザでは録画がサポートされていません。');
+                    return;
+                }
+
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    // 録画が停止したらダウンロード処理
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'digital-hourglass.webm'; // ファイル名を .webm に
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    // UIリセット (endedイベントでも実行されるが、念のため)
+                    recordBtn.textContent = '録画';
+                    recordBtn.disabled = false;
+                    playPauseBtn.disabled = false;
+                };
+
+                // 録画開始
+                mediaRecorder.start();
+
+                // UIを変更
+                recordBtn.textContent = '録画中...';
+                recordBtn.disabled = true;
+                playPauseBtn.disabled = true; // 録画中は再生/停止を操作させない
+
+                // ビデオを最初から再生
+                video.currentTime = 0.05;
+                setPlaybackSpeed(); // 速度を再設定
+                video.play();
             });
 
         });

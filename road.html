@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動く縞模様ジェネレーター</title>
+    <style>
+        /* CSS変数の初期値を定義 */
+        :root {
+            --color1: #FF0000; /* 縞模様の色 (デフォルト: 赤) */
+            --color2: #FFFFFF; /* 背景色 (デフォルト: 白) */
+            --speed: 5s;       /* アニメーション速度 (デフォルト: 5秒) */
+            --stripe-width: 15px; /* 縞模様の幅 (デフォルト: 15px) */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+            background-color: #f0f0f0; /* ページ自体の背景色 */
+        }
+
+        /* 縞模様を表示するメインコンテナ */
+        #stripe-container {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+
+            /* [変更] 色の境界をはっきりさせるため、
+               color2の開始位置 (var(--stripe-width)) を明記
+            */
+            background: repeating-linear-gradient(
+                90deg,
+                var(--color1),
+                var(--color1) var(--stripe-width),
+                var(--color2) var(--stripe-width), /* ← この行で開始位置を明示 */
+                var(--color2) calc(var(--stripe-width) * 2)
+            );
+
+            /* 背景サイズを縞模様の1サイクル分 (幅*2) に設定 */
+            background-size: calc(var(--stripe-width) * 2) 100%;
+
+            /* アニメーションを適用 */
+            animation: moveStripes var(--speed) linear infinite;
+        }
+
+        /* アニメーションの移動量を背景サイズと合わせる */
+        @keyframes moveStripes {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: calc(var(--stripe-width) * 2) 0;
+            }
+        }
+
+        /* --- 設定タブのスタイル --- */
+        #settings {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid #ccc;
+            width: 300px; /* 幅を広く (250px -> 300px) */
+        }
+
+        /* 設定タブのヘッダー (タイトルとトグルボタン) */
+        #settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 15px; /* ヘッダーと中身の間隔 */
+        }
+
+        #settings h3 {
+            margin: 0; /* 余白をリセット */
+        }
+
+        /* 折りたたみボタン */
+        #toggle-settings {
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 25px;
+            height: 25px;
+            line-height: 23px; /* テキストを中央に */
+            text-align: center;
+            padding: 0;
+        }
+        #toggle-settings:hover {
+            background: #ddd;
+        }
+
+        /* 折りたたまれた時のスタイル */
+        #settings-body.collapsed {
+            display: none;
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .color-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .color-options label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        
+        .color-options input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        .slider-value {
+            text-align: right;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="stripe-container"></div>
+
+    <div id="settings">
+        <div id="settings-header">
+            <h3>🎨 縞模様の設定</h3>
+            <button id="toggle-settings">－</button>
+        </div>
+
+        <div id="settings-body">
+            <div class="setting-group">
+                <label>縞模様の色</label>
+                <div class="color-options" id="color1-picker">
+                    <label><input type="radio" name="color1" value="#FF0000" checked> 赤 (R)</label>
+                    <label><input type="radio" name="color1" value="#00FF00"> 緑 (G)</label>
+                    <label><input type="radio" name="color1" value="#0000FF"> 青 (B)</label>
+                    <label><input type="radio" name="color1" value="#00FFFF"> シアン (C)</label>
+                    <label><input type="radio" name="color1" value="#FF00FF"> マゼンタ (M)</label>
+                    <label><input type="radio" name="color1" value="#FFFF00"> 黄 (Y)</label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label for="color2-slider">背景色 (白 ↔ 黒)</label>
+                <input type="range" id="color2-slider" min="0" max="255" value="255">
+                <div class="slider-value" id="color2-value">白 (255)</div>
+            </div>
+
+            <div class="setting-group">
+                <label for="speed-slider">スピード (遅い ↔ 速い)</label>
+                <input type="range" id="speed-slider" min="1" max="10" value="6">
+                <div class="slider-value" id="speed-value">5</div>
+            </div>
+
+            <div class="setting-group">
+                <label for="width-slider">縞の幅 (細い ↔ 太い)</label>
+                <input type="range" id="width-slider" min="5" max="50" value="15">
+                <div class="slider-value" id="width-value">15px</div>
+            </div>
+
+        </div> </div> <script>
+        // ページが読み込まれたら実行
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const root = document.documentElement;
+            
+            // --- 折りたたみ機能 ---
+            const toggleButton = document.getElementById('toggle-settings');
+            const settingsBody = document.getElementById('settings-body');
+
+            toggleButton.addEventListener('click', () => {
+                // 'collapsed' クラスを付け外しする
+                settingsBody.classList.toggle('collapsed');
+                
+                // ボタンのテキストを「＋」と「－」で切り替え
+                if (settingsBody.classList.contains('collapsed')) {
+                    toggleButton.textContent = '＋';
+                } else {
+                    toggleButton.textContent = '－';
+                }
+            });
+
+            // --- 1. 縞模様の色 (Color 1) ---
+            const colorPicker = document.getElementById('color1-picker');
+            
+            colorPicker.addEventListener('change', (e) => {
+                if (e.target.name === 'color1') {
+                    root.style.setProperty('--color1', e.target.value);
+                }
+            });
+
+            // --- 2. 背景色 (Color 2 / グレースケール) ---
+            const color2Slider = document.getElementById('color2-slider');
+            const color2Value = document.getElementById('color2-value');
+
+            color2Slider.addEventListener('input', (e) => {
+                const value = e.target.value; 
+                const color = `rgb(${value}, ${value}, ${value})`;
+                root.style.setProperty('--color2', color);
+                
+                let label = value;
+                if (value == 255) label = "白 (255)";
+                if (value == 0) label = "黒 (0)";
+                color2Value.textContent = label;
+            });
+
+            // --- 3. スピード ---
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+
+            speedSlider.addEventListener('input', (e) => {
+                const sliderValue = e.target.value; 
+                const speed = (11 - sliderValue) + 's';
+                root.style.setProperty('--speed', speed);
+                speedValue.textContent = (11 - sliderValue);
+            });
+
+            // --- 4. 縞の幅 ---
+            const widthSlider = document.getElementById('width-slider');
+            const widthValue = document.getElementById('width-value');
+
+            widthSlider.addEventListener('input', (e) => {
+                const value = e.target.value; // スライダーの値 (例: 15)
+                
+                // CSS変数を更新 (単位 'px' を付ける)
+                root.style.setProperty('--stripe-width', value + 'px');
+                
+                // 表示ラベルを更新
+                widthValue.textContent = value + 'px';
+            });
+
+        });
+    </script>
+
+</body>
+</html>

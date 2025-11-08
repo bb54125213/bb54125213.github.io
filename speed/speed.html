@@ -67,6 +67,10 @@
                     <textarea id="feedback" name="feedback" rows="4" placeholder="自由にご記入ください..."></textarea>
                 </div>
             </fieldset>
+            
+            <div id="psychology-code-summary" class="stimulus-container hidden" style="margin-bottom: 20px; text-align: left;">
+                </div>
+
             <div id="results-summary" class="results-summary hidden"></div>
             <button id="view-results-button" class="home-button">結果を提出して終了</button>
         </div>
@@ -302,6 +306,7 @@
             step3.classList.remove('hidden');
         }
         
+        // ★★★ 関数 handleSubmitAndShowResults を修正 ★★★
         function handleSubmitAndShowResults() {
             viewResultsButton.disabled = true;
             viewResultsButton.textContent = '結果を送信中...';
@@ -317,14 +322,37 @@
                 body: JSON.stringify(finalData)
             })
             .then(() => {
+                // --- 心理コード生成ロジック ---
+                // finalDurationB が短い（＝速く感じた）順にソート
+                const sortedResults = [...results].sort((a, b) => a.finalDurationB - b.finalDurationB);
+                
+                const psychologyCode = sortedResults.map(res => {
+                    const condition = res.stimulus.condition;
+                    if (condition.startsWith('Sound')) {
+                        return condition.replace('Sound', ''); // 'Sound1' -> '1'
+                    }
+                    return condition; // 'R', 'G', 'B', etc.
+                }).join('');
+                
+                // --- 心理コード表示 ---
+                const psychologyCodeSummary = document.getElementById('psychology-code-summary');
+                psychologyCodeSummary.innerHTML = `
+                    <h2 style="margin-top: 0; font-size: 1.2em;">あなたの心理コード</h2>
+                    <p style="font-size: 1.4em; font-weight: bold; margin: 10px 0; letter-spacing: 2px; word-wrap: break-word;">${psychologyCode}</p>
+                    <p style="font-size: 0.9em; text-align: left; margin: 0;">※ このコードは、あなたが「遅い」と感じた順（左）から「速い」と感じた順（右）に並んでいます。</p>
+                `;
+                // hidden クラスを外し、表示する
+                psychologyCodeSummary.classList.remove('hidden');
+
+                // --- 既存の結果サマリー表示 ---
                 let summaryHtml = '<ul>';
                 results.forEach(res => {
                     const diff = res.finalDurationB - EXPERIMENT_SETTINGS.durationA;
                     let feeling = '';
                     if (diff > 0.1) {
-                        feeling = `基準より <strong>${Math.abs(diff).toFixed(2)}秒 遅い</strong> と感じていました。`;
-                    } else if (diff < -0.1) {
                         feeling = `基準より <strong>${Math.abs(diff).toFixed(2)}秒 速い</strong> と感じていました。`;
+                    } else if (diff < -0.1) {
+                        feeling = `基準より <strong>${Math.abs(diff).toFixed(2)}秒 遅い</strong> と感じていました。`;
                     } else {
                         feeling = '基準とほぼ同じ速度だと感じていました。';
                     }
@@ -336,6 +364,8 @@
                 summaryHtml += '</ul>';
                 resultsSummary.innerHTML = summaryHtml;
                 resultsSummary.classList.remove('hidden');
+                
+                // --- フォームとボタンの表示切替 ---
                 document.querySelector('#step3 fieldset').classList.add('hidden');
                 viewResultsButton.textContent = 'ホームページに戻る';
                 viewResultsButton.disabled = false;

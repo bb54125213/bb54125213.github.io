@@ -26,14 +26,12 @@
             height: 100vh;
             overflow: hidden;
 
-            /* [変更] 色の境界をはっきりさせるため、
-               color2の開始位置 (var(--stripe-width)) を明記
-            */
+            /* 色の境界をはっきりさせる */
             background: repeating-linear-gradient(
                 90deg,
                 var(--color1),
                 var(--color1) var(--stripe-width),
-                var(--color2) var(--stripe-width), /* ← この行で開始位置を明示 */
+                var(--color2) var(--stripe-width), 
                 var(--color2) calc(var(--stripe-width) * 2)
             );
 
@@ -64,7 +62,8 @@
             padding: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             border: 1px solid #ccc;
-            width: 300px; /* 幅を広く (250px -> 300px) */
+            width: 300px; 
+            z-index: 100; /* テキストより手前に表示 */
         }
 
         /* 設定タブのヘッダー (タイトルとトグルボタン) */
@@ -140,6 +139,40 @@
             color: #555;
         }
 
+        /* 自動変更ボタンのスタイル */
+        #auto-change-button {
+            width: 100%;
+            padding: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        #auto-change-button.active { /* 動作中のスタイル */
+            background-color: #dc3545;
+        }
+
+
+        /* 画面下のテキストのスタイル */
+        #footer-text {
+            position: fixed;
+            bottom: 40px; /* 画面下からの距離 */
+            left: 50%;    /* 画面の左右中央 */
+            writing-mode: vertical-rl; 
+            transform-origin: center; 
+            transform: translateX(-50%) rotate(90deg);
+            
+            font-size: 36px;
+            font-weight: bold;
+            color: rgba(0, 0, 0, 0.75);
+            background-color: rgba(255, 255, 255, 0.6);
+            padding: 15px 10px;
+            border-radius: 8px;
+            letter-spacing: 2px;
+        }
+
     </style>
 </head>
 <body>
@@ -172,18 +205,24 @@
             </div>
 
             <div class="setting-group">
-                <label for="speed-slider">スピード (遅い ↔ 速い)</label>
-                <input type="range" id="speed-slider" min="1" max="10" value="6">
-                <div class="slider-value" id="speed-value">5</div>
+                <label for="speed-slider">アニメーション時間 (速い ↔ 遅い)</label>
+                <input type="range" id="speed-slider" min="1" max="200" value="50">
+                <div class="slider-value" id="speed-value">5.0s</div>
             </div>
 
             <div class="setting-group">
                 <label for="width-slider">縞の幅 (細い ↔ 太い)</label>
-                <input type="range" id="width-slider" min="5" max="50" value="15">
+                <input type="range" id="width-slider" min="1" max="100" value="15">
                 <div class="slider-value" id="width-value">15px</div>
             </div>
 
-        </div> </div> <script>
+            <div class="setting-group" style="margin-bottom: 0;">
+                <button id="auto-change-button">自動変更を開始</button>
+            </div>
+
+        </div> </div> <div id="footer-text">歩いてみよう！</div>
+
+    <script>
         // ページが読み込まれたら実行
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -194,21 +233,15 @@
             const settingsBody = document.getElementById('settings-body');
 
             toggleButton.addEventListener('click', () => {
-                // 'collapsed' クラスを付け外しする
                 settingsBody.classList.toggle('collapsed');
-                
-                // ボタンのテキストを「＋」と「－」で切り替え
-                if (settingsBody.classList.contains('collapsed')) {
-                    toggleButton.textContent = '＋';
-                } else {
-                    toggleButton.textContent = '－';
-                }
+                toggleButton.textContent = settingsBody.classList.contains('collapsed') ? '＋' : '－';
             });
 
             // --- 1. 縞模様の色 (Color 1) ---
             const colorPicker = document.getElementById('color1-picker');
             
             colorPicker.addEventListener('change', (e) => {
+                stopAutoChange(); // [変更なし] 手動操作で自動変更を停止
                 if (e.target.name === 'color1') {
                     root.style.setProperty('--color1', e.target.value);
                 }
@@ -219,6 +252,8 @@
             const color2Value = document.getElementById('color2-value');
 
             color2Slider.addEventListener('input', (e) => {
+                // stopAutoChange(); // [変更] 背景色スライダーは自動変更を停止しない
+                
                 const value = e.target.value; 
                 const color = `rgb(${value}, ${value}, ${value})`;
                 root.style.setProperty('--color2', color);
@@ -234,10 +269,10 @@
             const speedValue = document.getElementById('speed-value');
 
             speedSlider.addEventListener('input', (e) => {
-                const sliderValue = e.target.value; 
-                const speed = (11 - sliderValue) + 's';
+                const sliderValue = e.target.value; // 1 ～ 200
+                const speed = (sliderValue / 10).toFixed(1) + 's';
                 root.style.setProperty('--speed', speed);
-                speedValue.textContent = (11 - sliderValue);
+                speedValue.textContent = speed;
             });
 
             // --- 4. 縞の幅 ---
@@ -245,13 +280,56 @@
             const widthValue = document.getElementById('width-value');
 
             widthSlider.addEventListener('input', (e) => {
-                const value = e.target.value; // スライダーの値 (例: 15)
-                
-                // CSS変数を更新 (単位 'px' を付ける)
+                const value = e.target.value; // 1 ～ 100
                 root.style.setProperty('--stripe-width', value + 'px');
-                
-                // 表示ラベルを更新
                 widthValue.textContent = value + 'px';
+            });
+
+            // --- 5. 自動変更機能 ---
+
+            const autoChangeButton = document.getElementById('auto-change-button');
+            let isAutoChanging = false;
+            let autoChangeInterval = null;
+            const colorList = ['#FF0000', '#00FF00', '#0000FF', '#00FFFF', '#FF00FF', '#FFFF00'];
+            
+            // [変更] 縞模様の色(Color 1)だけをランダムに変更する関数
+            function autoChangeColors() {
+                // 1. 縞模様の色 (Color 1) をランダムに変更
+                const randomIndex = Math.floor(Math.random() * colorList.length);
+                const randomColor = colorList[randomIndex];
+                root.style.setProperty('--color1', randomColor);
+                // ラジオボタンの表示も同期
+                document.querySelector(`input[name="color1"][value="${randomColor}"]`).checked = true;
+
+                // 2. 背景色 (Color 2) の変更処理は削除
+            }
+
+            // 自動変更を停止する関数
+            function stopAutoChange() {
+                if (isAutoChanging) {
+                    clearInterval(autoChangeInterval);
+                    autoChangeInterval = null;
+                    isAutoChanging = false;
+                    autoChangeButton.textContent = '自動変更を開始';
+                    autoChangeButton.classList.remove('active');
+                }
+            }
+
+            // 自動変更ボタンのクリックイベント
+            autoChangeButton.addEventListener('click', () => {
+                if (isAutoChanging) {
+                    // 停止
+                    stopAutoChange();
+                } else {
+                    // 開始
+                    isAutoChanging = true;
+                    autoChangeButton.textContent = '自動変更を停止';
+                    autoChangeButton.classList.add('active');
+                    
+                    // [変更] 10秒ごと (10000ms) に色を変更
+                    autoChangeColors(); // 押してすぐに1回変更
+                    autoChangeInterval = setInterval(autoChangeColors, 10000); 
+                }
             });
 
         });

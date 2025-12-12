@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>落下速度テスト（ソート版）</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="simplespeed.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <style>
+        /* --- 追加・調整用スタイル --- */
+
+        /* レイアウト全体枠（左右分割） */
+        .split-layout {
+            display: flex;
+            gap: 20px;
+            max-width: 800px;
+            margin: 20px auto 100px auto;
+            align-items: flex-start;
+        }
+
+        /* 左カラム：縦長アニメーション（追従型） */
+        .left-column {
+            width: 80px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 20px;
+            z-index: 50;
+        }
+
+        /* ★変更点: シンプルでくっきりした枠にする */
+        .animation-wrapper {
+            width: 100%;
+            height: 500px;
+            background-color: #fff; /* 背景は白で見やすく */
+            border-radius: 4px;
+            border: 3px solid #444; /* 枠線を濃く、太く、くっきりと */
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            /* 余計な影や装飾は一切なし */
+        }
+
+        /* バー（フラットでシンプルに） */
+        .bar {
+            width: 80%;
+            left: 10%; /* 中央に配置 */
+            height: 20px;
+            border-radius: 2px;
+            position: absolute;
+            top: 0;
+            transform: translateY(-100%);
+            /* 影なし */
+        }
+        
+        @keyframes fall {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(550px); }
+        }
+
+        /* 右カラム：リストエリア + 軸 */
+        .right-column {
+            flex-grow: 1;
+            display: flex;
+            gap: 15px;
+        }
+
+        /* 軸ガイド（右側に配置） */
+        .axis-guide {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            flex-shrink: 0;
+            width: 40px;
+        }
+        .axis-badge {
+            writing-mode: vertical-rl;
+            padding: 10px 6px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #666; /* シンプルなグレー */
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+        }
+        
+        .axis-line {
+            flex-grow: 1;
+            width: 3px;
+            background: #ccc;
+            margin: 5px 0;
+            position: relative;
+        }
+        .axis-line::before {
+            content: ""; position: absolute; top: 0; left: -3.5px;
+            border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid #ccc;
+        }
+        .axis-line::after {
+            content: ""; position: absolute; bottom: 0; left: -3.5px;
+            border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 8px solid #ccc;
+        }
+
+        /* ソートリスト本体 */
+        .sort-container {
+            flex-grow: 1;
+        }
+
+        .sort-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* リストアイテム */
+        .sort-item {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            padding: 15px;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        
+        /* なめらかな移動（SortableJS用クラス） */
+        .sort-drag {
+            opacity: 0.9;
+            background: #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            transform: scale(1.02);
+            z-index: 100;
+            cursor: grabbing;
+        }
+        .sort-ghost {
+            opacity: 0.3;
+            background-color: #ddd;
+            border: 2px dashed #999;
+        }
+
+        /* 未再生状態 */
+        .sort-item.unplayed {
+            background-color: #f5f5f5;
+            color: #888;
+            border: 1px dashed #bbb;
+        }
+        .sort-item.unplayed .item-info {
+            opacity: 0.6;
+        }
+        .sort-item.unplayed::before {
+            content: "▶";
+            margin-right: 10px;
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        /* 再生済み */
+        .sort-item.played {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            color: #000;
+        }
+
+        /* 再生中のハイライト */
+        .sort-item.playing {
+            background-color: #e8f5e9 !important;
+            border-color: #2ecc71 !important;
+            box-shadow: 0 0 5px rgba(46, 204, 113, 0.4);
+            z-index: 10;
+            opacity: 1 !important;
+        }
+
+        .item-info {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+
+        .icon-sound {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* ハンドル部分 */
+        .drag-handle {
+            font-size: 1.5rem;
+            color: #ccc;
+            padding: 10px;
+            cursor: grab;
+            touch-action: none;
+        }
+        .drag-handle:active {
+            color: #555;
+            cursor: grabbing;
+        }
+
+        /* フッターボタン */
+        .footer-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            z-index: 200;
+        }
+        
+        .btn-submit {
+            width: 100%;
+            max-width: 300px;
+            padding: 15px;
+            border-radius: 30px;
+            border: none;
+            background-color: #c0392b;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            opacity: 1;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-submit:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.8;
+            box-shadow: none;
+        }
+
+        /* ヘルパー */
+        .hidden { display: none !important; }
+
+        /* 結果コード表示エリア */
+        .code-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        #psychology-code-display {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+            padding: 15px;
+            background: #fdfdfd;
+            border: 2px dashed #555;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+            word-wrap: break-word;
+            border-radius: 8px;
+        }
+        
+        .copy-btn {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95em;
+            color: #333;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .copy-btn:hover { background-color: #e0e0e0; }
+        .copy-btn.copied {
+            background-color: #27ae60;
+            color: white;
+            border-color: #27ae60;
+            pointer-events: none;
+        }
+        .copy-btn.copied::before { content: "✓ "; }
+
+    </style>
+</head>
+<body>
+    <div class="side-images left" id="side-images-left"></div>
+    <div class="side-images right" id="side-images-right"></div>
+    
+    <div class="container">
+        <h1>落下スピード感覚テスト (ソート版)</h1>
+        
+        <div id="step1">
+            <p>まず、あなたについて教えてください。</p>
+            <form id="userInfoForm">
+                <fieldset>
+                    <legend>回答者情報</legend>
+                    <div class="form-group">
+                        <label for="age">年代:</label>
+                        <select id="age" name="age" required>
+                            <option value="">選択してください</option>
+                            <option value="10代">10代</option><option value="20代">20代</option>
+                            <option value="30代">30代</option><option value="40代">40代</option>
+                            <option value="50代">50代</option><option value="60代以上">60代以上</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>性別:</label>
+                        <div class="radio-group">
+                            <input type="radio" id="gender_male" name="gender" value="男性" required><label for="gender_male">男性</label>
+                            <input type="radio" id="gender_female" name="gender" value="女性"><label for="gender_female">女性</label>
+                            <input type="radio" id="gender_other" name="gender" value="その他"><label for="gender_other">その他</label>
+                        </div>
+                    </div>
+                </fieldset>
+                <button type="submit">次へ進む</button>
+            </form>
+        </div>
+
+        <div id="step-tutorial" class="hidden">
+            <h2 class="section-title">テストの説明</h2>
+            <div class="example-box">
+                <p>様々な「色」や「音」とともに、バーが画面を落下します。<br>
+                あなたの感覚で、<strong>落下スピードが速い順（上）</strong>に並べ替えてください。</p>
+                <hr style="margin: 15px 0; border:0; border-top:1px dashed #ccc;">
+                <p><strong>【操作方法】</strong></p>
+                <ul style="padding-left: 20px; line-height: 1.8;">
+                    <li>リストの行を<strong>タップすると左側で再生</strong>されます。</li>
+                    <li>右側の<strong>「≡」を長押しして移動</strong>できます。</li>
+                    <li><span style="color:#e74c3c; font-weight:bold;">※ 全て再生すると完了ボタンが押せます。</span></li>
+                </ul>
+            </div>
+            <button id="btnStartTest" class="home-button color-1">理解しました（テスト開始）</button>
+        </div>
+
+        <div id="step2" class="hidden">
+            <div class="split-layout">
+                <div class="left-column">
+                    <div class="animation-wrapper">
+                        <div id="mainBar" class="bar"></div>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    
+                    <div class="sort-container">
+                        <ul id="sortList" class="sort-list">
+                            </ul>
+                    </div>
+
+                    <div class="axis-guide">
+                        <div class="axis-badge">速い</div>
+                        <div class="axis-line"></div>
+                        <div class="axis-badge">遅い</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-controls">
+                <button id="btnToFeedback" class="btn-submit" disabled>決定して次へ</button>
+            </div>
+        </div>
+
+        <div id="step3" class="hidden">
+            <h2 class="section-title">並べ替え完了</h2>
+            <p style="text-align:center;">結果を確定します。最後に、ご感想をお願いします。</p>
+            
+            <fieldset>
+                <legend>ご感想（任意）</legend>
+                <div class="form-group">
+                    <label for="feedback">テストの感想や、気づいたことなどをご記入ください。</label>
+                    <textarea id="feedback" name="feedback" rows="4" placeholder="自由にご記入ください..."></textarea>
+                </div>
+            </fieldset>
+            
+            <button id="btnFinalSubmit" class="home-button">結果を送信して終了</button>
+        </div>
+
+        <div id="step4" class="hidden">
+            <h2 class="section-title">ご協力ありがとうございました</h2>
+            <div style="text-align: center;">
+                <p>あなたの回答に基づく心理コード</p>
+                
+                <div class="code-container">
+                    <div id="psychology-code-display"></div>
+                    <button id="btnCopyCode" class="copy-btn">コードをコピーする</button>
+                </div>
+                
+                <p style="font-size:0.9em; color:#666;">(左:遅く感じた → 右:速く感じた)</p>
+            </div>
+            
+            <div style="margin-top:30px;">
+                <button onclick="window.location.href='../index.html'" class="home-button color-3">トップページに戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 設定エリア ---
+        const DURATION = 1.0; // 落下時間
+        
+        // 9項目
+        const ITEMS = [
+            { id: 'R', name: '赤色', type: 'color', val: '#ff0000' },
+            { id: 'G', name: '緑色', type: 'color', val: '#00ff00' },
+            { id: 'B', name: '青色', type: 'color', val: '#0000ff' },
+            { id: 'C', name: '水色', type: 'color', val: '#00ffff' },
+            { id: 'M', name: '紫色', type: 'color', val: '#ff00ff' },
+            { id: 'Y', name: '黄色', type: 'color', val: '#ffff00' },
+            { id: 'Sound1', name: '音 A', type: 'sound', val: 330 }, 
+            { id: 'Sound2', name: '音 B', type: 'sound', val: 440 },
+            { id: 'Sound3', name: '音 C', type: 'sound', val: 550 }
+        ];
+
+        let userInfo = {};
+        let calculatedScores = {}; 
+        let sortedOrderIds = []; 
+        let audioContext;
+        let startTime;
+        let isPlaying = false;
+        
+        let playedItems = new Set(); // 再生済みID
+
+        // --- DOM要素 ---
+        const els = {
+            step1: document.getElementById('step1'),
+            stepTutorial: document.getElementById('step-tutorial'),
+            step2: document.getElementById('step2'),
+            step3: document.getElementById('step3'),
+            step4: document.getElementById('step4'),
+            form: document.getElementById('userInfoForm'),
+            btnStartTest: document.getElementById('btnStartTest'),
+            sortList: document.getElementById('sortList'),
+            mainBar: document.getElementById('mainBar'),
+            btnToFeedback: document.getElementById('btnToFeedback'),
+            btnFinalSubmit: document.getElementById('btnFinalSubmit'),
+            feedbackInput: document.getElementById('feedback'),
+            codeDisplay: document.getElementById('psychology-code-display'),
+            btnCopyCode: document.getElementById('btnCopyCode')
+        };
+
+        // --- 背景画像 (既存) ---
+        const leftImageContainer = document.getElementById('side-images-left');
+        const rightImageContainer = document.getElementById('side-images-right');
+        function setupSideImages() {
+            const imageBaseUrl = 'https://bb54125213.github.io/image/';
+            const originalSources = [
+                { src: `${imageBaseUrl}image11.png` }, { src: `${imageBaseUrl}image21.png` }, { src: `${imageBaseUrl}image31.png` }
+            ];
+            [leftImageContainer, rightImageContainer].forEach((container, idx) => {
+                container.innerHTML = '';
+                for(let i=0; i<4; i++){
+                    const div = document.createElement('div');
+                    div.className = 'image-wrapper';
+                    div.style.position = 'absolute';
+                    div.style.top = (i * 25 + 5) + '%';
+                    const img = document.createElement('img');
+                    img.src = originalSources[i % 3].src;
+                    img.style.maxWidth = '50vw';
+                    if(idx === 0) {
+                        div.style.left = '-10%'; div.style.transform = 'translateX(-30%)';
+                    } else {
+                        div.style.right = '-10%'; div.style.transform = 'translateX(30%)';
+                    }
+                    div.appendChild(img);
+                    container.appendChild(div);
+                }
+            });
+        }
+        window.addEventListener('DOMContentLoaded', setupSideImages);
+
+
+        // --- ロジック ---
+
+        // 1. STEP1 -> Tutorial
+        els.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const fd = new FormData(els.form);
+            fd.forEach((v, k) => userInfo[k] = v);
+
+            els.step1.classList.add('hidden');
+            els.stepTutorial.classList.remove('hidden');
+        });
+
+        // 2. Tutorial -> STEP2 (Test Start)
+        els.btnStartTest.addEventListener('click', () => {
+            initSortList();
+            els.stepTutorial.classList.add('hidden');
+            els.step2.classList.remove('hidden');
+            startTime = new Date();
+        });
+
+        // 3. リスト初期化
+        function initSortList() {
+            const shuffled = [...ITEMS].sort(() => Math.random() - 0.5);
+            els.sortList.innerHTML = '';
+            playedItems.clear();
+            updateSubmitButtonState();
+            
+            shuffled.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'sort-item unplayed'; // 初期は未再生
+                li.dataset.id = item.id;
+                
+                // 行全体をクリックで再生
+                li.onclick = () => {
+                    playOne(item, li);
+                };
+
+                // 情報表示
+                const info = document.createElement('div');
+                info.className = 'item-info';
+                
+                if (item.type === 'color') {
+                    const dot = document.createElement('div');
+                    dot.className = 'color-dot';
+                    dot.style.backgroundColor = item.val;
+                    info.appendChild(dot);
+                } else {
+                    const icon = document.createElement('span');
+                    icon.className = 'icon-sound';
+                    icon.innerHTML = '♪';
+                    info.appendChild(icon);
+                }
+                
+                const text = document.createElement('span');
+                text.textContent = item.name;
+                info.appendChild(text);
+
+                // ハンバーガーメニュー (ハンドル)
+                const handle = document.createElement('div');
+                handle.className = 'drag-handle';
+                handle.innerHTML = '&#9776;'; // ≡
+                
+                // ハンドル操作時は再生しない
+                handle.onclick = (e) => {
+                    e.stopPropagation(); 
+                };
+
+                li.appendChild(info);
+                li.appendChild(handle);
+                els.sortList.appendChild(li);
+            });
+
+            // SortableJS 適用 (animationオプションでなめらかさを調整)
+            new Sortable(els.sortList, {
+                handle: '.drag-handle', 
+                animation: 300, /* ★なめらかな移動速度（ミリ秒）★ */
+                ghostClass: 'sort-ghost', /* 移動先のプレースホルダー */
+                dragClass: 'sort-drag'    /* ドラッグ中のアイテム */
+            });
+        }
+
+        // 4. アニメーション再生 (単体)
+        function playOne(item, liElement) {
+            if(isPlaying) return;
+            isPlaying = true;
+            
+            // ハイライト
+            document.querySelectorAll('.sort-item').forEach(el => el.classList.remove('playing'));
+            if(liElement) {
+                liElement.classList.add('playing');
+                liElement.classList.remove('unplayed');
+                liElement.classList.add('played');
+                
+                playedItems.add(item.id);
+                updateSubmitButtonState();
+            }
+
+            // バーの設定
+            els.mainBar.style.animation = 'none';
+            els.mainBar.style.backgroundColor = (item.type === 'color') ? item.val : '#888';
+            void els.mainBar.offsetWidth; // リフロー
+            
+            // 再生
+            els.mainBar.style.animation = `fall ${DURATION}s linear forwards`;
+            if (item.type === 'sound') playTone(item.val, DURATION);
+
+            setTimeout(() => {
+                isPlaying = false;
+                if(liElement) liElement.classList.remove('playing');
+            }, DURATION * 1000);
+        }
+
+        // 完了ボタンの状態更新
+        function updateSubmitButtonState() {
+            if (playedItems.size === ITEMS.length) {
+                els.btnToFeedback.disabled = false;
+                els.btnToFeedback.textContent = "決定して次へ";
+            } else {
+                els.btnToFeedback.disabled = true;
+                els.btnToFeedback.textContent = `再生してください (${playedItems.size}/${ITEMS.length})`;
+            }
+        }
+
+        // 5. STEP2 -> STEP3 (結果計算)
+        els.btnToFeedback.addEventListener('click', () => {
+            const listItems = Array.from(els.sortList.children);
+            
+            sortedOrderIds = []; // コード用にID順序を保存
+
+            // スコア計算 (1位:9点 〜 9位:1点)
+            listItems.forEach((li, index) => {
+                const id = li.dataset.id;
+                let score = 9 - index; 
+                calculatedScores[id] = score;
+                sortedOrderIds.push(id); 
+            });
+
+            // 画面遷移
+            els.step2.classList.add('hidden');
+            els.step3.classList.remove('hidden');
+            window.scrollTo(0,0);
+        });
+
+        // 6. STEP3 -> STEP4 (送信 & コード表示)
+        els.btnFinalSubmit.addEventListener('click', () => {
+            els.btnFinalSubmit.disabled = true;
+            els.btnFinalSubmit.textContent = '送信中...';
+
+            const elapsedTime = ((new Date() - startTime) / 1000).toFixed(2);
+            const feedbackText = els.feedbackInput.value;
+
+            // 送信データ構築
+            const finalData = {
+                elapsedTime: elapsedTime,
+                feedback: feedbackText,
+                age: userInfo.age,
+                gender: userInfo.gender,
+                QR: calculatedScores['R'] || 0,
+                QG: calculatedScores['G'] || 0,
+                QB: calculatedScores['B'] || 0,
+                QC: calculatedScores['C'] || 0,
+                QM: calculatedScores['M'] || 0,
+                QY: calculatedScores['Y'] || 0,
+                Qm1: calculatedScores['Sound1'] || 0,
+                Qm2: calculatedScores['Sound2'] || 0,
+                Qm3: calculatedScores['Sound3'] || 0
+            };
+
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbxXZnrG13En_lTPETtJHVqmnjALUXwwWLgB1rtTjgyXwvsKm8wAhQ24isznCgQg4-IM/exec';
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalData)
+            })
+            .then(() => {
+                showFinalResult();
+            })
+            .catch(err => {
+                // エラーでも結果画面へ
+                showFinalResult();
+            });
+        });
+
+        function showFinalResult() {
+            // 心理コード生成: 遅い順(下) -> 速い順(上) 
+            const code = [...sortedOrderIds].reverse().map(id => {
+                return id.replace('Sound', 'S'); 
+            }).join(' - ');
+
+            els.codeDisplay.textContent = code;
+
+            els.step3.classList.add('hidden');
+            els.step4.classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+        
+        // コピー機能
+        els.btnCopyCode.addEventListener('click', () => {
+            const code = els.codeDisplay.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                els.btnCopyCode.textContent = 'コピーしました！';
+                els.btnCopyCode.classList.add('copied');
+                
+                setTimeout(() => {
+                    els.btnCopyCode.textContent = 'コードをコピーする';
+                    els.btnCopyCode.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error("コピー失敗", err);
+            });
+        });
+
+        // 音声再生
+        function playTone(freq, dur) {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.frequency.value = freq;
+            gain.gain.value = 0.1;
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start();
+            osc.stop(audioContext.currentTime + dur);
+        }
+
+    </script>
+</body>
+</html>

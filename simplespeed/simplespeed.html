@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スピード感覚簡易テスト</title>
+    <title>落下速度テスト（ソート版）</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="simplespeed.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,29 +32,27 @@
             z-index: 50;
         }
 
-        /* ★変更点: シンプルでくっきりした枠にする */
+        /* アニメーション枠 */
         .animation-wrapper {
             width: 100%;
             height: 500px;
-            background-color: #fff; /* 背景は白で見やすく */
+            background-color: #fff;
             border-radius: 4px;
-            border: 3px solid #444; /* 枠線を濃く、太く、くっきりと */
+            border: 3px solid #444;
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
-            /* 余計な影や装飾は一切なし */
         }
 
-        /* バー（フラットでシンプルに） */
+        /* バー */
         .bar {
             width: 80%;
-            left: 10%; /* 中央に配置 */
+            left: 10%;
             height: 20px;
             border-radius: 2px;
             position: absolute;
             top: 0;
             transform: translateY(-100%);
-            /* 影なし */
         }
         
         @keyframes fall {
@@ -66,10 +64,25 @@
         .right-column {
             flex-grow: 1;
             display: flex;
+            flex-direction: column; /* 見出し用に追加 */
+            gap: 10px;
+        }
+        
+        .phase-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+            padding-left: 5px;
+            border-left: 4px solid #c0392b;
+        }
+
+        .list-area {
+            display: flex;
             gap: 15px;
         }
 
-        /* 軸ガイド（右側に配置） */
+        /* 軸ガイド */
         .axis-guide {
             display: flex;
             flex-direction: column;
@@ -85,7 +98,7 @@
             border-radius: 5px;
             font-weight: bold;
             color: #fff;
-            background-color: #666; /* シンプルなグレー */
+            background-color: #666;
             font-size: 0.8rem;
             letter-spacing: 2px;
         }
@@ -132,7 +145,7 @@
             position: relative;
         }
         
-        /* なめらかな移動（SortableJS用クラス） */
+        /* なめらかな移動 */
         .sort-drag {
             opacity: 0.9;
             background: #fff;
@@ -335,17 +348,17 @@
                 <p>様々な「色」や「音」とともに、バーが画面を落下します。<br>
                 あなたの感覚で、<strong>落下スピードが速い順（上）</strong>に並べ替えてください。</p>
                 <hr style="margin: 15px 0; border:0; border-top:1px dashed #ccc;">
-                <p><strong>【操作方法】</strong></p>
-                <ul style="padding-left: 20px; line-height: 1.8;">
-                    <li>リストの行を<strong>タップすると左側で再生</strong>されます。</li>
-                    <li>右側の<strong>「≡」を長押しして移動</strong>できます。</li>
-                    <li><span style="color:#e74c3c; font-weight:bold;">※ 全て再生すると完了ボタンが押せます。</span></li>
-                </ul>
+                <p><strong>【手順】</strong></p>
+                <ol style="padding-left: 20px; line-height: 1.8;">
+                    <li>まずは<strong>「色」</strong>の並べ替えを行います。</li>
+                    <li>次に<strong>「音」</strong>の並べ替えを行います。</li>
+                </ol>
+                <p>※ 全て再生すると次へ進めます。</p>
             </div>
             <button id="btnStartTest" class="home-button color-1">理解しました（テスト開始）</button>
         </div>
 
-        <div id="step2" class="hidden">
+        <div id="step-sort" class="hidden">
             <div class="split-layout">
                 <div class="left-column">
                     <div class="animation-wrapper">
@@ -354,28 +367,31 @@
                 </div>
 
                 <div class="right-column">
+                    <div id="phaseTitle" class="phase-title">色 (1/2)</div>
                     
-                    <div class="sort-container">
-                        <ul id="sortList" class="sort-list">
-                            </ul>
-                    </div>
+                    <div class="list-area">
+                        <div class="sort-container">
+                            <ul id="sortList" class="sort-list">
+                                </ul>
+                        </div>
 
-                    <div class="axis-guide">
-                        <div class="axis-badge">速い</div>
-                        <div class="axis-line"></div>
-                        <div class="axis-badge">遅い</div>
+                        <div class="axis-guide">
+                            <div class="axis-badge">速い</div>
+                            <div class="axis-line"></div>
+                            <div class="axis-badge">遅い</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="footer-controls">
-                <button id="btnToFeedback" class="btn-submit" disabled>決定して次へ</button>
+                <button id="btnNextPhase" class="btn-submit" disabled>決定して次へ</button>
             </div>
         </div>
 
-        <div id="step3" class="hidden">
-            <h2 class="section-title">並べ替え完了</h2>
-            <p style="text-align:center;">結果を確定します。最後に、ご感想をお願いします。</p>
+        <div id="step-feedback" class="hidden">
+            <h2 class="section-title">すべての並べ替え完了</h2>
+            <p style="text-align:center;">ご協力ありがとうございました。最後に、ご感想をお願いします。</p>
             
             <fieldset>
                 <legend>ご感想（任意）</legend>
@@ -388,7 +404,7 @@
             <button id="btnFinalSubmit" class="home-button">結果を送信して終了</button>
         </div>
 
-        <div id="step4" class="hidden">
+        <div id="step-result" class="hidden">
             <h2 class="section-title">ご協力ありがとうございました</h2>
             <div style="text-align: center;">
                 <p>あなたの回答に基づく心理コード</p>
@@ -400,7 +416,7 @@
                 
                 <p style="font-size:0.9em; color:#666;">(左:遅く感じた → 右:速く感じた)</p>
             </div>
-
+            
             <div style="margin-top:30px;">
                 <button onclick="window.location.href='../sandmov/codesandmov.html'" class="home-button color-3">デジタル砂時計をつくる</button>
             </div>
@@ -413,16 +429,20 @@
 
     <script>
         // --- 設定エリア ---
-        const DURATION = 1.0; // 落下時間
+        const DURATION = 1.0; 
         
-        // 9項目
-        const ITEMS = [
+        // 色アイテム (6個)
+        const COLORS = [
             { id: 'R', name: '赤色', type: 'color', val: '#ff0000' },
             { id: 'G', name: '緑色', type: 'color', val: '#00ff00' },
             { id: 'B', name: '青色', type: 'color', val: '#0000ff' },
             { id: 'C', name: '水色', type: 'color', val: '#00ffff' },
             { id: 'M', name: '紫色', type: 'color', val: '#ff00ff' },
-            { id: 'Y', name: '黄色', type: 'color', val: '#ffff00' },
+            { id: 'Y', name: '黄色', type: 'color', val: '#ffff00' }
+        ];
+
+        // 音アイテム (3個)
+        const SOUNDS = [
             { id: 'Sound1', name: '音 A', type: 'sound', val: 330 }, 
             { id: 'Sound2', name: '音 B', type: 'sound', val: 440 },
             { id: 'Sound3', name: '音 C', type: 'sound', val: 550 }
@@ -430,25 +450,27 @@
 
         let userInfo = {};
         let calculatedScores = {}; 
-        let sortedOrderIds = []; 
+        let finalSortedIds = []; // 色と音のIDを格納
         let audioContext;
         let startTime;
         let isPlaying = false;
+        let currentPhase = 'color'; // 'color' or 'sound'
         
-        let playedItems = new Set(); // 再生済みID
+        let playedItems = new Set(); // 現在のフェーズでの再生済みID
 
         // --- DOM要素 ---
         const els = {
             step1: document.getElementById('step1'),
             stepTutorial: document.getElementById('step-tutorial'),
-            step2: document.getElementById('step2'),
-            step3: document.getElementById('step3'),
-            step4: document.getElementById('step4'),
+            stepSort: document.getElementById('step-sort'),
+            stepFeedback: document.getElementById('step-feedback'),
+            stepResult: document.getElementById('step-result'),
             form: document.getElementById('userInfoForm'),
             btnStartTest: document.getElementById('btnStartTest'),
             sortList: document.getElementById('sortList'),
             mainBar: document.getElementById('mainBar'),
-            btnToFeedback: document.getElementById('btnToFeedback'),
+            phaseTitle: document.getElementById('phaseTitle'),
+            btnNextPhase: document.getElementById('btnNextPhase'),
             btnFinalSubmit: document.getElementById('btnFinalSubmit'),
             feedbackInput: document.getElementById('feedback'),
             codeDisplay: document.getElementById('psychology-code-display'),
@@ -498,25 +520,32 @@
             els.stepTutorial.classList.remove('hidden');
         });
 
-        // 2. Tutorial -> STEP2 (Test Start)
+        // 2. Tutorial -> Color Sort Phase
         els.btnStartTest.addEventListener('click', () => {
-            initSortList();
+            currentPhase = 'color';
+            startPhase(COLORS, "色 (1/2)");
+            
             els.stepTutorial.classList.add('hidden');
-            els.step2.classList.remove('hidden');
+            els.stepSort.classList.remove('hidden');
             startTime = new Date();
         });
 
-        // 3. リスト初期化
-        function initSortList() {
-            const shuffled = [...ITEMS].sort(() => Math.random() - 0.5);
-            els.sortList.innerHTML = '';
+        // フェーズ開始処理
+        function startPhase(items, title) {
+            els.phaseTitle.textContent = title;
             playedItems.clear();
-            updateSubmitButtonState();
+            
+            // リスト生成
+            const shuffled = [...items].sort(() => Math.random() - 0.5);
+            els.sortList.innerHTML = '';
             
             shuffled.forEach(item => {
                 const li = document.createElement('li');
-                li.className = 'sort-item unplayed'; // 初期は未再生
+                li.className = 'sort-item unplayed';
                 li.dataset.id = item.id;
+                li.dataset.type = item.type;
+                li.dataset.val = item.val;
+                li.dataset.name = item.name;
                 
                 // 行全体をクリックで再生
                 li.onclick = () => {
@@ -547,24 +576,23 @@
                 const handle = document.createElement('div');
                 handle.className = 'drag-handle';
                 handle.innerHTML = '&#9776;'; // ≡
-                
-                // ハンドル操作時は再生しない
-                handle.onclick = (e) => {
-                    e.stopPropagation(); 
-                };
+                handle.onclick = (e) => { e.stopPropagation(); };
 
                 li.appendChild(info);
                 li.appendChild(handle);
                 els.sortList.appendChild(li);
             });
 
-            // SortableJS 適用 (animationオプションでなめらかさを調整)
-            new Sortable(els.sortList, {
+            // SortableJS 適用
+            if(window.sortableInstance) window.sortableInstance.destroy();
+            window.sortableInstance = new Sortable(els.sortList, {
                 handle: '.drag-handle', 
-                animation: 300, /* ★なめらかな移動速度（ミリ秒）★ */
-                ghostClass: 'sort-ghost', /* 移動先のプレースホルダー */
-                dragClass: 'sort-drag'    /* ドラッグ中のアイテム */
+                animation: 300, 
+                ghostClass: 'sort-ghost',
+                dragClass: 'sort-drag'
             });
+
+            updateSubmitButtonState();
         }
 
         // 4. アニメーション再生 (単体)
@@ -586,7 +614,7 @@
             // バーの設定
             els.mainBar.style.animation = 'none';
             els.mainBar.style.backgroundColor = (item.type === 'color') ? item.val : '#888';
-            void els.mainBar.offsetWidth; // リフロー
+            void els.mainBar.offsetWidth;
             
             // 再生
             els.mainBar.style.animation = `fall ${DURATION}s linear forwards`;
@@ -600,36 +628,59 @@
 
         // 完了ボタンの状態更新
         function updateSubmitButtonState() {
-            if (playedItems.size === ITEMS.length) {
-                els.btnToFeedback.disabled = false;
-                els.btnToFeedback.textContent = "決定して次へ";
+            const currentTotal = (currentPhase === 'color') ? COLORS.length : SOUNDS.length;
+            if (playedItems.size === currentTotal) {
+                els.btnNextPhase.disabled = false;
+                els.btnNextPhase.textContent = "決定して次へ";
             } else {
-                els.btnToFeedback.disabled = true;
-                els.btnToFeedback.textContent = `再生してください (${playedItems.size}/${ITEMS.length})`;
+                els.btnNextPhase.disabled = true;
+                els.btnNextPhase.textContent = `再生してください (${playedItems.size}/${currentTotal})`;
             }
         }
 
-        // 5. STEP2 -> STEP3 (結果計算)
-        els.btnToFeedback.addEventListener('click', () => {
+        // 5. フェーズ遷移 / 終了処理
+        els.btnNextPhase.addEventListener('click', () => {
             const listItems = Array.from(els.sortList.children);
             
-            sortedOrderIds = []; // コード用にID順序を保存
+            // スコア計算と保存
+            if (currentPhase === 'color') {
+                // 色: 上(速い)から 6, 5, 4, 3, 2, 1
+                // 順序: 遅い(下) -> 速い(上) に変換して一時保存
+                let tempIds = [];
+                listItems.forEach((li, index) => {
+                    const id = li.dataset.id;
+                    let score = 6 - index; 
+                    calculatedScores[id] = score;
+                    tempIds.push(id);
+                });
+                // finalSortedIds に [遅い...速い] の順で追加 (tempIdsは[速...遅]なのでreverse)
+                finalSortedIds = [...finalSortedIds, ...tempIds.reverse()];
 
-            // スコア計算 (1位:9点 〜 9位:1点)
-            listItems.forEach((li, index) => {
-                const id = li.dataset.id;
-                let score = 9 - index; 
-                calculatedScores[id] = score;
-                sortedOrderIds.push(id); 
-            });
+                // 音フェーズへ移行
+                currentPhase = 'sound';
+                startPhase(SOUNDS, "音 (2/2)");
+                window.scrollTo(0,0);
 
-            // 画面遷移
-            els.step2.classList.add('hidden');
-            els.step3.classList.remove('hidden');
-            window.scrollTo(0,0);
+            } else if (currentPhase === 'sound') {
+                // 音: 上(速い)から 6, 4, 2
+                let tempIds = [];
+                listItems.forEach((li, index) => {
+                    const id = li.dataset.id;
+                    let score = 6 - (index * 2); // 0->6, 1->4, 2->2
+                    calculatedScores[id] = score;
+                    tempIds.push(id);
+                });
+                // finalSortedIds に [遅い...速い] の順で追加
+                finalSortedIds = [...finalSortedIds, ...tempIds.reverse()];
+
+                // 感想画面へ
+                els.stepSort.classList.add('hidden');
+                els.stepFeedback.classList.remove('hidden');
+                window.scrollTo(0,0);
+            }
         });
 
-        // 6. STEP3 -> STEP4 (送信 & コード表示)
+        // 6. 最終送信
         els.btnFinalSubmit.addEventListener('click', () => {
             els.btnFinalSubmit.disabled = true;
             els.btnFinalSubmit.textContent = '送信中...';
@@ -666,21 +717,21 @@
                 showFinalResult();
             })
             .catch(err => {
-                // エラーでも結果画面へ
                 showFinalResult();
             });
         });
 
         function showFinalResult() {
-            // 心理コード生成: 遅い順(下) -> 速い順(上) 
-            const code = [...sortedOrderIds].reverse().map(id => {
+            // 心理コード: 色(遅->速) - 音(遅->速)
+            // finalSortedIds は既に [ColorSlow...ColorFast, SoundSlow...SoundFast] の順になっている
+            const code = finalSortedIds.map(id => {
                 return id.replace('Sound', 'S'); 
             }).join(' - ');
 
             els.codeDisplay.textContent = code;
 
-            els.step3.classList.add('hidden');
-            els.step4.classList.remove('hidden');
+            els.stepFeedback.classList.add('hidden');
+            els.stepResult.classList.remove('hidden');
             window.scrollTo(0,0);
         }
         

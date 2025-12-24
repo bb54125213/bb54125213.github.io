@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GALAXY ROCKET CHALLENGE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* --- 全体設定 --- */
+        body {
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #fff;
+            user-select: none;
+        }
+
+        /* --- ゲーム画面エリア --- */
+        #game-world {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            overflow: hidden;
+            background-color: #000022;
+        }
+
+        /* --- 背景レイヤー --- */
+        #bg-loop {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('./nightgame/background2.png');
+            background-size: 100% auto; background-repeat: repeat-y; z-index: 1;
+        }
+        #bg-start {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 500vh; 
+            background-image: url('./nightgame/background.png');
+            background-size: 100% 100%; background-repeat: no-repeat; z-index: 2;
+        }
+
+        /* --- ロゴ --- */
+        #logo-display {
+            position: absolute;
+            top: 20px; right: 20px;
+            width: 400px;
+            z-index: 1500;
+        }
+        #logo-display img { width: 100%; height: auto; display: block; }
+
+        /* --- UIレイヤー --- */
+        #ui-layer {
+            position: absolute; top: 20px; left: 20px;
+            text-align: left; z-index: 1000; pointer-events: none;
+            text-shadow: 4px 4px 0 #000;
+        }
+        
+        #altitude-display { 
+            font-size: 3.5rem; color: #00ff00; margin-bottom: 15px;
+            transition: color 0.2s, transform 0.2s;
+        }
+        .pulse-text { animation: pulse-anim 0.5s ease-in-out; color: #ff00ff !important; }
+        @keyframes pulse-anim {
+            0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); }
+        }
+        #high-score-display { font-size: 1.2rem; color: #ffff00; }
+
+        /* --- メッセージエリア --- */
+        #message-area {
+            position: absolute; top: 30%; width: 100%; z-index: 1000; pointer-events: none;
+            text-shadow: 6px 6px 0 #000;
+        }
+        #main-message { font-size: 5rem; color: #ff4500; line-height: 1.2; }
+        #sub-message { font-size: 1.8rem; margin-top: 30px; line-height: 1.5; color: #fff;}
+
+        /* --- オブジェクトコンテナ --- */
+        #objects-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 50; pointer-events: none;
+        }
+        .game-object { position: absolute; will-change: transform, top; }
+
+        /* --- ロケットコンテナ（位置・震え担当） --- */
+        #rocket-container {
+            position: absolute;
+            bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 450px;
+            z-index: 100; /* 全体の前面 */
+            transition: bottom 2s ease-out;
+            display: none;
+        }
+        /* 震えるアニメーション */
+        .shaking { animation: shake-anim 0.1s infinite alternate; }
+        @keyframes shake-anim {
+            0% { transform: translateX(-50.5%) translateY(4px); }
+            100% { transform: translateX(-49.5%) translateY(-4px); }
+        }
+
+        /* --- ロケットビジュアル（画像・色担当） --- */
+        #rocket-visual {
+            position: absolute; top:0; left:0; width: 100%; height: 100%;
+            background-image: url('./nightgame/rocket.png');
+            background-size: contain; background-repeat: no-repeat; background-position: bottom center;
+            /* キャラより手前 */
+            z-index: 110; 
+        }
+        /* レインボーアニメーション */
+        .rainbow-mode { animation: rainbow-filter 0.5s linear infinite; }
+        @keyframes rainbow-filter {
+            0% { filter: hue-rotate(0deg) drop-shadow(0 0 30px red); }
+            100% { filter: hue-rotate(360deg) drop-shadow(0 0 30px violet); }
+        }
+
+        /* --- スペシャルキャラ（15万m〜） --- */
+        #special-chara {
+            position: absolute;
+            /* ロケットより後ろ */
+            z-index: 90;
+            /* ★配置修正: ロケットより少し上に */
+            bottom: 250px; 
+            left: 50%; 
+            width: 400px; height: 400px;
+            transform: translateX(-50%);
+            background-image: url('./nightgame/chara.png');
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        /* 手を振るような揺れ */
+        .waving { animation: wave-anim 2s infinite ease-in-out; }
+        @keyframes wave-anim {
+            0% { transform: translateX(-60%) rotate(-5deg); }
+            50% { transform: translateX(-40%) rotate(5deg); }
+            100% { transform: translateX(-60%) rotate(-5deg); }
+        }
+
+        /* --- 煙 --- */
+        .smoke-particle {
+            position: absolute; width: 220px; height: 220px;
+            background-image: url('./nightgame/smoke.png');
+            background-size: contain; background-repeat: no-repeat;
+            opacity: 0.9; z-index: 90; pointer-events: none;
+        }
+
+        /* --- 下部パネル --- */
+        #bottom-panel {
+            height: 220px; background-color: #111; border-top: 4px solid #555;
+            display: flex; z-index: 2000;
+        }
+        #controls {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; border-right: 2px solid #444;
+        }
+        button#start-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.8rem; padding: 20px 50px;
+            background-color: #e60012; color: white;
+            border: 4px solid #fff; cursor: pointer;
+            margin-bottom: 20px; box-shadow: 6px 6px 0 #000;
+        }
+        button#start-btn:active { transform: translate(4px, 4px); box-shadow: none; }
+        button:disabled { background-color: #555; color: #999; border-color: #999; cursor: not-allowed; }
+        .settings { font-size: 1rem; color: #aaa; }
+        
+        #ranking-board {
+            flex: 1; padding: 15px 30px; overflow-y: auto; text-align: left;
+            font-size: 1rem; color: #ddd; position: relative;
+        }
+        .rank-item { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dotted #333; }
+        
+        /* ログ消去ボタン */
+        #reset-log-btn {
+            position: absolute; bottom: 10px; right: 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem; padding: 5px 10px;
+            background-color: #333; color: #888; border: 1px solid #555; cursor: pointer;
+        }
+        #reset-log-btn:hover { background-color: #555; color: #fff; }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-world">
+        <div id="logo-display"><img src="./nightgame/LLF.png" alt="LOGO"></div>
+        <div id="bg-loop"></div>
+        <div id="bg-start"></div>
+
+        <div id="ui-layer">
+            <div id="altitude-display">ALT: 0m</div>
+            <div id="high-score-display">BEST: 0m</div>
+        </div>
+
+        <div id="message-area">
+            <div id="main-message">READY?</div>
+            <div id="sub-message"></div>
+        </div>
+
+        <div id="objects-layer"></div>
+        
+        <div id="rocket-container">
+            <div id="special-chara"></div> 
+            <div id="rocket-visual"></div>
+        </div>
+
+        <div id="smoke-container"></div>
+    </div>
+
+    <div id="bottom-panel">
+        <div id="controls">
+            <button id="start-btn" onclick="prepareGame()">GAME START</button>
+            <div class="settings">
+                SENSITIVITY: <span id="threshold-val">20</span>
+                <input type="range" id="threshold" min="5" max="80" value="20" oninput="updateThreshold(this.value)">
+            </div>
+        </div>
+        <div id="ranking-board">
+            <h3 style="color:#00bfff; border-bottom:2px solid #555;">TOP RECORDS</h3>
+            <div id="ranking-list"></div>
+            <button id="reset-log-btn" onclick="resetRanking()">RESET LOG</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 設定値 ---
+        let THRESHOLD = 20; 
+        const CLIMB_SPEED = 250; 
+        const PIXEL_PER_METER = 0.2; 
+        const SMOKE_INTERVAL = 3; 
+        
+        const METEOR_START_ALT = 40000;
+        const RAINBOW_START_ALT = 100000;
+        const CHARA_START_ALT = 150000;
+        const PULSE_INTERVAL = 10000;
+
+        // --- 変数 ---
+        let audioContext, analyser, dataArray;
+        let isGameState = 'idle'; 
+        let currentAltitude = 0;
+        let lastPulseAltitude = 0;
+        let gameLoopId;
+        let frameCount = 0;
+        let ranking = [];
+        let activeObjects = [];
+        let highScore = 0;
+
+        // --- DOM ---
+        const rocketContainer = document.getElementById('rocket-container');
+        const rocketVisual = document.getElementById('rocket-visual');
+        const specialChara = document.getElementById('special-chara');
+        
+        const bgStart = document.getElementById('bg-start');
+        const bgLoop = document.getElementById('bg-loop');
+        const altitudeDisplay = document.getElementById('altitude-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const mainMessage = document.getElementById('main-message');
+        const subMessage = document.getElementById('sub-message');
+        const startBtn = document.getElementById('start-btn');
+        const smokeContainer = document.getElementById('smoke-container');
+        const objectsLayer = document.getElementById('objects-layer');
+
+        window.onload = () => { loadRanking(); updateThreshold(20); };
+        function updateThreshold(val) { THRESHOLD = val; document.getElementById('threshold-val').innerText = val; }
+
+        // --- Audio Init ---
+        async function initAudio() {
+            if (audioContext && audioContext.state !== 'closed') {
+                if(audioContext.state === 'suspended') await audioContext.resume();
+                return true;
+            }
+            try {
+                const constraints = { audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false } };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const microphone = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                microphone.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                return true;
+            } catch (err) {
+                alert("Mic Error. Check HTTPS or Localhost."); return false;
+            }
+        }
+        
+        function playSound(freq, type, dur, vol=0.1) {
+             if(!audioContext) return;
+             const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
+             osc.type = type; osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+             gain.gain.setValueAtTime(vol, audioContext.currentTime); 
+             gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + dur);
+             osc.connect(gain);
+             gain.connect(audioContext.destination); osc.start(); osc.stop(audioContext.currentTime + dur);
+        }
+
+        // --- お祝いBGM ---
+        function playFanfare() {
+            if(!audioContext) return;
+            const now = audioContext.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            const times = [0, 0.15, 0.3, 0.6];
+            const types = ['square', 'square', 'square', 'sawtooth'];
+            
+            notes.forEach((freq, i) => {
+                const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
+                osc.type = types[i]; osc.frequency.setValueAtTime(freq, now + times[i]);
+                gain.gain.setValueAtTime(0.1, now + times[i]); gain.gain.linearRampToValueAtTime(0, now + times[i] + 0.4);
+                osc.connect(gain); gain.connect(audioContext.destination); osc.start(now + times[i]); osc.stop(now + times[i] + 0.5);
+            });
+            setTimeout(() => {
+                [523.25, 659.25, 783.99, 1046.50].forEach(f => {
+                    const o = audioContext.createOscillator(); const g = audioContext.createGain();
+                    o.type = 'triangle'; o.frequency.setValueAtTime(f, audioContext.currentTime);
+                    g.gain.setValueAtTime(0.05, audioContext.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5);
+                    o.connect(g); g.connect(audioContext.destination); o.start(); o.stop(audioContext.currentTime + 1.5);
+                });
+            }, 600);
+        }
+
+        // --- Game Flow ---
+        async function prepareGame() {
+            startBtn.disabled = true; startBtn.innerText = "WAIT...";
+            if (!(await initAudio())) return;
+            resetGame();
+            startCountdown();
+        }
+
+        function resetGame() {
+            isGameState = 'idle';
+            currentAltitude = 0;
+            lastPulseAltitude = 0;
+            frameCount = 0;
+            activeObjects = [];
+            objectsLayer.innerHTML = '';
+            updateView(0);
+            
+            rocketContainer.style.display = 'block';
+            rocketContainer.style.opacity = 1;
+            rocketContainer.classList.remove('shaking');
+            rocketVisual.classList.remove('rainbow-mode');
+            rocketContainer.style.bottom = '0'; 
+            
+            specialChara.style.opacity = 0;
+            specialChara.classList.remove('waving');
+
+            smokeContainer.innerHTML = '';
+            mainMessage.innerText = ''; subMessage.innerText = '';
+            startBtn.innerText = "READY";
+        }
+
+        function startCountdown() {
+            isGameState = 'countdown';
+            let count = 3;
+            mainMessage.innerText = count; playSound(440, 'square', 0.1);
+            const timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    mainMessage.innerText = count; playSound(440, 'square', 0.1);
+                } else {
+                    clearInterval(timer);
+                    isGameState = 'waiting_start';
+                    mainMessage.innerText = "BLOW!!";
+                    subMessage.innerText = "息を吹き込め！";
+                    playSound(880, 'sawtooth', 0.6);
+                    gameLoop();
+                }
+            }, 1000);
+        }
+
+        // --- Main Loop ---
+        function gameLoop() {
+            if (isGameState === 'exploded' || isGameState === 'celebrating' || isGameState === 'idle') return;
+
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0; dataArray.forEach(v => sum += v);
+            let avgVol = sum / dataArray.length;
+
+            if (isGameState === 'waiting_start') {
+                if (avgVol > THRESHOLD) {
+                    isGameState = 'flying';
+                    mainMessage.innerText = ""; subMessage.innerText = "";
+                    rocketContainer.classList.add('shaking');
+                    rocketContainer.style.bottom = '20%';
+                }
+            } 
+            else if (isGameState === 'flying') {
+                if (avgVol > THRESHOLD) {
+                    currentAltitude += CLIMB_SPEED;
+                    frameCount++;
+                    updateView(currentAltitude);
+                    if (frameCount % SMOKE_INTERVAL === 0) spawnRocketSmoke();
+                    handleObjectSpawning(currentAltitude);
+                    updateObjects();
+                } else {
+                    checkAndExplode();
+                }
+            }
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- 描画・演出 ---
+        function updateView(alt) {
+            altitudeDisplay.innerText = `ALT: ${alt.toLocaleString()}m`;
+            
+            if (Math.floor(alt / PULSE_INTERVAL) > Math.floor(lastPulseAltitude / PULSE_INTERVAL)) {
+                altitudeDisplay.classList.remove('pulse-text'); void altitudeDisplay.offsetWidth; 
+                altitudeDisplay.classList.add('pulse-text'); playSound(1200, 'sine', 0.1); 
+            }
+            lastPulseAltitude = alt;
+
+            const scrollPixels = alt * PIXEL_PER_METER;
+            bgStart.style.transform = `translateY(${scrollPixels}px)`;
+            bgLoop.style.backgroundPosition = `center ${scrollPixels}px`;
+
+            if (alt > RAINBOW_START_ALT) {
+                if (!rocketVisual.classList.contains('rainbow-mode')) rocketVisual.classList.add('rainbow-mode');
+            }
+
+            if (alt > CHARA_START_ALT) {
+                if (specialChara.style.opacity == 0) {
+                    specialChara.style.opacity = 1;
+                    specialChara.classList.add('waving');
+                }
+            }
+        }
+
+        // --- オブジェクト生成 ---
+        function handleObjectSpawning(alt) {
+            if (alt < METEOR_START_ALT) return;
+            if (Math.random() < 0.04) spawnObject('meteor'); 
+            if (Math.random() < 0.03) {
+                const types = ['blue', 'red', 'yellow'];
+                spawnObject('monster', types[Math.floor(Math.random()*types.length)]);
+            }
+        }
+
+        function spawnObject(category, subType) {
+            const el = document.createElement('div');
+            el.className = 'game-object';
+            const x = 5 + Math.random() * 90;
+            el.style.left = `${x}%`; el.style.top = '-150px';
+
+            if (category === 'meteor') {
+                el.style.width = '100px'; el.style.height = '100px';
+                el.style.backgroundImage = "url('./nightgame/meteo.png')"; el.style.backgroundSize = 'contain';
+                const direction = Math.random() > 0.5 ? 1 : -1; 
+                el.style.transform = `rotate(${direction === 1 ? -45 : 45}deg)`;
+                el.dataset.speedY = 25 + Math.random() * 20; el.dataset.speedX = direction * (5 + Math.random() * 5);
+            } 
+            else if (category === 'monster') {
+                el.style.width = '120px'; el.style.height = '120px';
+                el.style.backgroundImage = `url('./nightgame/${subType}.png')`;
+                el.style.backgroundSize = 'contain'; el.style.backgroundRepeat = 'no-repeat';
+                const rotation = Math.random() * 360;
+                el.style.transform = `rotate(${rotation}deg)`;
+                el.dataset.speedY = 15 + Math.random() * 15; el.dataset.speedX = (Math.random() - 0.5) * 25;
+                el.dataset.rotationSpeed = (Math.random() - 0.5) * 30; el.dataset.currentRotation = rotation;
+            }
+            objectsLayer.appendChild(el); activeObjects.push(el);
+        }
+
+        function updateObjects() {
+            for (let i = activeObjects.length - 1; i >= 0; i--) {
+                const el = activeObjects[i];
+                let posY = parseFloat(el.dataset.posY || -150); posY += parseFloat(el.dataset.speedY);
+                if (el.dataset.rotationSpeed) {
+                    let rot = parseFloat(el.dataset.currentRotation) + parseFloat(el.dataset.rotationSpeed);
+                    el.dataset.currentRotation = rot; el.style.transform = `rotate(${rot}deg)`;
+                }
+                if (posY > window.innerHeight + 200) { el.remove(); activeObjects.splice(i, 1); }
+                else {
+                    el.style.top = `${posY}px`;
+                    let currentLeft = parseFloat(el.style.left);
+                    el.style.left = `calc(${currentLeft}% + ${parseFloat(el.dataset.speedX)/10}%)`; el.dataset.posY = posY;
+                }
+            }
+        }
+
+        // --- 煙生成 ---
+        function spawnRocketSmoke() {
+            const smoke = document.createElement('div');
+            smoke.className = 'smoke-particle';
+            if (currentAltitude > RAINBOW_START_ALT) smoke.classList.add('rainbow-mode');
+
+            const rRect = rocketContainer.getBoundingClientRect();
+            const smokeHalfWidth = 110; 
+            const startX = (rRect.left + rRect.width / 2) - smokeHalfWidth;
+            const startY = rRect.bottom - 60; 
+
+            smoke.style.left = `${startX}px`; smoke.style.top = `${startY}px`;
+            const baseRotation = -90; const spread = Math.random() * 60 - 30; 
+            const finalRotation = baseRotation + spread; const scaleX = Math.random() > 0.5 ? 1 : -1;
+            smoke.style.transform = `rotate(${finalRotation}deg) scaleX(${scaleX})`;
+            smokeContainer.appendChild(smoke);
+
+            let opacity = 1.0; let currentTop = startY;
+            const anim = setInterval(() => {
+                opacity -= 0.05; currentTop += 12; 
+                smoke.style.opacity = opacity; smoke.style.top = `${currentTop}px`;
+                if (opacity <= 0) { clearInterval(anim); smoke.remove(); }
+            }, 30);
+        }
+
+        // --- 判定と爆発 ---
+        function checkAndExplode() {
+            cancelAnimationFrame(gameLoopId);
+            let isNewRecord = false;
+            if (ranking.length === 0 || currentAltitude > ranking[0].score) isNewRecord = true;
+            explode(isNewRecord);
+        }
+
+        function explode(isNewRecord) {
+            isGameState = isNewRecord ? 'celebrating' : 'exploded';
+            rocketContainer.classList.remove('shaking'); rocketContainer.style.opacity = 0; 
+            playSound(100, 'sawtooth', 0.8); 
+            
+            for (let i=0; i<30; i++) {
+                const s = document.createElement('div'); s.className = 'smoke-particle';
+                if(currentAltitude > RAINBOW_START_ALT) s.classList.add('rainbow-mode');
+                const rRect = rocketContainer.getBoundingClientRect();
+                const startX = (rRect.left + rRect.width / 2) - 150; const startY = (rRect.top + rRect.height / 2) - 150;
+                s.style.left = `${startX}px`; s.style.top = `${startY}px`;
+                const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 25 + 10; 
+                smokeContainer.appendChild(s);
+                let op = 1; let x = 0; let y = 0;
+                let t = setInterval(()=>{
+                    op -= 0.04; x += Math.cos(angle)*speed; y += Math.sin(angle)*speed;
+                    s.style.opacity = op; s.style.transform = `translate(${x}px, ${y}px)`;
+                    if(op<=0){ clearInterval(t); s.remove(); }
+                }, 20);
+            }
+
+            saveScore(currentAltitude);
+
+            if (isNewRecord) {
+                mainMessage.innerText = "NEW RECORD!!"; mainMessage.style.color = "#FFD700";
+                subMessage.innerText = `SCORE: ${currentAltitude.toLocaleString()}m`;
+                playFanfare(); celebrationAnim();
+            } else {
+                mainMessage.innerText = "EXPLODED!"; mainMessage.style.color = "#ff4500";
+                subMessage.innerText = `SCORE: ${currentAltitude.toLocaleString()}m`;
+            }
+            setTimeout(() => { startBtn.disabled = false; startBtn.innerText = "RETRY"; }, 3000);
+        }
+
+        // --- お祝いアニメーション (隕石除外) ---
+        function celebrationAnim() {
+            for(let i=0; i<20; i++) {
+                setTimeout(() => {
+                    // ★ここを修正: meteoを除外
+                    const types = ['blue', 'red', 'yellow'];
+                    const type = types[Math.floor(Math.random()*types.length)];
+                    const el = document.createElement('div'); el.className = 'game-object';
+                    el.style.width = '100px'; el.style.height = '100px';
+                    el.style.backgroundImage = `url('./nightgame/${type}.png')`;
+                    el.style.backgroundSize = 'contain'; el.style.backgroundRepeat = 'no-repeat';
+                    el.style.left = `${Math.random()*90}%`; el.style.top = '100%'; 
+                    el.style.transition = 'top 2s ease-out, opacity 2s';
+                    objectsLayer.appendChild(el);
+                    setTimeout(() => {
+                        el.style.top = `${Math.random()*50}%`; el.style.transform = `rotate(${Math.random()*360}deg)`;
+                    }, 50);
+                    setTimeout(() => { el.style.opacity = 0; }, 1500);
+                    setTimeout(() => { el.remove(); }, 2500);
+                }, i * 100);
+            }
+        }
+
+        // --- ランキング管理 ---
+        function saveScore(score) {
+            const d = new Date();
+            const time = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+            ranking.push({ score: score, date: time });
+            ranking.sort((a,b)=>b.score - a.score); ranking = ranking.slice(0,5);
+            localStorage.setItem('galaxyRocketRanking', JSON.stringify(ranking));
+            if (ranking[0].score === score) highScore = score;
+            loadRanking();
+        }
+        function loadRanking() {
+            const s = localStorage.getItem('galaxyRocketRanking');
+            if(s) ranking = JSON.parse(s);
+            const list = document.getElementById('ranking-list'); list.innerHTML = '';
+            if(ranking.length > 0) highScoreDisplay.innerText = `BEST: ${ranking[0].score.toLocaleString()}m`;
+            else highScoreDisplay.innerText = `BEST: 0m`;
+            ranking.forEach((r,i)=>{
+                list.innerHTML += `<div class="rank-item" style="color:${i==0?'#ffff00':'#fff'}"><span>${i+1}. ${r.score.toLocaleString()}m</span><span>${r.date}</span></div>`;
+            });
+        }
+        function resetRanking() {
+            if(confirm("ランキングの記録をすべて消去しますか？\n(この操作は元に戻せません)")) {
+                localStorage.removeItem('galaxyRocketRanking');
+                ranking = []; loadRanking(); highScoreDisplay.innerText = `BEST: 0m`;
+            }
+        }
+    </script>
+</body>
+</html>

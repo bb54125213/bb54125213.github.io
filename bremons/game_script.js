@@ -12,11 +12,11 @@ const STATE = {
     FUELING: 2,
     FLYING: 3,
     RESULT: 4,
-    PAUSED: 5 // ★追加: ポーズ状態
+    PAUSED: 5
 };
 
 let currentState = STATE.INIT;
-let lastState = STATE.INIT; // ★追加: ポーズ前の状態を記憶
+let lastState = STATE.INIT;
 let audioContext, analyser, dataArray, microphone;
 let isMicActive = false;
 
@@ -25,10 +25,10 @@ let currentStageNum = 1;
 let goalDistance = 100000000;
 
 // パラメータ
-let fuelSeconds = 0;       // 今回の燃料（秒）
-let chargedFuelSeconds = 0; // 記録用（減らない変数）
-let flightDistance = 0;    // 今回の飛行距離
-let totalDistance = 0;     // これまでの累積距離（セーブデータ）
+let fuelSeconds = 0;       
+let chargedFuelSeconds = 0; 
+let flightDistance = 0;    
+let totalDistance = 0;     
 const FLIGHT_SPEED = 50000;
 const MAX_FUEL_SEC = 20;
 
@@ -36,7 +36,7 @@ const MAX_FUEL_SEC = 20;
 let hasStartedBlowing = false; 
 let fuelingDone = false;       
 
-// DOM要素 (感度スライダーをポーズ画面内のIDに変更)
+// DOM要素
 const els = {
     bg: document.getElementById('gameBg'),
     rocket: document.getElementById('rocket'),
@@ -47,7 +47,7 @@ const els = {
     micLevel: document.getElementById('micLevel'),
     paBtn: document.getElementById('paBtn'),
     
-    // ★変更: 感度設定はポーズメニュー内の要素を参照
+    // 感度設定
     threshVal: document.getElementById('threshVal_pause'),
     sensitivity: document.getElementById('sensitivity_pause'),
     
@@ -60,7 +60,7 @@ const els = {
     mapMarker: document.getElementById('mapMarker'),
     bgm: document.getElementById('bgm'),
     
-    // ★追加: ヘッダーとポーズ関連
+    // ヘッダーとポーズ
     gameHeader: document.getElementById('gameHeader'),
     stageNameDisplay: document.getElementById('stageNameDisplay'),
     pauseModal: document.getElementById('pauseModal')
@@ -75,15 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     goalDistance = STAGE_DATA[currentStageNum].distance;
 
-    // ★追加: ステージ名を表示
+    // ステージ名を表示
     els.stageNameDisplay.innerText = STAGE_DATA[currentStageNum].name;
 
-    // ★追加: スライダー操作時に数値を更新
+    // スライダー連動
     els.sensitivity.addEventListener('input', () => {
          els.threshVal.innerText = els.sensitivity.value;
     });
 
-    // セーブデータをロード
     loadGameData();
     updateDistanceDisplay();
 });
@@ -141,8 +140,7 @@ function startCountdown() {
             els.cdOverlay.classList.add('hidden');
             currentState = STATE.FUELING;
             
-            // ★追加: ゲーム開始でヘッダー（ポーズボタン）を表示
-            els.gameHeader.style.display = 'flex';
+            // ヘッダーは常に表示なので操作不要
             
             els.paBtn.innerText = "ふぅ〜っ！(給油中)";
             els.paBtn.disabled = true;
@@ -153,27 +151,25 @@ function startCountdown() {
     }, 1000);
 }
 
-// ■ ポーズ切り替え機能 (グローバル関数)
+// ■ ポーズ切り替え
 window.togglePause = function() {
     if (currentState === STATE.PAUSED) {
-        // 再開処理
+        // 再開
         currentState = lastState;
         els.pauseModal.classList.add('hidden');
         
-        // 飛行中ならBGMとアニメーション再開
         if (currentState === STATE.FLYING) {
             els.bgm.play();
             els.bg.classList.remove('speed-stop');
         }
     } else {
-        // ポーズ開始（初期状態や結果画面では無効）
-        if (currentState < STATE.FUELING || currentState === STATE.RESULT) return;
+        // ポーズ開始（INITでも押せるように制限を緩和、ただしRESULTは除外）
+        if (currentState === STATE.RESULT) return;
 
         lastState = currentState;
         currentState = STATE.PAUSED;
         els.pauseModal.classList.remove('hidden');
         
-        // 停止処理
         els.bgm.pause();
         els.bg.classList.add('speed-stop');
     }
@@ -181,7 +177,6 @@ window.togglePause = function() {
 
 // ■ メインループ
 function gameLoop() {
-    // ★追加: ポーズ中は処理をスキップ
     if (currentState === STATE.PAUSED) {
         requestAnimationFrame(gameLoop);
         return;
@@ -193,7 +188,7 @@ function gameLoop() {
     for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
     let average = sum / dataArray.length;
     
-    // 感度計算 (ポーズメニュー内のスライダー値)
+    // 感度
     const sensVal = parseInt(els.sensitivity.value);
     const threshold = 100 - (sensVal * 0.9); 
     els.threshVal.innerText = sensVal;
@@ -302,16 +297,14 @@ async function finishFlight() {
     els.bg.classList.remove('speed-fast');
     els.bg.classList.add('speed-stop');
     
-    // ★追加: 結果画面ではヘッダーを隠す
+    // 結果画面ではヘッダー隠す（ごちゃつくため）
     els.gameHeader.style.display = 'none';
     
     els.bgm.pause();
     playEngineStallSound();
 
     try {
-        console.log("セーブ開始...");
         await saveGameData(); 
-        console.log("セーブ成功");
     } catch (e) {
         console.error("セーブ失敗:", e);
     }
@@ -339,6 +332,9 @@ async function saveGameData() {
 function retryGame() {
     els.modal.classList.add('hidden');
     
+    // 再開時はヘッダーを再表示
+    els.gameHeader.style.display = 'flex';
+    
     fuelingDone = false;
     hasStartedBlowing = false;
     fuelSeconds = 0;
@@ -351,7 +347,7 @@ function retryGame() {
     startCountdown();
 }
 
-// --- 以下変更なし（マップ・音・モンスター） ---
+// --- そのほか ---
 function updateMap() {
     let progress = totalDistance / goalDistance;
     if (progress > 1) progress = 1;

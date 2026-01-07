@@ -7,13 +7,41 @@
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* --- 追加CSS: ヘッダーとポーズメニュー --- */
+        /* --- ヘッダーレイアウト調整 --- */
         .game-header {
-            position: absolute; top: 10px; left: 0; width: 100%; z-index: 20;
-            display: flex; justify-content: space-between; padding: 0 15px; box-sizing: border-box;
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 50px; /* 高さを確保 */
+            z-index: 50;  /* 最前面に */
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 0 15px; 
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); /* 見やすくする */
         }
+        
         .stage-title-display { font-size: 16px; text-shadow: 2px 2px 0 #000; color: #fff; }
-        .pause-btn { background: none; border: 2px solid #fff; border-radius: 5px; font-size: 20px; color: #fff; cursor: pointer; text-shadow: 2px 2px 0 #000; width: 40px; height: 40px; }
+        
+        .pause-btn { 
+            background: rgba(0,0,0,0.5); 
+            border: 2px solid #fff; 
+            border-radius: 5px; 
+            font-size: 20px; 
+            color: #fff; 
+            cursor: pointer; 
+            text-shadow: 2px 2px 0 #000; 
+            width: 40px; 
+            height: 40px; 
+        }
+
+        /* --- 重なり防止 --- */
+        /* info-panel を少し下げてヘッダーと被らないようにする */
+        .info-panel {
+            margin-top: 50px; /* ヘッダーの高さ分下げる */
+        }
 
         /* ポーズメニューモーダル */
         .pause-modal {
@@ -27,7 +55,7 @@
         }
         .hidden { display: none !important; }
 
-        /* ロケット位置の修正 (UIに被らないように) */
+        /* ロケット位置の修正 */
         .rocket { bottom: 220px !important; } 
     </style>
 </head>
@@ -37,8 +65,8 @@
     <div class="game-container game-screen">
         <div class="scrolling-bg speed-stop" id="gameBg"></div>
         
-        <header class="game-header" id="gameHeader" style="display:none;">
-            <div class="stage-title-display" id="stageNameDisplay">STAGE ???</div>
+        <header class="game-header" id="gameHeader">
+            <div class="stage-title-display" id="stageNameDisplay">LOADING...</div>
             <button class="pause-btn" onclick="togglePause()">||</button>
         </header>
         
@@ -114,7 +142,7 @@
                     <p>今回の飛行: <span id="resultDist" style="color:#f1c40f">0</span> km</p>
                     <p>現在の地点: <span id="totalDistDisplay">0</span> km</p>
                 </div>
-                <p style="font-size: 12px; color: #aaa;">記録をクラウドに送信中...</p>
+                <p style="font-size: 12px; color: #aaa;">記録を保存しました</p>
                 
                 <div class="modal-btns">
                     <button onclick="retryGame()" class="pixel-btn start-btn">この場所から再出発</button>
@@ -141,7 +169,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ログインチェック
         const uid = localStorage.getItem('user_uid');
         if(!uid) {
             alert("ログイン情報がありません。トップに戻ります。");
@@ -150,12 +177,11 @@
 
         window.DB = {};
 
-        // データのロード関数
+        // ロード関数
         window.DB.load = async () => {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const stageNum = urlParams.get('stage') || 1;
-
                 const docRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
                 const docSnap = await getDoc(docRef);
                 
@@ -169,12 +195,11 @@
             }
         };
 
-        // データのセーブ関数
+        // セーブ関数 (アラート削除済み)
         window.DB.save = async (logData, totalDistance) => {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const stageNum = urlParams.get('stage') || 1;
-
                 const userRef = doc(db, "users", uid);
                 const stageRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
 
@@ -186,10 +211,9 @@
                 }, { merge: true });
                 
                 console.log("Cloud Save Complete!");
-                alert("データがクラウドに保存されました！");
+                // ★アラートは削除しました
             } catch (e) {
                 console.error("Save Error:", e);
-                alert("保存エラー: " + e.message);
             }
         };
     </script>

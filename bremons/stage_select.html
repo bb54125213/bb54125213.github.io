@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ステージ選択 - BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ローディング中の表示用 */
+        #loadingMsg { text-align: center; margin-top: 20px; color: #f1c40f; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <audio id="bgm" src="./bgm/GuideToAdventure.mp3" loop autoplay></audio>
+
+    <div class="game-container stage-select-screen">
+        <div class="scrolling-bg"></div>
+        <div class="floating-layer" id="floatingLayer"></div>
+        
+        <div class="ui-layer">
+            
+            <div class="title-area" style="margin-top: 20px;">
+                <h1 class="game-title" style="font-size: 32px;">BREMONS</h1>
+            </div>
+
+            <header class="stage-select-header">
+                <button onclick="location.href='index.html'" class="pixel-btn back-btn">←戻る</button>
+                <h2 class="screen-title">ステージ選択</h2>
+            </header>
+
+            <div id="loadingMsg">データ確認中...</div>
+
+            <div class="stage-list hidden" id="stageList">
+                
+                <div id="panel_stage_1" class="stage-panel unlocked current" onclick="selectStage(1)">
+                    <div class="panel-header">
+                        <span class="stage-num">STAGE 1</span>
+                        <span id="status_stage_1" class="stage-status">READY</span>
+                    </div>
+                    <div class="stage-name">惑星インハレスへの旅路</div>
+                    <div class="stage-info">距離: 1億km</div> </div>
+
+                <div id="panel_stage_2" class="stage-panel locked">
+                    <div class="panel-header">
+                        <span class="stage-num">STAGE 2</span>
+                        <span id="status_stage_2" class="stage-status">🔒</span>
+                    </div>
+                    <div class="stage-name">惑星エクセールへ</div>
+                    <div class="stage-info">距離: 1億5千万km</div>
+                </div>
+
+                <div id="panel_stage_3" class="stage-panel locked">
+                    <div class="panel-header">
+                        <span class="stage-num">STAGE 3</span>
+                        <span id="status_stage_3" class="stage-status">🔒</span>
+                    </div>
+                    <div class="stage-name">惑星プネウマ</div>
+                    <div class="stage-info">詳細不明</div>
+                </div>
+
+            </div>
+            
+            <footer class="footer-area" style="margin-top: auto;">
+                <div class="version">Ver 2.1.0</div>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+            authDomain: "bremons.firebaseapp.com",
+            projectId: "bremons",
+            storageBucket: "bremons.firebasestorage.app",
+            messagingSenderId: "30413071482",
+            appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+            measurementId: "G-4D4FCXGDBG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ステージの目標距離設定 (game_script.jsと合わせる)
+        const STAGE_GOALS = {
+            1: 100000000,
+            2: 150000000,
+            3: 300000000
+        };
+
+        const uid = localStorage.getItem('user_uid');
+        if(!uid) {
+            alert("ログインしてください");
+            location.href = 'index.html';
+        }
+
+        // ステージ情報をチェックしてUI更新
+        async function checkStageStatus() {
+            // STAGE 1 の進捗取得
+            const s1Ref = doc(db, "users", uid, "stages", "stage_1");
+            const s1Snap = await getDoc(s1Ref);
+            const s1Dist = s1Snap.exists() ? (s1Snap.data().totalDistance || 0) : 0;
+
+            // STAGE 2 の進捗取得
+            const s2Ref = doc(db, "users", uid, "stages", "stage_2");
+            const s2Snap = await getDoc(s2Ref);
+            const s2Dist = s2Snap.exists() ? (s2Snap.data().totalDistance || 0) : 0;
+
+            // === UI更新ロジック ===
+            
+            // STAGE 1: 常に解放。クリアしたか判定
+            if (s1Dist >= STAGE_GOALS[1]) {
+                markAsCleared(1);
+                unlockStage(2); // 1クリアなら2を解放
+            } else {
+                markAsCurrent(1);
+            }
+
+            // STAGE 2: 解放されている場合、クリア判定
+            if (s1Dist >= STAGE_GOALS[1]) {
+                if (s2Dist >= STAGE_GOALS[2]) {
+                    markAsCleared(2);
+                    unlockStage(3); // 2クリアなら3を解放
+                } else {
+                    markAsCurrent(2);
+                }
+            }
+
+            // ロード完了
+            document.getElementById('loadingMsg').classList.add('hidden');
+            document.getElementById('stageList').classList.remove('hidden');
+        }
+
+        // ヘルパー関数: クリア済みの見た目にする
+        function markAsCleared(num) {
+            const p = document.getElementById(`panel_stage_${num}`);
+            const s = document.getElementById(`status_stage_${num}`);
+            p.className = "stage-panel unlocked cleared";
+            p.onclick = () => selectStage(num);
+            s.innerText = "CLEAR!";
+        }
+
+        // ヘルパー関数: 現在挑戦中の見た目にする
+        function markAsCurrent(num) {
+            const p = document.getElementById(`panel_stage_${num}`);
+            const s = document.getElementById(`status_stage_${num}`);
+            p.className = "stage-panel unlocked current";
+            p.onclick = () => selectStage(num);
+            s.innerText = "GO!";
+        }
+
+        // ヘルパー関数: ロック解除（まだクリアはしてない状態）
+        function unlockStage(num) {
+            // unlock処理は markAsCurrent の中で実質兼ねているが、
+            // 「まだ挑戦権を得たばかり」の状態を明示的にするならここ
+            // 今回は単純に markAsCurrent が呼ばれればOK
+        }
+
+        // グローバル関数への紐づけ
+        window.selectStage = function(n) {
+            window.location.href = `game_main.html?stage=${n}`;
+        };
+
+        // 実行
+        checkStageStatus();
+
+        // BGM対策
+        document.body.addEventListener('click', function() {
+            var bgm = document.getElementById('bgm');
+            if(bgm.paused) bgm.play();
+        }, { once: true });
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>

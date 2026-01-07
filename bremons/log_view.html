@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flight Log - BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* グラフエリア */
+        .chart-container {
+            width: 90%;
+            height: 300px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #fff;
+            margin: 10px auto;
+            padding: 10px;
+            border-radius: 10px;
+            position: relative;
+            z-index: 10;
+        }
+        /* リストエリア */
+        .log-list {
+            width: 90%;
+            height: 300px;
+            overflow-y: auto;
+            margin: 10px auto;
+            background: rgba(255,255,255,0.1);
+            font-size: 12px;
+            border-radius: 5px;
+            position: relative;
+            z-index: 10;
+        }
+        .log-item { border-bottom: 1px dashed #555; padding: 8px; }
+        
+        /* メニューボタン */
+        .header-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            z-index: 10;
+        }
+        .back-btn-styled {
+            position: absolute;
+            left: 20px;
+            font-family: 'DotGothic16', sans-serif;
+            background: #333;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 5px 10px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #000;
+        }
+        .back-btn-styled:active { transform: translate(2px, 2px); box-shadow: none; }
+    </style>
+</head>
+<body>
+    <audio id="bgm" src="./bgm/GuideToAdventure.mp3" loop autoplay></audio>
+
+    <div class="game-container">
+        <div class="scrolling-bg"></div>
+        
+        <div class="ui-layer" style="display:block; overflow-y:auto; position:relative; z-index:5;">
+            
+            <header class="header-area">
+                <button onclick="location.href='index.html'" class="back-btn-styled">← MENU</button>
+                <h2 style="font-size: 18px; margin:0;">宇宙飛行士<span id="pilotName" style="color:#f1c40f"></span>の<br>航行記録</h2>
+            </header>
+
+            <div class="chart-container">
+                <canvas id="myChart"></canvas>
+            </div>
+
+            <div id="logList" class="log-list">
+                <div style="text-align:center; padding:20px;">データを読み込み中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+            authDomain: "bremons.firebaseapp.com",
+            projectId: "bremons",
+            storageBucket: "bremons.firebasestorage.app",
+            messagingSenderId: "30413071482",
+            appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+            measurementId: "G-4D4FCXGDBG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const uid = localStorage.getItem('user_uid');
+        if(!uid) location.href = 'index.html';
+
+        const userName = localStorage.getItem('user_name') || "名無し";
+        document.getElementById('pilotName').innerText = userName;
+
+        async function renderLog() {
+            const docRef = doc(db, "users", uid, "stages", "stage_1");
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists() && docSnap.data().history) {
+                const logs = docSnap.data().history;
+                
+                const labels = [];
+                const totalDistData = [];
+                const fuelData = []; // ★追加: 燃料データ用配列
+                let runningTotal = 0;
+
+                logs.forEach((l, i) => {
+                    labels.push(`Flight ${i+1}`);
+                    runningTotal += l.distance; 
+                    totalDistData.push(runningTotal / 1000);
+                    fuelData.push(l.fuelDuration); // ★追加: データをプッシュ
+                });
+
+                // リスト表示
+                const listEl = document.getElementById('logList');
+                listEl.innerHTML = "";
+                [...logs].reverse().forEach((l, i) => {
+                    const date = new Date(l.date).toLocaleString();
+                    const div = document.createElement('div');
+                    div.className = 'log-item';
+                    div.innerHTML = `[${date}]<br>チャージ: <span style="color:#f1c40f">${l.fuelDuration}秒</span> / 飛行: ${l.distance.toLocaleString()}km`;
+                    listEl.appendChild(div);
+                });
+
+                // Chart.js 描画
+                const ctx = document.getElementById('myChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            // データセット1: 総距離 (青エリア)
+                            {
+                                label: '総飛行距離 (x1000 km)',
+                                data: totalDistData,
+                                borderColor: '#3498db',
+                                backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                                fill: true,
+                                tension: 0.1,
+                                yAxisID: 'y1' // 右軸へ
+                            },
+                            // データセット2: 燃料チャージ (黄ライン)
+                            {
+                                label: '燃料チャージ時間 (秒)',
+                                data: fuelData,
+                                borderColor: '#f1c40f',
+                                backgroundColor: '#f1c40f',
+                                fill: false,
+                                tension: 0.1,
+                                yAxisID: 'y' // 左軸へ
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { labels: { color: 'white', font: {family: 'DotGothic16'} } }
+                        },
+                        scales: {
+                            x: { ticks: { color: 'white' } },
+                            // 左軸 (燃料)
+                            y: { 
+                                type: 'linear', display: true, position: 'left',
+                                ticks: { color: '#f1c40f' }, 
+                                title: {display:true, text:'秒', color:'white'},
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            },
+                            // 右軸 (距離)
+                            y1: { 
+                                type: 'linear', display: true, position: 'right',
+                                ticks: { color: '#3498db' }, 
+                                grid: { drawOnChartArea: false } // グリッド線が重ならないように
+                            }
+                        }
+                    }
+                });
+
+            } else {
+                document.getElementById('logList').innerHTML = "<p style='text-align:center;'>データがまだありません</p>";
+            }
+        }
+
+        // クリック時も再生（念のため）
+        document.body.addEventListener('click', () => {
+            const bgm = document.getElementById('bgm');
+            if(bgm && bgm.paused) {
+                bgm.volume = 0.3;
+                bgm.play().catch(e=>{});
+            }
+        }, { once: true });
+
+        renderLog();
+    </script>
+</body>
+</html>

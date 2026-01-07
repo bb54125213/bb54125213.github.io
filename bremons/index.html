@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <audio id="bgm" src="./bgm/GuideToAdventure.mp3" loop></audio>
+    <div class="game-container menu-screen">
+        <div class="scrolling-bg"></div>
+        <div class="floating-layer" id="floatingLayer"></div>
+
+        <div class="ui-layer">
+            <div class="title-area">
+                <h1 class="game-title">BREMONS</h1>
+                <span class="subtitle">- ブレモンズ -</span>
+            </div>
+
+            <div id="loginArea" class="menu-list">
+                <p>パイロット認証が必要です</p>
+                <button id="loginBtn" class="pixel-btn start-btn">Googleでログイン</button>
+            </div>
+
+            <nav id="menuArea" class="menu-list hidden">
+                <p>ようこそ、宇宙飛行士<span id="userName" style="color:#f1c40f;">パイロット</span></p>
+                <button onclick="startGame()" class="pixel-btn start-btn">ゲームスタート</button>
+                <button onclick="location.href='log_view.html'" class="pixel-btn">軌跡をみる(グラフ)</button>
+                <button onclick="goOnline()" class="pixel-btn">オンラインで</button>
+                <button id="logoutBtn" class="pixel-btn" style="font-size:14px; background:#555;">ログアウト</button>
+            </nav>
+            
+            <footer class="footer-area">
+                <div class="version">Ver 2.0.0 (Cloud)</div>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // ★★★ ここにコピーした firebaseConfig を貼り付けてください ★★★
+        const firebaseConfig = {
+        apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+        authDomain: "bremons.firebaseapp.com",
+        projectId: "bremons",
+        storageBucket: "bremons.firebasestorage.app",
+        messagingSenderId: "30413071482",
+        appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+        measurementId: "G-4D4FCXGDBG"
+        };
+
+        // Firebase初期化
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // 要素
+        const loginArea = document.getElementById('loginArea');
+        const menuArea = document.getElementById('menuArea');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userNameSpan = document.getElementById('userName');
+
+        // ログイン処理
+        loginBtn.addEventListener('click', () => {
+            signInWithPopup(auth, provider)
+                .catch((error) => alert("ログイン失敗: " + error.message));
+        });
+
+        // ログアウト処理
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // ログイン状態の監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // ログイン中
+                loginArea.classList.add('hidden');
+                menuArea.classList.remove('hidden');
+                userNameSpan.innerText = user.displayName || "名無しパイロット";
+                
+                // ユーザー情報をローカルストレージにも保存（ゲーム画面へ渡す簡易的な方法）
+                localStorage.setItem('user_uid', user.uid);
+                localStorage.setItem('user_name', user.displayName);
+            } else {
+                // ログアウト中
+                loginArea.classList.remove('hidden');
+                menuArea.classList.add('hidden');
+                localStorage.removeItem('user_uid');
+            }
+        });
+        
+        // 通常のJS関数をグローバルに公開（module内だと隠蔽されるため）
+        window.startGame = function() {
+            window.location.href = "stage_select.html";
+        };
+        window.goOnline = function() { alert("オンライン対戦（準備中）"); };
+        // BGM再生の強化
+        document.addEventListener('DOMContentLoaded', () => {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.3;
+
+            // ページ読み込み時に再生を試みる
+            bgm.play().catch(() => {
+                console.log("自動再生がブロックされました。ユーザー操作を待ちます。");
+            });
+
+            // 画面のどこかをクリックしたら再生
+            document.body.addEventListener('click', () => {
+                if (bgm.paused) {
+                    bgm.play();
+                }
+            }, { once: true });
+        });
+    </script>
+    
+    <script src="script.js"></script>
+    <style> .hidden { display: none !important; } </style>
+</body>
+</html>

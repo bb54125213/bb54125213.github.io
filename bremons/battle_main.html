@@ -227,9 +227,13 @@
 
         <div id="countdownOverlay" class="countdown-layer hidden">
             <div id="countdownText">3</div>
-            <div id="matchMsg" class="matching-msg hidden">対戦相手を探しています...</div>
-            <div id="waitingCount" style="color:#2ecc71; margin:10px 0; font-size:14px;">待機中のプレイヤー: 確認中...</div>
-            <button onclick="cancelMatching()" class="pixel-btn" style="background:#d8ec92; margin-top:20px;">キャンセル</button>
+            
+            <div id="matchArea" class="hidden" style="text-align:center;">
+                <div id="matchMsg" class="matching-msg">対戦相手を探しています...</div>
+                
+                <div id="waitingCount" style="color:#2ecc71; margin:10px 0; font-size:14px;">待機中のプレイヤー: 確認中...</div>
+                <button onclick="cancelMatching()" class="pixel-btn" style="background:#e74c3c; margin-top:20px;">キャンセル</button>
+            </div>
         </div>
 
         <div id="resultModal" class="battle-modal hidden">

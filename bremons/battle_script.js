@@ -114,49 +114,58 @@ async function initAudio() {
     }
 }
 
-// --- オンライン マッチング処理 ---
+// --- オンライン マッチング処理 (修正版) ---
 async function startMatching() {
+    // UI表示
     els.countdownOverlay.classList.remove('hidden');
     els.countdownText.innerText = "";
     document.getElementById('matchArea').classList.remove('hidden');
     monitorWaitingPlayers();
-    els.matchMsg.classList.remove('hidden');
 
     const roomsRef = ref(db, 'rooms');
+    
+    // 一度だけデータを取得して空き部屋を探す
     const snapshot = await get(roomsRef);
     let foundRoomId = null;
 
-    // 空き部屋('waiting')を探す
     if (snapshot.exists()) {
-        snapshot.forEach(childSnap => {
-            const val = childSnap.val();
+        const rooms = snapshot.val();
+        // 古い順（キー順）に探す
+        for (const [key, val] of Object.entries(rooms)) {
+            // "waiting" かつ "自分が作った部屋じゃない" 場合に参加
             if (val.status === 'waiting') {
-                foundRoomId = childSnap.key;
+                foundRoomId = key;
+                break; // 最初に見つけた部屋に入る
             }
-        });
+        }
     }
 
     if (foundRoomId) {
-        // 部屋に参加 (Guest)
+        // --- GUEST参加 ---
         roomId = foundRoomId;
         myRole = 'guest';
+        
+        // 参加書き込み
         await update(ref(db, `rooms/${roomId}`), {
             guest: { name: myName, life: MAX_LIFE },
-            status: 'playing'
+            status: 'playing' // ステータスを変更してゲーム開始へ
         });
+        
         setupRoomListener();
+
     } else {
-        // 部屋を作成 (Host)
+        // --- HOST作成 ---
         const newRoomRef = push(roomsRef);
         roomId = newRoomRef.key;
         myRole = 'host';
+        
         await set(newRoomRef, {
             host: { name: myName, life: MAX_LIFE },
             status: 'waiting',
             createdAt: Date.now()
         });
         
-        // 切断時に部屋を削除
+        // 切断時に自動削除
         onDisconnect(newRoomRef).remove();
         setupRoomListener();
     }

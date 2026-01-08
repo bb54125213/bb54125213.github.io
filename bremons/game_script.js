@@ -28,29 +28,33 @@ let fuelSeconds = 0;
 let chargedFuelSeconds = 0; 
 let flightDistance = 0;    
 let totalDistance = 0;     
+const FLIGHT_SPEED = 500000; // ご希望通り維持
 const MAX_FUEL_SEC = 20;
 
 let hasStartedBlowing = false; 
 let fuelingDone = false;       
 
-// ★追加要素
+// ★追加1: 星とロケット制御用変数
 let starCount = 0;
 let blueStarCount = 0;
-let stars = []; // 画面上の星オブジェクト
-let rocketX = 50; // ロケットの横位置 (0-100%)
-let targetX = 50; // 目標位置 (音程で制御)
+let stars = []; 
+let rocketX = 50; 
+let targetX = 50; 
 
 // 音声認識設定
 const THOUSAND_INDEX = 24;
+// デフォルト値
 let micConfig = {
     noiseThreshold: 0.05, 
     paProfile: [0.032, 0.041, 0.014, 0.022, 0.009, 0.017, 0.005, 0.022, 0.011, 0.010, 0.029, 0.092, 0.135, 0.139, 0.051, 0.013, 0.009, 0.012, 0.014, 0.014, 0.008, 0.009, 0.017, 0.007]
 };
 
+// ★追加2: コックピット設定の読み込み
 const savedConfig = localStorage.getItem('mic_config_v2');
 if(savedConfig) {
     try {
         micConfig = JSON.parse(savedConfig);
+        console.log("Cockpit Config Loaded:", micConfig);
     } catch(e) { console.error("Config Error"); }
 }
 
@@ -75,7 +79,7 @@ const els = {
     stageNameDisplay: document.getElementById('stageNameDisplay'),
     pauseModal: document.getElementById('pauseModal'),
     retryBtn: document.getElementById('retryBtn'),
-    // ★追加UI
+    // ★追加3: 星カウント表示用
     countStar: document.getElementById('countStar'),
     countBlue: document.getElementById('countBlue')
 };
@@ -141,17 +145,16 @@ window.tryRetry = async function() {
     els.modal.classList.add('hidden');
     els.gameHeader.style.display = 'flex';
     
-    // リセット処理
     fuelingDone = false;
     hasStartedBlowing = false;
     fuelSeconds = 0;
     chargedFuelSeconds = 0; 
     flightDistance = 0;
     
-    // ★星リセット
+    // ★追加4: リトライ時の星リセット
     starCount = 0; blueStarCount = 0;
-    els.countStar.innerText = 0;
-    els.countBlue.innerText = 0;
+    if(els.countStar) els.countStar.innerText = 0;
+    if(els.countBlue) els.countBlue.innerText = 0;
     stars.forEach(s => s.el.remove());
     stars = [];
     rocketX = 50; targetX = 50;
@@ -173,7 +176,7 @@ async function initGame() {
         analyser = audioContext.createAnalyser();
         microphone = audioContext.createMediaStreamSource(stream);
         microphone.connect(analyser);
-        // ★飛行時の音程検知のためFFTサイズを少し大きくして精度を上げる
+        // ★飛行時の音程検知のためFFTサイズを少し大きく
         analyser.fftSize = 2048; 
         dataArray = new Uint8Array(analyser.frequencyBinCount);
         isMicActive = true;
@@ -246,8 +249,8 @@ function gameLoop() {
     for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
     let average = sum / dataArray.length;
     
-    // 最大音量チェック
-    for(let i=0; i<THOUSAND_INDEX; i++) { // 判定用は低音重視
+    // 判定用最大音量
+    for(let i=0; i<THOUSAND_INDEX; i++) {
         const val = dataArray[i] / 255.0;
         if(val > max_amplitude) max_amplitude = val;
     }
@@ -257,9 +260,10 @@ function gameLoop() {
     for(let i=30; i<100; i++) highFreqEnergy += dataArray[i];
     const highFreqAvg = highFreqEnergy / 70;
 
-    // UI更新
+    // UI更新 (コックピット閾値基準)
     let visualLevel = Math.min(100, (max_amplitude / micConfig.noiseThreshold) * 30); 
     els.micLevel.style.width = visualLevel + '%';
+    
     const isOverThreshold = max_amplitude > micConfig.noiseThreshold;
     els.micLevel.style.backgroundColor = isOverThreshold ? '#2ecc71' : '#555';
 
@@ -267,25 +271,23 @@ function gameLoop() {
         const isBlowing = isOverThreshold && (highFreqAvg > 10);
         processFueling(isBlowing);
     } else if (currentState === STATE.FLYING) {
-        // ★飛行中は音程検知
+        // ★追加5: 音程検知
         const pitchX = detectPitchX();
         if (pitchX !== null) {
             targetX = pitchX;
         }
         processFlying();
+        // 飛行中も「ぱっ」などは監視しない（星操作に集中）
     }
     requestAnimationFrame(gameLoop);
 }
 
-// ★音程検知ロジック
-// 最も音量が大きい周波数を探し、それを0~100の位置にマッピングする
+// ★追加6: 音程検知ロジック
 function detectPitchX() {
     let maxVal = -1;
     let maxIndex = -1;
 
-    // 探索範囲: 口笛や歌声の帯域 (例: 500Hz ~ 2000Hzあたり)
-    // sampleRate 44100Hz / 2048(fft) = 21.5Hz/bin
-    // index 20(430Hz) ~ 100(2150Hz) くらいを見る
+    // 音声帯域 (index 20~100) をスキャン
     const startBin = 20; 
     const endBin = 100;
 
@@ -296,11 +298,10 @@ function detectPitchX() {
         }
     }
 
-    // 音が小さすぎる場合は無視
-    if (maxVal < 100) return null; // 閾値（要調整）
+    // ノイズ閾値より小さい音は無視
+    if ((maxVal / 255.0) < micConfig.noiseThreshold) return null;
 
-    // インデックスを 0~100% に変換
-    // 低い音(左) -> 高い音(右)
+    // 位置を0-100にマッピング
     let percent = ((maxIndex - startBin) / (endBin - startBin)) * 100;
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;
@@ -310,12 +311,14 @@ function detectPitchX() {
 
 function analyzeVoice(maxAmp) {
     if (maxAmp < micConfig.noiseThreshold) return null;
+
     let Pa_euclid = 0;
     for (let i = 0; i < THOUSAND_INDEX; i++) {
         const spectrumVal = dataArray[i] / 255.0; 
         Pa_euclid += Math.pow(micConfig.paProfile[i] - spectrumVal, 2);
     }
     const Pa_odds = 1 / (1 + Math.sqrt(Pa_euclid));
+    
     if (Pa_odds >= 0.70) return "ぱっ";
     return null;
 }
@@ -324,6 +327,7 @@ function processFueling(isBlowing) {
     if (fuelingDone) {
         let maxAmp = 0;
         for(let i=0; i<THOUSAND_INDEX; i++) if(dataArray[i]/255.0 > maxAmp) maxAmp = dataArray[i]/255.0;
+        
         const recognized = analyzeVoice(maxAmp);
         if (recognized === "ぱっ") {
             launchRocket();
@@ -338,8 +342,14 @@ function processFueling(isBlowing) {
         els.fuelTime.innerText = fuelSeconds.toFixed(2);
         
         let barPercent = (fuelSeconds / MAX_FUEL_SEC) * 100;
-        if (fuelSeconds > MAX_FUEL_SEC) barPercent = 100;
+        if (fuelSeconds > MAX_FUEL_SEC) {
+            barPercent = 100;
+            els.fuelBar.classList.add('overcharge');
+        } else {
+            els.fuelBar.classList.remove('overcharge');
+        }
         els.fuelBar.style.width = barPercent + '%';
+
     } else {
         if (hasStartedBlowing) {
             fuelingDone = true;
@@ -347,6 +357,7 @@ function processFueling(isBlowing) {
             els.paBtn.innerText = "「ぱっ！」と言って発射";
             els.paBtn.style.backgroundColor = "#e74c3c";
             els.paBtn.onclick = launchRocket;
+            els.fuelBar.classList.remove('overcharge');
             playBlipSound(800);
         }
     }
@@ -355,10 +366,11 @@ function processFueling(isBlowing) {
 function launchRocket() {
     currentState = STATE.FLYING;
     flightDistance = 0; 
+    // ★追加7: 星リセット
     starCount = 0; blueStarCount = 0;
-    els.countStar.innerText = 0;
-    els.countBlue.innerText = 0;
-    
+    if(els.countStar) els.countStar.innerText = 0;
+    if(els.countBlue) els.countBlue.innerText = 0;
+
     els.bgm.currentTime = 0;
     els.bgm.volume = 0.3;
     els.bgm.play();
@@ -376,20 +388,17 @@ function processFlying() {
     flightDistance += distDelta;   
     totalDistance += distDelta;
     
-    // ★修正: 10倍長く飛べるように (0.1倍消費)
-    fuelSeconds -= (timeDelta * 0.1); 
+    // ★飛行時間を2倍（0.5倍消費）に
+    fuelSeconds -= (timeDelta * 0.5); 
 
     if (fuelSeconds <= 0) {
         fuelSeconds = 0;
         finishFlight();
     }
     
-    // ★ロケット移動 (ターゲットに向かって滑らかに)
-    // 現在位置に ターゲットとの差分の 10% を加算する（補間）
+    // ★追加8: ロケット移動と星更新
     rocketX += (targetX - rocketX) * 0.1;
     els.rocket.style.left = rocketX + "%";
-
-    // ★星の生成と移動
     updateStars();
 
     els.fuelTime.innerText = fuelSeconds.toFixed(2);
@@ -397,50 +406,48 @@ function processFlying() {
     updateDistanceDisplay();
 }
 
-// ★星の処理
+// ★追加9: 星の生成と当たり判定
 function updateStars() {
-    // 生成 (ランダム)
-    if (Math.random() < 0.05) { // 生成確率 (調整可)
-        const isBlue = Math.random() < 0.2; // 20%で青星
+    // 生成 (5%の確率)
+    if (Math.random() < 0.05) { 
+        const isBlue = Math.random() < 0.2; 
         const starEl = document.createElement('img');
         starEl.src = isBlue ? './nightgame/bluestar.png' : './nightgame/star.png';
         starEl.className = 'falling-star';
         
         // ランダムな音階（X座標）
-        const starX = Math.random() * 90 + 5; // 5%~95%
+        const starX = Math.random() * 90 + 5; 
         starEl.style.left = starX + "%";
-        starEl.style.top = "-50px"; // 画面上から
+        starEl.style.top = "-50px"; 
         
         els.gameLayer.appendChild(starEl);
         stars.push({ el: starEl, x: starX, y: -50, isBlue: isBlue });
     }
 
-    // 移動と当たり判定
     const rocketRect = els.rocket.getBoundingClientRect();
     
-    // 逆ループで削除しても安全に
     for (let i = stars.length - 1; i >= 0; i--) {
         const s = stars[i];
-        s.y += 3; // 落下速度
+        s.y += 3; 
         s.el.style.top = s.y + "px";
 
         const starRect = s.el.getBoundingClientRect();
 
-        // 当たり判定 (矩形交差)
+        // 当たり判定
         if (
             starRect.left < rocketRect.right &&
             starRect.right > rocketRect.left &&
             starRect.top < rocketRect.bottom &&
             starRect.bottom > rocketRect.top
         ) {
-            // GET!
+            // GET
             if (s.isBlue) {
                 blueStarCount++;
-                els.countBlue.innerText = blueStarCount;
+                if(els.countBlue) els.countBlue.innerText = blueStarCount;
                 playBlipSound(1200);
             } else {
                 starCount++;
-                els.countStar.innerText = starCount;
+                if(els.countStar) els.countStar.innerText = starCount;
                 playBlipSound(880);
             }
             s.el.remove();
@@ -448,7 +455,7 @@ function updateStars() {
             continue;
         }
 
-        // 画面外削除
+        // 画面外
         if (s.y > window.innerHeight) {
             s.el.remove();
             stars.splice(i, 1);
@@ -497,7 +504,7 @@ async function saveGameData() {
         date: new Date().toISOString(),
         fuelDuration: parseFloat(chargedFuelSeconds.toFixed(2)),
         distance: Math.floor(flightDistance),
-        // ★追加: 星ログ
+        // ★追加10: ログ保存
         stars: starCount,
         blueStars: blueStarCount
     };

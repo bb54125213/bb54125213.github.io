@@ -1,3 +1,14 @@
+// ★ バージョン一括管理
+const GAME_VERSION = "3.1.1";
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 画面内の .version クラスを持つ要素をすべて書き換える
+    const verEls = document.querySelectorAll('.version');
+    verEls.forEach(el => {
+        el.innerText = "Ver " + GAME_VERSION;
+    });
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     
     // BGMの再生（ユーザー操作が必要な場合があるため、クリックでも発火するようにする）

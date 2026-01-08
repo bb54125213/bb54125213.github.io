@@ -20,10 +20,7 @@
         .hidden { display: none !important; }
         .pause-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .pause-content { background: #fff; color: #333; padding: 30px; border-radius: 10px; text-align: center; width: 80%; border: 4px solid #333; }
-        
-        /* ポーズ画面の警告文 */
         .pause-warning { font-size: 12px; color: #e74c3c; margin-top: 5px; font-weight: bold; }
-        /* リザルトの所持数 */
         .result-inventory { font-size: 14px; margin: 10px 0; color: #2ecc71; font-weight: bold; }
     </style>
 </head>
@@ -64,7 +61,7 @@
             </div>
 
             <div id="messageArea" class="message-area">
-                <p>エネルギー充填中...<br>(モンスター消費)</p>
+                <p>エネルギー充填中...<br>(パートナー待機中)</p>
             </div>
 
             <div class="control-panel">
@@ -90,12 +87,11 @@
                     <input type="range" id="sensitivity_pause" min="0" max="100" value="45" style="width:100%;">
                     <p style="font-size:10px; color:#666;">※数値が高いほど小さな音で反応します</p>
                 </div>
-                
-                <p class="pause-warning">※中断すると消費したモンスターは<br>戻りません！</p>
+                <p class="pause-warning">※中断するとパートナーは戻りません</p>
 
                 <div class="modal-btns">
                     <button onclick="togglePause()" class="pixel-btn start-btn">ゲーム再開</button>
-                    <button onclick="location.href='stage_select.html'" class="pixel-btn">中断してメニューへ</button>
+                    <button onclick="location.href='stage_select.html'" class="pixel-btn">航行を中断する</button>
                 </div>
             </div>
         </div>
@@ -107,12 +103,11 @@
                     <p>今回の飛行: <span id="resultDist" style="color:#f1c40f">0</span> km</p>
                     <p>現在の地点: <span id="totalDistDisplay">0</span> km</p>
                 </div>
-                
                 <div class="result-inventory">所持: <span id="currentStock">?</span> 匹</div>
                 
                 <div class="modal-btns">
-                    <button id="retryBtn" onclick="tryRetry()" class="pixel-btn start-btn">消費して再挑戦</button>
-                    <button onclick="location.href='stage_select.html'" class="pixel-btn">惑星へ戻る</button>
+                    <button id="retryBtn" onclick="tryRetry()" class="pixel-btn start-btn">力を借りて再出発</button>
+                    <button onclick="location.href='stage_select.html'" class="pixel-btn">一時撤退する</button>
                 </div>
             </div>
         </div>
@@ -147,7 +142,6 @@
             return docSnap.exists() ? (docSnap.data().totalDistance || 0) : 0;
         };
 
-        // ★現在の所持数を取得
         window.DB.getInventoryCount = async (costId) => {
             if(!costId) return 0;
             const userRef = doc(db, "users", uid);
@@ -162,15 +156,14 @@
             const userRef = doc(db, "users", uid);
             const updateField = {};
             updateField[`inventory.${costId}`] = increment(-1);
-            
             try {
                 await updateDoc(userRef, updateField);
                 window.readyToStart = true;
                 return true;
             } catch(e) {
                 console.error(e);
-                alert("エラー: モンスターを消費できませんでした");
-                location.href = "stage_select.html"; // 強制送還
+                alert("エラー: 通信に失敗しました");
+                location.href = "stage_select.html";
                 return false;
             }
         };
@@ -181,9 +174,7 @@
                 const stageNum = urlParams.get('stage') || 1;
                 const stageRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
                 const userRef = doc(db, "users", uid);
-
                 setDoc(userRef, { lastLogin: new Date().toISOString() }, { merge: true });
-
                 await setDoc(stageRef, {
                     totalDistance: totalDistance,
                     history: arrayUnion(logData)
@@ -195,10 +186,6 @@
     </script>
 
     <script src="game_script.js"></script>
-    <script>
-        // game_script.js の finishFlight 関数内で、この関数を呼ぶように後で連携します
-        // が、game_script.js から window.DB を呼ぶ形になっているので、
-        // 実際には game_script.js 側で updateInventoryDisplay を呼ぶように修正します。
-    </script>
+    <script src="script.js"></script> 
 </body>
 </html>

@@ -123,11 +123,11 @@ window.tryRetry = async function() {
     els.retryBtn.disabled = true;
     els.retryBtn.innerText = "確認中...";
 
-    // 在庫チェック
+    // 所持チェック
     if(window.DB.checkInventory) {
         const hasStock = await window.DB.checkInventory(currentCostId);
         if(!hasStock) {
-            alert("モンスターの在庫がありません！惑星に戻って捕獲してください。");
+            alert("モンスターの所持がありません！惑星に戻って捕獲してください。");
             location.href = "stage_select.html";
             return;
         }
@@ -372,7 +372,7 @@ async function finishFlight() {
         // 0匹ならボタン押せないようにする
         if(count < 1) {
             els.retryBtn.disabled = true;
-            els.retryBtn.innerText = "在庫なし";
+            els.retryBtn.innerText = "所持なし";
             els.retryBtn.style.backgroundColor = "#555";
         }
     }

@@ -14,9 +14,9 @@
         .owned-info { font-size: 14px; color: #fff; text-align: right; margin-top:5px; font-weight:bold; }
         .insufficient { opacity: 0.6; filter: grayscale(100%); pointer-events: none; border-color: #555 !important; }
         .insufficient .stage-status { color: #999 !important; }
-        /* レイアウト調整 */
-        .stage-list { margin-top: 10px; padding-right: 5px; } /* スクロールバーとの余白 */
+        .stage-list { margin-top: 10px; padding-right: 5px; } 
         .stage-panel { margin-bottom: 15px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -24,6 +24,8 @@
 
     <div class="game-container stage-select-screen">
         <div class="scrolling-bg"></div>
+        <div class="floating-layer" id="floatingLayer"></div>
+        
         <div class="ui-layer">
             <div class="title-area" style="margin-top: 20px;">
                 <h1 class="game-title" style="font-size: 32px;">BREMONS</h1>
@@ -37,14 +39,22 @@
             <div id="loadingMsg" style="text-align:center; margin-top:20px;">データ確認中...</div>
 
             <div class="stage-list hidden" id="stageList">
+                
                 <div id="panel_planet_1" class="stage-panel unlocked current" onclick="goPlanet(1)">
                     <div class="panel-header">
                         <span><span class="stage-type-label type-planet">探索</span>PLANET A</span>
                         <span class="stage-status">OPEN</span>
                     </div>
-                    <div class="stage-name">惑星インハレス</div>
-                    <div class="stage-info">ターゲット: Usa (Red)</div>
-                    <div class="owned-info">所持: <span id="count_usa" style="color:#2ecc71">0</span> 匹</div>
+                    <div class="panel-content-wrapper">
+                        <div class="hologram-container" style="color:#e74c3c;">
+                            <img src="./nightgame/red.png" class="hologram-img">
+                        </div>
+                        <div class="panel-text-info">
+                            <div class="stage-name">惑星インハレス</div>
+                            <div class="stage-info">ターゲット: Usa</div>
+                            <div class="owned-info">所持: <span id="count_usa" style="color:#2ecc71">0</span></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="panel_flight_1" class="stage-panel locked" onclick="goFlight(1, 'usa')">
@@ -52,9 +62,16 @@
                         <span><span class="stage-type-label type-flight">飛行</span>FLIGHT 1</span>
                         <span id="status_flight_1" class="stage-status">🔒</span>
                     </div>
-                    <div class="stage-name">エクセールへの旅路</div>
-                    <div class="cost-info">必要コスト: Usa 1匹 / 回</div>
-                    <div class="stage-info">距離: 1億km</div>
+                    <div class="panel-content-wrapper">
+                        <div class="panel-text-info">
+                            <div class="stage-name">エクセールへの旅路</div>
+                            <div class="cost-info">動力源: Usaの力</div>
+                            <div class="progress-area">
+                                <div class="progress-text">進捗: <span id="prog_text_1">0</span>%</div>
+                                <div class="progress-bar-bg"><div id="prog_bar_1" class="progress-bar-fill"></div></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="panel_planet_2" class="stage-panel locked" onclick="goPlanet(2)">
@@ -62,9 +79,16 @@
                         <span><span class="stage-type-label type-planet">探索</span>PLANET B</span>
                         <span id="status_planet_2" class="stage-status">🔒</span>
                     </div>
-                    <div class="stage-name">惑星エクセール</div>
-                    <div class="stage-info">ターゲット: Inv (Blue)</div>
-                    <div class="owned-info">所持: <span id="count_inv" style="color:#2ecc71">0</span> 匹</div>
+                    <div class="panel-content-wrapper">
+                        <div class="hologram-container" style="color:#3498db;">
+                            <img src="./nightgame/blue.png" class="hologram-img">
+                        </div>
+                        <div class="panel-text-info">
+                            <div class="stage-name">惑星エクセール</div>
+                            <div class="stage-info">ターゲット: Inv</div>
+                            <div class="owned-info">所持: <span id="count_inv" style="color:#2ecc71">0</span></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="panel_flight_2" class="stage-panel locked" onclick="goFlight(2, 'inv')">
@@ -72,9 +96,16 @@
                         <span><span class="stage-type-label type-flight">飛行</span>FLIGHT 2</span>
                         <span id="status_flight_2" class="stage-status">🔒</span>
                     </div>
-                    <div class="stage-name">プネウマへの旅路</div>
-                    <div class="cost-info">必要コスト: Inv 1匹 / 回</div>
-                    <div class="stage-info">距離: 1.5億km</div>
+                    <div class="panel-content-wrapper">
+                        <div class="panel-text-info">
+                            <div class="stage-name">プネウマへの旅路</div>
+                            <div class="cost-info">動力源: Invの力</div>
+                            <div class="progress-area">
+                                <div class="progress-text">進捗: <span id="prog_text_2">0</span>%</div>
+                                <div class="progress-bar-bg"><div id="prog_bar_2" class="progress-bar-fill"></div></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                  <div id="panel_planet_3" class="stage-panel locked" onclick="goPlanet(3)">
@@ -82,14 +113,21 @@
                         <span><span class="stage-type-label type-planet">探索</span>PLANET C</span>
                         <span id="status_planet_3" class="stage-status">🔒</span>
                     </div>
-                    <div class="stage-name">惑星プネウマ</div>
-                    <div class="stage-info">ターゲット: Him (Yellow)</div>
-                    <div class="owned-info">所持: <span id="count_him" style="color:#2ecc71">0</span> 匹</div>
+                    <div class="panel-content-wrapper">
+                        <div class="hologram-container" style="color:#f1c40f;">
+                            <img src="./nightgame/yellow.png" class="hologram-img">
+                        </div>
+                        <div class="panel-text-info">
+                            <div class="stage-name">惑星プネウマ</div>
+                            <div class="stage-info">ターゲット: Him</div>
+                            <div class="owned-info">所持: <span id="count_him" style="color:#2ecc71">0</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <footer class="footer-area" style="margin-top: auto;">
-                <div class="version">Ver 2.4.0</div>
+                <div class="version">Ver ---</div>
             </footer>
         </div>
         
@@ -102,7 +140,6 @@
                 </div>
             </div>
         </div>
-        
         <div id="alertDialog" class="custom-dialog-overlay hidden">
             <div class="custom-dialog-box">
                 <p id="alertMsg" class="dialog-msg">メッセージ</p>
@@ -131,6 +168,8 @@
         if(!uid) location.href = 'index.html';
 
         let inventory = { usa: 0, inv: 0, him: 0 };
+        // ステージの目標距離
+        const GOALS = { 1: 100000000, 2: 150000000, 3: 300000000 };
 
         async function init() {
             try {
@@ -144,6 +183,7 @@
                 document.getElementById('count_inv').innerText = inventory.inv || 0;
                 document.getElementById('count_him').innerText = inventory.him || 0;
 
+                // フライト進捗
                 const s1Ref = doc(db, "users", uid, "stages", "stage_1");
                 const s1Snap = await getDoc(s1Ref);
                 const s1Dist = s1Snap.exists() ? (s1Snap.data().totalDistance || 0) : 0;
@@ -152,18 +192,23 @@
                 const s2Snap = await getDoc(s2Ref);
                 const s2Dist = s2Snap.exists() ? (s2Snap.data().totalDistance || 0) : 0;
 
-                const f1Unlocked = s1Dist >= 100000000;
+                // ★進捗率の計算と表示
+                updateProgress(1, s1Dist);
+                updateProgress(2, s2Dist);
+
+                // === ロック解除＆コスト判定 ===
+                const f1Unlocked = s1Dist >= GOALS[1];
                 unlock("panel_flight_1", "status_flight_1", f1Unlocked);
                 checkCost("panel_flight_1", "usa");
 
                 if(f1Unlocked) {
                     unlock("panel_planet_2", "status_planet_2", false);
-                    const f2Unlocked = s2Dist >= 150000000;
+                    const f2Unlocked = s2Dist >= GOALS[2];
                     unlock("panel_flight_2", "status_flight_2", f2Unlocked);
                     checkCost("panel_flight_2", "inv");
                 }
 
-                if(s2Dist >= 150000000) {
+                if(s2Dist >= GOALS[2]) {
                     unlock("panel_planet_3", "status_planet_3", false);
                 }
 
@@ -171,6 +216,15 @@
                 document.getElementById('stageList').classList.remove('hidden');
 
             } catch(e) { console.error(e); }
+        }
+
+        function updateProgress(num, dist) {
+            const goal = GOALS[num];
+            let percent = Math.floor((dist / goal) * 100);
+            if(percent > 100) percent = 100;
+            
+            document.getElementById(`prog_text_${num}`).innerText = percent;
+            document.getElementById(`prog_bar_${num}`).style.width = percent + "%";
         }
 
         function unlock(panelId, statusId, isCleared) {
@@ -181,7 +235,7 @@
             p.classList.add('unlocked');
             if(isCleared) {
                 p.classList.add('cleared');
-                s.innerText = "CLEAR!";
+                s.innerText = "COMPLETE";
             } else {
                 p.classList.add('current');
                 s.innerText = "GO!";
@@ -194,7 +248,7 @@
             const count = inventory[monsterId] || 0;
             if(count < 1) {
                 p.classList.add('insufficient');
-                p.querySelector('.stage-status').innerText = "NO COST";
+                p.querySelector('.stage-status').innerText = "探索必要"; // 文言変更
             }
         }
 
@@ -205,35 +259,24 @@
             window.location.href = `planet_game.html?planet=${n}`;
         };
 
-        // ★カスタムダイアログ制御
         window.goFlight = function(n, monsterId) {
             const p = document.getElementById(`panel_flight_${n}`);
             if(p.classList.contains('locked')) return;
             if(p.classList.contains('insufficient')) return;
             
-            showConfirm(`モンスター(${monsterId})を1匹消費して出発しますか？`, () => {
+            showConfirm(`モンスター(${monsterId})の力を借りて出発しますか？`, () => {
                 window.location.href = `game_main.html?stage=${n}&cost=${monsterId}`;
             });
         };
 
-        // ダイアログ表示関数
         function showConfirm(msg, onYes) {
             const dialog = document.getElementById('confirmDialog');
             document.getElementById('confirmMsg').innerText = msg;
             dialog.classList.remove('hidden');
-            
-            document.getElementById('btnYes').onclick = () => {
-                dialog.classList.add('hidden');
-                onYes();
-            };
-            document.getElementById('btnNo').onclick = () => {
-                dialog.classList.add('hidden');
-            };
+            document.getElementById('btnYes').onclick = () => { dialog.classList.add('hidden'); onYes(); };
+            document.getElementById('btnNo').onclick = () => { dialog.classList.add('hidden'); };
         }
-        
-        window.closeAlert = function() {
-            document.getElementById('alertDialog').classList.add('hidden');
-        };
+        window.closeAlert = function() { document.getElementById('alertDialog').classList.add('hidden'); };
         
         document.body.addEventListener('click', function() {
             var bgm = document.getElementById('bgm');

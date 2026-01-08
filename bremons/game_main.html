@@ -58,14 +58,6 @@
                     燃料: <span id="fuelTime">0.00</span> 秒分
                     <div class="fuel-bar-container"><div class="fuel-bar" id="fuelBar"></div></div>
                 </div>
-                <div class="star-counters">
-                    <div class="star-count-item">
-                        <img src="./nightgame/star.png" class="icon-sm"> x <span id="countStar">0</span>
-                    </div>
-                    <div class="star-count-item">
-                        <img src="./nightgame/bluestar.png" class="icon-sm"> x <span id="countBlue">0</span>
-                    </div>
-                </div>
             </div>
 
             <div id="messageArea" class="message-area">
@@ -161,7 +153,6 @@
         window.DB.consumeAndStart = async (costId) => {
             const userRef = doc(db, "users", uid);
             const updateField = {};
-            // ネスト更新用ドット記法
             updateField[`inventory.${costId}`] = increment(-1);
             try {
                 await updateDoc(userRef, updateField);
@@ -182,12 +173,8 @@
                 const stageRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
                 const userRef = doc(db, "users", uid);
 
-                // 今回のスコア
                 const thisFlightDist = logData.distance;
                 const thisFuelTime = logData.fuelDuration;
-                // ★追加: 星の数
-                const stars = logData.stars || 0;
-                const blueStars = logData.blueStars || 0;
 
                 const userSnap = await getDoc(userRef);
                 const userData = userSnap.exists() ? userSnap.data() : {};
@@ -200,10 +187,7 @@
                     displayName: localStorage.getItem('user_name') || "名無し",
                     maxSingleFlight: newMaxDist,
                     maxFuelDuration: newMaxFuel,
-                    totalGlobalDistance: increment(thisFlightDist),
-                    // ★累積加算
-                    totalStars: increment(stars),
-                    totalBlueStars: increment(blueStars)
+                    totalGlobalDistance: increment(thisFlightDist)
                 }, { merge: true });
 
                 await setDoc(stageRef, {

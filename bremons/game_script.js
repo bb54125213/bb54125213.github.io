@@ -28,20 +28,13 @@ let fuelSeconds = 0;
 let chargedFuelSeconds = 0; 
 let flightDistance = 0;    
 let totalDistance = 0;     
-const FLIGHT_SPEED = 500000; // ご希望通り維持
+const FLIGHT_SPEED = 500000;
 const MAX_FUEL_SEC = 20;
 
 let hasStartedBlowing = false; 
 let fuelingDone = false;       
 
-// ★追加1: 星とロケット制御用変数
-let starCount = 0;
-let blueStarCount = 0;
-let stars = []; 
-let rocketX = 50; 
-let targetX = 50; 
-
-// 音声認識設定
+// 音声認識設定 (Load Config)
 const THOUSAND_INDEX = 24;
 // デフォルト値
 let micConfig = {
@@ -49,7 +42,7 @@ let micConfig = {
     paProfile: [0.032, 0.041, 0.014, 0.022, 0.009, 0.017, 0.005, 0.022, 0.011, 0.010, 0.029, 0.092, 0.135, 0.139, 0.051, 0.013, 0.009, 0.012, 0.014, 0.014, 0.008, 0.009, 0.017, 0.007]
 };
 
-// ★追加2: コックピット設定の読み込み
+// コックピット設定の読み込み
 const savedConfig = localStorage.getItem('mic_config_v2');
 if(savedConfig) {
     try {
@@ -78,10 +71,7 @@ const els = {
     gameHeader: document.getElementById('gameHeader'),
     stageNameDisplay: document.getElementById('stageNameDisplay'),
     pauseModal: document.getElementById('pauseModal'),
-    retryBtn: document.getElementById('retryBtn'),
-    // ★追加3: 星カウント表示用
-    countStar: document.getElementById('countStar'),
-    countBlue: document.getElementById('countBlue')
+    retryBtn: document.getElementById('retryBtn')
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -150,18 +140,9 @@ window.tryRetry = async function() {
     fuelSeconds = 0;
     chargedFuelSeconds = 0; 
     flightDistance = 0;
-    
-    // ★追加4: リトライ時の星リセット
-    starCount = 0; blueStarCount = 0;
-    if(els.countStar) els.countStar.innerText = 0;
-    if(els.countBlue) els.countBlue.innerText = 0;
-    stars.forEach(s => s.el.remove());
-    stars = [];
-    rocketX = 50; targetX = 50;
-    els.rocket.style.left = "50%";
-
     els.retryBtn.disabled = false;
     els.retryBtn.innerText = "力を借りて再出発";
+
     els.fuelTime.innerText = "0.00";
     els.fuelBar.style.width = "0%";
     
@@ -171,13 +152,13 @@ window.tryRetry = async function() {
 
 async function initGame() {
     try {
+        // 余計なオプションを削除し、最も安定する設定に戻しました
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
         microphone = audioContext.createMediaStreamSource(stream);
         microphone.connect(analyser);
-        // ★飛行時の音程検知のためFFTサイズを少し大きく
-        analyser.fftSize = 2048; 
+        analyser.fftSize = 1024; 
         dataArray = new Uint8Array(analyser.frequencyBinCount);
         isMicActive = true;
         
@@ -243,24 +224,20 @@ function gameLoop() {
     if (!isMicActive) return;
     analyser.getByteFrequencyData(dataArray);
     
-    // --- 解析処理 ---
     let sum = 0;
     let max_amplitude = 0;
     for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
     let average = sum / dataArray.length;
     
-    // 判定用最大音量
     for(let i=0; i<THOUSAND_INDEX; i++) {
         const val = dataArray[i] / 255.0;
         if(val > max_amplitude) max_amplitude = val;
     }
 
-    // ブレス成分
     let highFreqEnergy = 0;
     for(let i=30; i<100; i++) highFreqEnergy += dataArray[i];
     const highFreqAvg = highFreqEnergy / 70;
 
-    // UI更新 (コックピット閾値基準)
     let visualLevel = Math.min(100, (max_amplitude / micConfig.noiseThreshold) * 30); 
     els.micLevel.style.width = visualLevel + '%';
     
@@ -271,42 +248,10 @@ function gameLoop() {
         const isBlowing = isOverThreshold && (highFreqAvg > 10);
         processFueling(isBlowing);
     } else if (currentState === STATE.FLYING) {
-        // ★追加5: 音程検知
-        const pitchX = detectPitchX();
-        if (pitchX !== null) {
-            targetX = pitchX;
-        }
         processFlying();
-        // 飛行中も「ぱっ」などは監視しない（星操作に集中）
+        // 飛行中も監視したい場合はここにanalyzeVoiceなどを入れる
     }
     requestAnimationFrame(gameLoop);
-}
-
-// ★追加6: 音程検知ロジック
-function detectPitchX() {
-    let maxVal = -1;
-    let maxIndex = -1;
-
-    // 音声帯域 (index 20~100) をスキャン
-    const startBin = 20; 
-    const endBin = 100;
-
-    for (let i = startBin; i < endBin; i++) {
-        if (dataArray[i] > maxVal) {
-            maxVal = dataArray[i];
-            maxIndex = i;
-        }
-    }
-
-    // ノイズ閾値より小さい音は無視
-    if ((maxVal / 255.0) < micConfig.noiseThreshold) return null;
-
-    // 位置を0-100にマッピング
-    let percent = ((maxIndex - startBin) / (endBin - startBin)) * 100;
-    if (percent < 0) percent = 0;
-    if (percent > 100) percent = 100;
-    
-    return percent;
 }
 
 function analyzeVoice(maxAmp) {
@@ -366,11 +311,6 @@ function processFueling(isBlowing) {
 function launchRocket() {
     currentState = STATE.FLYING;
     flightDistance = 0; 
-    // ★追加7: 星リセット
-    starCount = 0; blueStarCount = 0;
-    if(els.countStar) els.countStar.innerText = 0;
-    if(els.countBlue) els.countBlue.innerText = 0;
-
     els.bgm.currentTime = 0;
     els.bgm.volume = 0.3;
     els.bgm.play();
@@ -388,79 +328,16 @@ function processFlying() {
     flightDistance += distDelta;   
     totalDistance += distDelta;
     
-    // ★飛行時間を2倍（0.5倍消費）に
+    // 飛行時間を2倍（0.5倍消費）に
     fuelSeconds -= (timeDelta * 0.5); 
 
     if (fuelSeconds <= 0) {
         fuelSeconds = 0;
         finishFlight();
     }
-    
-    // ★追加8: ロケット移動と星更新
-    rocketX += (targetX - rocketX) * 0.1;
-    els.rocket.style.left = rocketX + "%";
-    updateStars();
-
     els.fuelTime.innerText = fuelSeconds.toFixed(2);
     els.fuelBar.style.width = Math.min(100, (fuelSeconds / MAX_FUEL_SEC) * 100) + '%';
     updateDistanceDisplay();
-}
-
-// ★追加9: 星の生成と当たり判定
-function updateStars() {
-    // 生成 (5%の確率)
-    if (Math.random() < 0.05) { 
-        const isBlue = Math.random() < 0.2; 
-        const starEl = document.createElement('img');
-        starEl.src = isBlue ? './nightgame/bluestar.png' : './nightgame/star.png';
-        starEl.className = 'falling-star';
-        
-        // ランダムな音階（X座標）
-        const starX = Math.random() * 90 + 5; 
-        starEl.style.left = starX + "%";
-        starEl.style.top = "-50px"; 
-        
-        els.gameLayer.appendChild(starEl);
-        stars.push({ el: starEl, x: starX, y: -50, isBlue: isBlue });
-    }
-
-    const rocketRect = els.rocket.getBoundingClientRect();
-    
-    for (let i = stars.length - 1; i >= 0; i--) {
-        const s = stars[i];
-        s.y += 3; 
-        s.el.style.top = s.y + "px";
-
-        const starRect = s.el.getBoundingClientRect();
-
-        // 当たり判定
-        if (
-            starRect.left < rocketRect.right &&
-            starRect.right > rocketRect.left &&
-            starRect.top < rocketRect.bottom &&
-            starRect.bottom > rocketRect.top
-        ) {
-            // GET
-            if (s.isBlue) {
-                blueStarCount++;
-                if(els.countBlue) els.countBlue.innerText = blueStarCount;
-                playBlipSound(1200);
-            } else {
-                starCount++;
-                if(els.countStar) els.countStar.innerText = starCount;
-                playBlipSound(880);
-            }
-            s.el.remove();
-            stars.splice(i, 1);
-            continue;
-        }
-
-        // 画面外
-        if (s.y > window.innerHeight) {
-            s.el.remove();
-            stars.splice(i, 1);
-        }
-    }
 }
 
 function updateDistanceDisplay() {
@@ -503,10 +380,7 @@ async function saveGameData() {
     const newLog = {
         date: new Date().toISOString(),
         fuelDuration: parseFloat(chargedFuelSeconds.toFixed(2)),
-        distance: Math.floor(flightDistance),
-        // ★追加10: ログ保存
-        stars: starCount,
-        blueStars: blueStarCount
+        distance: Math.floor(flightDistance)
     };
     if (window.DB && window.DB.save) {
         await window.DB.save(newLog, totalDistance);

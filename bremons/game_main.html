@@ -82,10 +82,8 @@
         <div id="pauseModal" class="pause-modal hidden">
             <div class="pause-content">
                 <h2>PAUSE</h2>
-                <div class="sensitivity-control" style="margin: 20px 0; color:#333; text-align:left;">
-                    <label>マイク感度: <span id="threshVal_pause">45</span></label>
-                    <input type="range" id="sensitivity_pause" min="0" max="100" value="45" style="width:100%;">
-                    <p style="font-size:10px; color:#666;">※数値が高いほど小さな音で反応します</p>
+                <div style="margin: 20px 0; color:#333; text-align:left;">
+                    <p>マイク感度は「コックピット」で<br>調整した設定が使用されています。</p>
                 </div>
                 <p class="pause-warning">※中断するとパートナーは戻りません</p>
 
@@ -155,6 +153,7 @@
         window.DB.consumeAndStart = async (costId) => {
             const userRef = doc(db, "users", uid);
             const updateField = {};
+            // ネスト更新用ドット記法
             updateField[`inventory.${costId}`] = increment(-1);
             try {
                 await updateDoc(userRef, updateField);

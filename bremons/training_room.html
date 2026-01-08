@@ -3,182 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Training Room</title>
+    <title>Calibration Room</title>
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        body { background: #111; color: #fff; text-align: center; height: 100vh; overflow: hidden; margin: 0; }
-        .training-container {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100%; width: 100%;
-        }
-        .training-header {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-sizing: border-box;
-            z-index: 10;
-        }
-        .training-title { font-size: 24px; color: #8e44ad; margin: 0; }
-        
-        /* 判定表示エリア */
-        .indicators {
-            display: flex; gap: 20px; margin-bottom: 20px; z-index: 5;
-        }
-        .indicator-group {
-            display: flex; flex-direction: column; align-items: center;
-        }
-        .indicator-box {
-            width: 100px; height: 100px;
-            border: 4px solid #555;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 40px; font-weight: bold;
-            color: #555;
-            background: rgba(0,0,0,0.5);
-            transition: all 0.1s;
-        }
-        .score-text {
-            font-size: 12px; margin-top: 5px; color: #777; font-family: monospace;
+        body { background: #111; color: #fff; text-align: center; height: 100dvh; overflow: hidden; margin: 0; touch-action: none; }
+        .container {
+            display: flex; flex-direction: column; align-items: center; height: 100%; width: 100%;
+            padding: 10px; box-sizing: border-box;
         }
         
-        /* 光ったとき */
-        .active-ha {
-            border-color: #f1c40f; color: #f1c40f;
-            background: rgba(241, 196, 15, 0.2);
-            box-shadow: 0 0 20px #f1c40f; transform: scale(1.1);
+        /* ヘッダー */
+        .header {
+            width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
         }
-        .active-pa {
-            border-color: #e74c3c; color: #e74c3c;
-            background: rgba(231, 76, 60, 0.2);
-            box-shadow: 0 0 20px #e74c3c; transform: scale(1.1);
-        }
+        .title { font-size: 20px; color: #8e44ad; margin: 0; }
 
-        /* ビジュアライザー */
-        .visualizer-container {
-            position: relative;
-            width: 300px; height: 150px;
-            background: #000; border: 2px solid #333;
-            margin-bottom: 20px;
+        /* ビジュアライザーエリア */
+        .vis-wrapper {
+            position: relative; width: 95%; height: 200px;
+            background: #000; border: 2px solid #333; border-radius: 4px;
+            margin-bottom: 10px;
         }
         canvas { display: block; width: 100%; height: 100%; }
-        
-        /* 閾値ライン（ビジュアライザー上に描画） */
-        .threshold-bar {
-            position: absolute; left: 0; right: 0; height: 2px; background: #e74c3c;
-            z-index: 10; pointer-events: none;
-            transition: bottom 0.1s;
-        }
-        .threshold-label {
-            position: absolute; right: 0; top: -15px; font-size: 10px; color: #e74c3c;
+        .vis-label {
+            position: absolute; top: 5px; right: 5px; font-size: 10px; color: #aaa; text-align: right;
         }
 
-        /* 感度設定 */
-        .sensitivity-panel {
-            width: 90%; max-width: 400px;
-            background: rgba(50, 50, 50, 0.8);
-            padding: 15px; border-radius: 10px;
-            border: 2px solid #fff;
-            z-index: 5;
+        /* 判定結果表示 */
+        .result-area {
+            display: flex; gap: 20px; margin-bottom: 15px; height: 80px;
         }
+        .res-box {
+            width: 80px; height: 80px; border: 3px solid #444; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05); transition: 0.1s;
+        }
+        .res-text { font-size: 32px; font-weight: bold; color: #666; }
+        .res-score { font-size: 10px; color: #aaa; margin-top: 5px; }
         
-        .start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        .active-ha { border-color: #f1c40f; background: rgba(241,196,15,0.3); box-shadow: 0 0 15px #f1c40f; transform: scale(1.1); }
+        .active-ha .res-text { color: #fff; }
+        .active-pa { border-color: #e74c3c; background: rgba(231,76,60,0.3); box-shadow: 0 0 15px #e74c3c; transform: scale(1.1); }
+        .active-pa .res-text { color: #fff; }
+
+        /* キャリブレーション操作盤 */
+        .control-panel {
+            width: 95%; background: rgba(30,30,30,0.8); border: 1px solid #555;
+            padding: 15px; border-radius: 8px;
+            display: flex; flex-direction: column; gap: 10px;
         }
+        .panel-title { font-size: 14px; color: #3498db; margin-bottom: 5px; text-align: left; }
+        
+        .calib-btns { display: flex; justify-content: space-between; gap: 10px; }
+        .calib-btn {
+            flex: 1; padding: 12px 0; font-family: 'DotGothic16', sans-serif;
+            background: #333; color: #fff; border: 1px solid #777; border-radius: 5px; cursor: pointer;
+            font-size: 12px; transition: 0.2s;
+        }
+        .calib-btn:active { transform: translateY(2px); }
+        .btn-noise { border-color: #95a5a6; }
+        .btn-ha { border-color: #f1c40f; }
+        .btn-pa { border-color: #e74c3c; }
+        
+        .recording { background: #e74c3c !important; color: #fff !important; animation: pulse 0.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        .reset-btn {
+            margin-top: 10px; background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 12px;
+        }
+
+        .status-msg { height: 20px; font-size: 14px; color: #2ecc71; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="training-container">
-        <header class="training-header">
-            <button onclick="location.href='stage_select.html'" class="pixel-btn back-btn" style="position:static; width:auto;">←戻る</button>
-            <h1 class="training-title">トレーニング</h1>
-            <div style="width: 60px;"></div>
-        </header>
+    <div class="container">
+        <div class="header">
+            <button onclick="location.href='stage_select.html'" class="pixel-btn back-btn" style="width:auto; position:static;">←戻る</button>
+            <h1 class="title">コックピット</h1>
+            <div style="width:50px;"></div>
+        </div>
 
-        <div class="indicators">
-            <div class="indicator-group">
-                <div id="indHa" class="indicator-box">はっ</div>
-                <span id="scoreHa" class="score-text">Score: 0.00</span>
-            </div>
-            <div class="indicator-group">
-                <div id="indPa" class="indicator-box">ぱっ</div>
-                <span id="scorePa" class="score-text">Score: 0.00</span>
+        <div class="vis-wrapper">
+            <canvas id="visCanvas"></canvas>
+            <div class="vis-label">
+                <span style="color:#0ff">━ リアルタイム</span><br>
+                <span style="color:#f1c40f">━ "はっ"基準</span><br>
+                <span style="color:#e74c3c">━ "ぱっ"基準</span>
             </div>
         </div>
 
-        <div class="visualizer-container">
-            <canvas id="audioCanvas"></canvas>
-            <div id="threshBar" class="threshold-bar" style="bottom: 10%;">
-                <span class="threshold-label">判定ライン</span>
+        <div class="result-area">
+            <div id="boxHa" class="res-box">
+                <span class="res-text">はっ</span>
+                <span id="scoreHa" class="res-score">0.00</span>
+            </div>
+            <div id="boxPa" class="res-box">
+                <span class="res-text">ぱっ</span>
+                <span id="scorePa" class="res-score">0.00</span>
             </div>
         </div>
 
-        <div class="sensitivity-panel">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <label>ノイズ除去レベル (閾値)</label>
-                <span id="sensValDisplay">50</span>
+        <div class="status-msg" id="statusMsg">マイク待機中...</div>
+
+        <div class="control-panel">
+            <div class="panel-title">▼ 音声を登録して調整（キャリブレーション）</div>
+            <div class="calib-btns">
+                <button class="calib-btn btn-noise" onclick="startCalib('noise')">① 無音<br>(ノイズ)</button>
+                <button class="calib-btn btn-ha" onclick="startCalib('ha')">② 「はっ」<br>を登録</button>
+                <button class="calib-btn btn-pa" onclick="startCalib('pa')">③ 「ぱっ」<br>を登録</button>
             </div>
-            <input type="range" id="sensSlider" min="1" max="100" value="50" style="width:100%;">
-            <div style="font-size:10px; color:#ccc; margin-top:5px; text-align:left;">
-                ※赤いラインより下の音は無視します。<br>
-                「静かなのに反応する」場合はスライダーを<span style="color:#f1c40f">右</span>へ動かしてください。
-            </div>
+            <button class="reset-btn" onclick="resetDefaults()">初期設定に戻す</button>
         </div>
     </div>
 
-    <div id="startOverlay" class="start-overlay">
-        <h2>マイクテスト開始</h2>
-        <p>マイクを許可して練習しよう</p>
-        <button class="pixel-btn start-btn" onclick="startTraining()">START</button>
-    </div>
-
-    <script src="script.js"></script>
     <script>
         let audioContext, analyser, dataArray;
         let canvas, ctx;
-        
-        // C#由来の判定データ
-        const THOUSAND_INDEX = 24;
-        const Ha_array = [0.09666242, 0.1010209, 0.04417039, 0.005689631, 0.005637815, 0.01925762, 0.03026361, 0.0365145, 0.0382, 0.01092663, 0.00179, 0.00457, 0.01878265, 0.055, 0.06935102, 0.0409, 0.0239, 0.0127, 0.027, 0.0401, 0.0292, 0.0226, 0.00922, 0.0389];
-        const Pa_array = [0.03245861, 0.04191279, 0.01490102, 0.02225155, 0.009038828, 0.01731531, 0.005591091, 0.02210945, 0.0117, 0.0108, 0.0292, 0.0925, 0.135, 0.139, 0.0511, 0.0134, 0.00949, 0.0122, 0.014, 0.0142, 0.0084, 0.00948, 0.0178, 0.00705];
-        
-        let threshold = 0.05; // 判定閾値 (0.0 - 1.0)
+        const BIN_COUNT = 512; // FFTサイズ1024の半分
+        const LOW_FREQ_IDX = 24; // 判定に使う低音域 (0~23)
+
+        // 設定値 (localStorageから読み込み or 初期値)
+        let config = {
+            noiseThreshold: 0.05, // これ以下の音量は無視
+            haProfile: null,      // [0.0, 0.1, ...] (24個の配列)
+            paProfile: null       // [0.0, 0.2, ...]
+        };
+
+        // デフォルト（C#由来）
+        const defaultHa = [0.09666242, 0.1010209, 0.04417039, 0.005689631, 0.005637815, 0.01925762, 0.03026361, 0.0365145, 0.0382, 0.01092663, 0.00179, 0.00457, 0.01878265, 0.055, 0.06935102, 0.0409, 0.0239, 0.0127, 0.027, 0.0401, 0.0292, 0.0226, 0.00922, 0.0389];
+        const defaultPa = [0.03245861, 0.04191279, 0.01490102, 0.02225155, 0.009038828, 0.01731531, 0.005591091, 0.02210945, 0.0117, 0.0108, 0.0292, 0.0925, 0.135, 0.139, 0.0511, 0.0134, 0.00949, 0.0122, 0.014, 0.0142, 0.0084, 0.00948, 0.0178, 0.00705];
+
+        // 状態
+        let calibMode = null; // 'noise', 'ha', 'pa'
+        let calibBuffer = []; // 録音中のデータを貯める
         let cooldown = 0;
 
-        // 感度設定のロード
-        const savedSens = localStorage.getItem('mic_sensitivity');
-        if(savedSens) {
-            document.getElementById('sensSlider').value = savedSens;
-            updateThreshold(savedSens);
-        } else {
-            updateThreshold(50);
+        // --- 初期化 ---
+        window.onload = () => {
+            loadConfig();
+            initAudio();
+        };
+
+        function loadConfig() {
+            const saved = localStorage.getItem('mic_config_v2');
+            if (saved) {
+                config = JSON.parse(saved);
+            } else {
+                config.haProfile = defaultHa;
+                config.paProfile = defaultPa;
+            }
         }
 
-        // スライダーイベント
-        document.getElementById('sensSlider').addEventListener('input', (e) => {
-            const val = e.target.value;
-            updateThreshold(val);
-            localStorage.setItem('mic_sensitivity', val);
-        });
-
-        function updateThreshold(val) {
-            document.getElementById('sensValDisplay').innerText = val;
-            
-            // スライダー 1(感度高/閾値低) -> 100(感度低/閾値高)
-            // 0.01 (最小) ～ 0.3 (最大) くらいにマッピング
-            // 式: 0.01 + (val / 100) * 0.29
-            threshold = 0.01 + (val / 100) * 0.29;
-
-            // 赤いラインの高さを更新 (グラフの高さに対する割合)
-            // ビジュアライザーは max_amplitude (0-1.0) を表示する想定
-            // canvasの高さは 100%
-            const percent = Math.min(100, threshold * 100 * 3); // *3は表示上の見やすさ補正
-            document.getElementById('threshBar').style.bottom = percent + "%";
-        }
-
-        async function startTraining() {
+        async function initAudio() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -187,17 +165,16 @@
                 mic.connect(analyser);
                 analyser.fftSize = 1024;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
-                
-                // Canvas準備
-                canvas = document.getElementById('audioCanvas');
+
+                canvas = document.getElementById('visCanvas');
                 ctx = canvas.getContext('2d');
                 resizeCanvas();
                 window.addEventListener('resize', resizeCanvas);
 
-                document.getElementById('startOverlay').style.display = 'none';
+                document.getElementById('statusMsg').innerText = "準備完了！声を検知できます。";
                 loop();
             } catch(e) {
-                alert("マイクが使えません");
+                document.getElementById('statusMsg').innerText = "エラー: マイク許可が必要です";
             }
         }
 
@@ -206,85 +183,187 @@
             canvas.height = canvas.parentElement.clientHeight;
         }
 
+        // --- メインループ ---
         function loop() {
             requestAnimationFrame(loop);
-            if(!analyser) return;
-
-            if(cooldown > 0) cooldown--;
+            if (!analyser) return;
 
             analyser.getByteFrequencyData(dataArray);
+            if (cooldown > 0) cooldown--;
 
-            // --- 描画 ---
+            // 1. 描画 (Visualizer)
+            drawVisualizer();
+
+            // 2. キャリブレーション処理 (録音中)
+            if (calibMode) {
+                processCalibration();
+                return;
+            }
+
+            // 3. 通常判定処理
+            processDetection();
+        }
+
+        // --- 描画ロジック ---
+        function drawVisualizer() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const barWidth = (canvas.width / THOUSAND_INDEX) * 2.5;
+            const barW = (canvas.width / LOW_FREQ_IDX) * 0.8;
             let x = 0;
-            let max_amplitude = 0;
 
-            // 0-23番目の成分(低音)を計算・描画
-            let Ha_euclid = 0;
-            let Pa_euclid = 0;
+            // 0〜23番目（低音）のみ表示
+            for(let i=0; i<LOW_FREQ_IDX; i++) {
+                const val = dataArray[i] / 255.0; // 0.0 ~ 1.0
 
-            for(let i=0; i<THOUSAND_INDEX; i++) {
-                // 0-255 を 0.0-1.0 に正規化
-                const val = dataArray[i] / 255.0; 
+                // 基準線（Ha = 黄, Pa = 赤）
+                const haRef = config.haProfile[i];
+                const paRef = config.paProfile[i];
+
+                // 基準ライン描画
+                ctx.fillStyle = 'rgba(241, 196, 15, 0.5)'; // 黄
+                ctx.fillRect(x, canvas.height * (1 - haRef), barW, 2);
+                ctx.fillStyle = 'rgba(231, 76, 60, 0.5)'; // 赤
+                ctx.fillRect(x, canvas.height * (1 - paRef), barW, 2);
+
+                // 現在の入力バー
+                // 閾値以下ならグレー、超えてたらシアン
+                let maxAmp = Math.max(...Array.from(dataArray).slice(0, 24)) / 255.0;
+                ctx.fillStyle = (maxAmp > config.noiseThreshold) ? '#0ff' : '#333';
                 
-                // 最大振幅を記録
-                if(val > max_amplitude) max_amplitude = val;
+                const h = val * canvas.height;
+                ctx.fillRect(x, canvas.height - h, barW, h);
 
-                // 類似度計算
-                Ha_euclid += Math.pow(Ha_array[i] - val, 2);
-                Pa_euclid += Math.pow(Pa_array[i] - val, 2);
+                x += barW + 2;
+            }
 
-                // グラフ描画
-                const barHeight = val * canvas.height * 3; // 見やすく3倍
-                
-                // 色: 閾値を超えていれば緑、以下ならグレー
-                if(val > threshold) {
-                    ctx.fillStyle = `rgb(${val*255}, 255, 100)`;
-                } else {
-                    ctx.fillStyle = `rgb(50, 50, 50)`;
+            // ノイズ閾値ライン（全体）
+            ctx.strokeStyle = '#555';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * (1 - config.noiseThreshold));
+            ctx.lineTo(canvas.width, canvas.height * (1 - config.noiseThreshold));
+            ctx.stroke();
+        }
+
+        // --- 判定ロジック ---
+        function processDetection() {
+            // 最大音量チェック
+            let maxAmp = 0;
+            for(let i=0; i<LOW_FREQ_IDX; i++) {
+                if(dataArray[i] > maxAmp) maxAmp = dataArray[i];
+            }
+            maxAmp /= 255.0;
+
+            // ノイズゲート
+            if (maxAmp < config.noiseThreshold) {
+                // 静か
+                return;
+            }
+
+            if (cooldown > 0) return;
+
+            // ユークリッド距離計算
+            let haDist = 0;
+            let paDist = 0;
+
+            for(let i=0; i<LOW_FREQ_IDX; i++) {
+                const val = dataArray[i] / 255.0;
+                haDist += Math.pow(config.haProfile[i] - val, 2);
+                paDist += Math.pow(config.paProfile[i] - val, 2);
+            }
+
+            const haScore = 1 / (1 + Math.sqrt(haDist));
+            const paScore = 1 / (1 + Math.sqrt(paDist));
+
+            document.getElementById('scoreHa').innerText = haScore.toFixed(3);
+            document.getElementById('scorePa').innerText = paScore.toFixed(3);
+
+            // 判定 (少し緩めに設定しつつ、比較で勝負)
+            if (haScore > 0.6 || paScore > 0.6) {
+                if (haScore > paScore + 0.05) { // 差をつける
+                    trigger('boxHa', 'active-ha');
+                } else if (paScore > haScore + 0.05) {
+                    trigger('boxPa', 'active-pa');
                 }
-
-                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                x += barWidth + 1;
-            }
-
-            // --- スコア計算 ---
-            const Ha_odds = 1 / (1 + Math.sqrt(Ha_euclid));
-            const Pa_odds = 1 / (1 + Math.sqrt(Pa_euclid));
-
-            // スコア表示更新
-            document.getElementById('scoreHa').innerText = "Score: " + Ha_odds.toFixed(3);
-            document.getElementById('scorePa').innerText = "Score: " + Pa_odds.toFixed(3);
-
-            // --- 判定ロジック ---
-            // 1. ノイズゲート: 最大音量が閾値を超えているか？
-            // ここが重要！「静かなのに反応する」を防ぐ壁
-            if(max_amplitude < threshold) {
-                // 静かなので判定しない
-                return; 
-            }
-
-            if(cooldown > 0) return;
-
-            // 2. 確率判定
-            if(Ha_odds >= 0.83) {
-                flash('indHa', 'active-ha');
-                cooldown = 15;
-            } else if(Pa_odds >= 0.70) {
-                flash('indPa', 'active-pa');
-                cooldown = 15;
             }
         }
 
-        function flash(id, activeClass) {
+        function trigger(id, cls) {
             const el = document.getElementById(id);
-            el.classList.add(activeClass);
-            setTimeout(() => {
-                el.classList.remove(activeClass);
-            }, 300);
+            el.classList.add(cls);
+            cooldown = 15;
+            setTimeout(() => el.classList.remove(cls), 200);
+        }
+
+        // --- キャリブレーション ---
+        function startCalib(mode) {
+            calibMode = mode;
+            calibBuffer = [];
+            
+            let msg = "";
+            if(mode === 'noise') msg = "静かにしていてください... (計測中)";
+            if(mode === 'ha') msg = "「はっ！」と言ってください！";
+            if(mode === 'pa') msg = "「ぱっ！」と言ってください！";
+            
+            document.getElementById('statusMsg').innerText = msg;
+            
+            // 2秒後に終了
+            setTimeout(endCalib, 2000);
+        }
+
+        function processCalibration() {
+            // 現在のフレームのデータをコピーして保存
+            // 0-23番目のみ抽出
+            const frame = [];
+            for(let i=0; i<LOW_FREQ_IDX; i++) frame.push(dataArray[i] / 255.0);
+            calibBuffer.push(frame);
+        }
+
+        function endCalib() {
+            // 解析
+            if (calibMode === 'noise') {
+                // 平均ではなく「最大値」をとって、それより少し上を閾値にする
+                let maxNoise = 0;
+                calibBuffer.forEach(frame => {
+                    const m = Math.max(...frame);
+                    if(m > maxNoise) maxNoise = m;
+                });
+                config.noiseThreshold = Math.min(maxNoise + 0.02, 0.3); // 少し余裕を持たせる、上限0.3
+                document.getElementById('statusMsg').innerText = `設定完了: ノイズ閾値 ${config.noiseThreshold.toFixed(3)}`;
+            } 
+            else {
+                // "はっ" "ぱっ" の特徴抽出
+                // 録音期間中で「最も音が大きかったフレーム」を採用する（ピーク検出）
+                let peakFrame = null;
+                let maxVol = -1;
+
+                calibBuffer.forEach(frame => {
+                    const vol = frame.reduce((a,b)=>a+b, 0); // 合計音量
+                    if (vol > maxVol) {
+                        maxVol = vol;
+                        peakFrame = frame;
+                    }
+                });
+
+                if (maxVol > 0.5) { // ある程度音が入っていれば
+                    if (calibMode === 'ha') config.haProfile = peakFrame;
+                    if (calibMode === 'pa') config.paProfile = peakFrame;
+                    document.getElementById('statusMsg').innerText = `設定完了: 「${calibMode=='ha'?'はっ':'ぱっ'}」を登録しました！`;
+                } else {
+                    document.getElementById('statusMsg').innerText = "失敗: 音が小さすぎました。";
+                }
+            }
+
+            // 保存
+            localStorage.setItem('mic_config_v2', JSON.stringify(config));
+            calibMode = null;
+        }
+
+        function resetDefaults() {
+            if(confirm("初期設定に戻しますか？")) {
+                localStorage.removeItem('mic_config_v2');
+                location.reload();
+            }
         }
     </script>
 </body>

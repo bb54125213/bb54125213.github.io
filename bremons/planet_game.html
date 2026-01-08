@@ -7,53 +7,27 @@
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* ★スマホ対応: dvhを使ってアドレスバー分を考慮 */
         body { 
-            overflow: hidden; 
-            background: #000; 
-            touch-action: manipulation; /* ダブルタップ拡大防止 */
-            height: 100dvh; 
-            margin: 0;
-            user-select: none; /* テキスト選択防止 */
+            overflow: hidden; background: #000; touch-action: none;
+            height: 100dvh; margin: 0; user-select: none;
         }
         
-        .game-container {
-            width: 100%; height: 100%; position: relative; overflow: hidden;
-        }
-
-        .game-world {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden;
-            will-change: transform;
-        }
+        .game-container { width: 100%; height: 100%; position: relative; overflow: hidden; }
+        .game-world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; will-change: transform; }
 
         .sky-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('./nightgame/background2.png');
-            background-size: cover;
-            z-index: 0;
+            background-image: url('./nightgame/background2.png'); background-size: cover; z-index: 0;
         }
-
         .ground-layer {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 160px;
-            z-index: 10;
-            background-repeat: repeat-x;
-            background-size: auto 100%;
+            z-index: 10; background-repeat: repeat-x; background-size: auto 100%;
         }
-
-        .decor-obj {
-            position: absolute; bottom: 140px; z-index: 5;
-            image-rendering: pixelated; pointer-events: none;
-        }
+        .decor-obj { position: absolute; bottom: 140px; z-index: 5; image-rendering: pixelated; pointer-events: none; }
 
         .player-char {
-            position: absolute; 
-            bottom: 130px; 
-            left: 15%; 
-            width: 120px; 
-            z-index: 20;
-            transition: transform 0.1s;
-            image-rendering: pixelated;
+            position: absolute; bottom: 130px; left: 15%; width: 120px; z-index: 20;
+            transition: transform 0.1s; image-rendering: pixelated;
         }
         .player-walking { animation: walkBob 0.8s infinite alternate; }
         @keyframes walkBob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
@@ -73,118 +47,71 @@
         }
         @keyframes popUpFade { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
 
-        /* UIレイヤー */
         .hud-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 50; pointer-events: none;
-            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 50; pointer-events: none; padding-bottom: env(safe-area-inset-bottom);
         }
         
         .header-panel {
-            position: absolute; top: 10px; right: 10px; 
-            display: flex; gap: 10px;
-            pointer-events: auto;
-            align-items: flex-start;
+            position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; pointer-events: auto; align-items: flex-start;
         }
-        
         .status-box {
             background: rgba(0,0,0,0.8); border: 2px solid #fff; padding: 8px 15px;
-            border-radius: 8px; color: #fff; font-size: 14px;
-            min-width: 120px;
+            border-radius: 8px; color: #fff; font-size: 14px; min-width: 120px;
         }
         .finish-btn {
             background: #e74c3c; color: #fff; border: 2px solid #fff;
             padding: 8px 15px; font-size: 14px; cursor: pointer; border-radius: 5px;
-            font-family: 'DotGothic16', sans-serif;
-            white-space: nowrap;
+            font-family: 'DotGothic16', sans-serif; white-space: nowrap;
         }
 
-        /* 戦術マップ */
         .map-panel {
-            position: absolute; top: 10px; left: 10px;
-            width: 110px; height: 110px;
-            background: rgba(0, 20, 0, 0.9);
-            border: 2px solid #2ecc71;
-            border-radius: 4px;
-            overflow: hidden;
-            box-shadow: 0 0 10px #2ecc71;
-            pointer-events: none;
+            position: absolute; top: 10px; left: 10px; width: 110px; height: 110px;
+            background: rgba(0, 20, 0, 0.9); border: 2px solid #2ecc71; border-radius: 4px;
+            overflow: hidden; box-shadow: 0 0 10px #2ecc71; pointer-events: none;
         }
         .map-grid {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(rgba(46, 204, 113, 0.2) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(46, 204, 113, 0.2) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(46, 204, 113, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(46, 204, 113, 0.2) 1px, transparent 1px);
             background-size: 20px 20px;
         }
-        .map-ground-line {
-            position: absolute; bottom: 10px; left: 0; width: 100%; height: 2px;
-            background: #2ecc71;
-        }
+        .map-ground-line { position: absolute; bottom: 10px; left: 0; width: 100%; height: 2px; background: #2ecc71; }
         .map-player-icon {
-            position: absolute; bottom: 10px; left: 20px;
-            width: 0; height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 12px solid #fff;
-            transform: translate(-50%, 0);
-            filter: drop-shadow(0 0 4px #fff);
+            position: absolute; bottom: 10px; left: 20px; width: 0; height: 0;
+            border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 12px solid #fff;
+            transform: translate(-50%, 0); filter: drop-shadow(0 0 4px #fff);
         }
         .map-dot {
             position: absolute; width: 8px; height: 8px; border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: all 0.1s linear;
+            transform: translate(-50%, -50%); transition: all 0.1s linear;
         }
-        .dot-monster { 
-            background: #f1c40f; box-shadow: 0 0 5px #f1c40f; 
-            width: 8px; height: 8px; border-radius: 2px;
-        }
-        .dot-meteor { 
-            background: #e74c3c; box-shadow: 0 0 5px #e74c3c; 
-            border: 1px solid #fff;
-        }
+        .dot-monster { background: #f1c40f; box-shadow: 0 0 5px #f1c40f; width: 8px; height: 8px; border-radius: 2px; }
+        .dot-meteor { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; border: 1px solid #fff; }
 
         .mic-indicator {
-            position: absolute; bottom: 20px; left: 10px;
-            width: 150px; height: 8px; background: #333; border: 1px solid #fff;
+            position: absolute; bottom: 20px; left: 10px; width: 200px; height: 10px; background: #333; border: 1px solid #fff;
         }
         .mic-bar { height: 100%; background: #2ecc71; width: 0%; }
         .voice-feedback {
-            position: absolute; bottom: 40px; left: 10px;
-            font-size: 20px; color: #f1c40f; text-shadow: 2px 2px 0 #000;
-            opacity: 0; transition: opacity 0.2s;
+            position: absolute; bottom: 40px; left: 10px; font-size: 24px; color: #f1c40f;
+            text-shadow: 2px 2px 0 #000; opacity: 0; transition: opacity 0.2s;
         }
 
-        /* 手動アクションボタンエリア */
         .manual-actions {
-            position: absolute; bottom: 20px; right: 20px;
-            display: flex; gap: 15px;
-            pointer-events: auto;
+            position: absolute; bottom: 20px; right: 20px; display: flex; gap: 15px; pointer-events: auto;
         }
         .action-btn-manual {
-            width: 70px; height: 70px;
-            border-radius: 50%;
-            border: 3px solid #fff;
-            color: #fff;
-            font-family: 'DotGothic16', sans-serif;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
-            display: flex; align-items: center; justify-content: center;
-            user-select: none;
+            width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff;
+            color: #fff; font-family: 'DotGothic16', sans-serif; font-size: 20px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; user-select: none;
         }
-        .btn-ha { background: #f39c12; } /* オレンジ */
-        .btn-pa { background: #e74c3c; } /* 赤 */
-        .action-btn-manual:active {
-            transform: translateY(4px);
-            box-shadow: none;
-        }
+        .btn-ha { background: #f39c12; }
+        .btn-pa { background: #e74c3c; }
+        .action-btn-manual:active { transform: translateY(4px); box-shadow: none; }
 
         .start-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 200;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.85); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #fff; text-align: center;
         }
     </style>
@@ -196,9 +123,7 @@
             <div class="sky-bg"></div>
             <div class="ground-layer" id="groundLayer"></div>
             <div id="decorLayer"></div>
-            
             <img src="./nightgame/chara.png" class="player-char player-walking" id="player">
-            
             <div id="objContainer"></div>
         </div>
 
@@ -231,10 +156,9 @@
         <div class="start-overlay" id="startOverlay">
             <h2>探索ミッション開始</h2>
             <p style="margin: 20px 0; line-height: 1.8;">
-                マイクまたはボタンを使用します。<br>
                 <span style="color:#f1c40f">「はっ！」</span>でモンスターを捕獲<br>
                 <span style="color:#e74c3c">「ぱっ！」</span>で隕石を迎撃<br>
-                隕石に当たると -5 匹！
+                設定された音声データを使用します
             </p>
             <button class="pixel-btn start-btn" onclick="gameStart()">START</button>
         </div>
@@ -282,12 +206,26 @@
         let decorTimer = 0;
         let voiceTimer = 0;
 
-        // 音声認識
+        // --- ★音声認識設定 (Load Config) ---
         let audioContext, analyser, dataArray;
         const THOUSAND_INDEX = 24;
-        const Ha_array = [0.09666242, 0.1010209, 0.04417039, 0.005689631, 0.005637815, 0.01925762, 0.03026361, 0.0365145, 0.0382, 0.01092663, 0.00179, 0.00457, 0.01878265, 0.055, 0.06935102, 0.0409, 0.0239, 0.0127, 0.027, 0.0401, 0.0292, 0.0226, 0.00922, 0.0389];
-        const Pa_array = [0.03245861, 0.04191279, 0.01490102, 0.02225155, 0.009038828, 0.01731531, 0.005591091, 0.02210945, 0.0117, 0.0108, 0.0292, 0.0925, 0.135, 0.139, 0.0511, 0.0134, 0.00949, 0.0122, 0.014, 0.0142, 0.0084, 0.00948, 0.0178, 0.00705];
+        
+        // デフォルト設定（万が一キャリブレーションされていない場合）
+        let micConfig = {
+            noiseThreshold: 0.05,
+            haProfile: [0.096, 0.101, 0.044, 0.005, 0.005, 0.019, 0.030, 0.036, 0.038, 0.010, 0.001, 0.004, 0.018, 0.055, 0.069, 0.040, 0.023, 0.012, 0.027, 0.040, 0.029, 0.022, 0.009, 0.038],
+            paProfile: [0.032, 0.041, 0.014, 0.022, 0.009, 0.017, 0.005, 0.022, 0.011, 0.010, 0.029, 0.092, 0.135, 0.139, 0.051, 0.013, 0.009, 0.012, 0.014, 0.014, 0.008, 0.009, 0.017, 0.007]
+        };
         let voiceCooldown = 0; 
+
+        // 初期化時にロード
+        const savedConfig = localStorage.getItem('mic_config_v2');
+        if(savedConfig) {
+            try {
+                micConfig = JSON.parse(savedConfig);
+                console.log("Mic config loaded", micConfig);
+            } catch(e) { console.error("Config parse error"); }
+        }
 
         document.getElementById('planetName').innerText = currentData.name;
         createGroundTexture(currentData.groundColor);
@@ -300,7 +238,6 @@
             }
         });
 
-        // ボタンイベント
         document.getElementById('btnHa').addEventListener('click', () => {
             if(isGameRunning) triggerAction("はっ");
         });
@@ -318,7 +255,7 @@
                 analyser.fftSize = 1024;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             } catch(e) {
-                console.log("マイクなしモードで起動");
+                console.log("マイクなしモード");
             }
             
             document.getElementById('startOverlay').style.display = 'none';
@@ -334,11 +271,8 @@
             document.getElementById('groundLayer').style.backgroundPosition = `${groundOffset}px bottom`;
 
             if(analyser) {
-                voiceTimer++;
-                if(voiceTimer > 10) { 
-                    processVoice();
-                    voiceTimer = 0;
-                }
+                // 少し頻度高めに判定してもOK (ロジックがしっかりしたので)
+                processVoice();
             }
 
             spawnTimer++;
@@ -362,40 +296,7 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // --- 振動 ---
-        function updateShakeEffect() {
-            const playerX = window.innerWidth * 0.15;
-            const playerY = window.innerHeight - 130;
-            
-            let proximityShake = 0;
-            gameObjects.forEach(obj => {
-                if(obj.type === 'meteor' && obj.alive) {
-                    const dx = obj.x - playerX;
-                    const dy = obj.y - playerY;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    const shakeRange = 600;
-                    if(dist < shakeRange) {
-                        let intensity = 1.0 - (dist / shakeRange);
-                        if(intensity > proximityShake) proximityShake = intensity;
-                    }
-                }
-            });
-
-            shakeTrauma = Math.max(0, shakeTrauma - 0.02);
-            let totalShake = Math.max(proximityShake, shakeTrauma);
-
-            const gameWorld = document.getElementById('gameWorld');
-            if(totalShake > 0) {
-                const shakeAmount = 20 * totalShake * totalShake;
-                const tx = (Math.random() - 0.5) * shakeAmount;
-                const ty = (Math.random() - 0.5) * shakeAmount;
-                gameWorld.style.transform = `translate(${tx}px, ${ty}px)`;
-            } else {
-                gameWorld.style.transform = 'none';
-            }
-        }
-
-        // --- 音声認識 ---
+        // --- ★新・音声認識ロジック (Training Roomと同じ) ---
         function processVoice() {
             if(voiceCooldown > 0) {
                 voiceCooldown--;
@@ -408,28 +309,38 @@
             let average = sum / dataArray.length;
             document.getElementById('micBar').style.width = Math.min(100, average * 2) + "%";
 
+            // ノイズゲートチェック (最大振幅)
             let max_amplitude = 0;
-            let Ha_euclid = 0;
-            let Pa_euclid = 0;
-
             for(let i=0; i<THOUSAND_INDEX; i++) {
                 const val = dataArray[i] / 255.0;
                 if(val > max_amplitude) max_amplitude = val;
-                Ha_euclid += Math.pow(Ha_array[i] - val, 2);
-                Pa_euclid += Math.pow(Pa_array[i] - val, 2);
             }
 
-            const Ha_odds = 1 / (1 + Math.sqrt(Ha_euclid));
-            const Pa_odds = 1 / (1 + Math.sqrt(Pa_euclid));
+            // ★設定されたノイズ閾値を使う
+            if(max_amplitude < micConfig.noiseThreshold) return;
 
-            if(max_amplitude < 0.05) return; 
+            // ユークリッド距離計算 (設定されたプロファイルと比較)
+            let haDist = 0;
+            let paDist = 0;
 
-            if(Ha_odds >= 0.83) {
-                triggerAction("はっ");
-                voiceCooldown = 5;
-            } else if(Pa_odds >= 0.70) {
-                triggerAction("ぱっ");
-                voiceCooldown = 5;
+            for(let i=0; i<THOUSAND_INDEX; i++) {
+                const val = dataArray[i] / 255.0;
+                haDist += Math.pow(micConfig.haProfile[i] - val, 2);
+                paDist += Math.pow(micConfig.paProfile[i] - val, 2);
+            }
+
+            const haScore = 1 / (1 + Math.sqrt(haDist));
+            const paScore = 1 / (1 + Math.sqrt(paDist));
+
+            // ★比較判定 (Training Roomと同じ緩めのロジック)
+            if (haScore > 0.6 || paScore > 0.6) {
+                if (haScore > paScore + 0.05) {
+                    triggerAction("はっ");
+                    voiceCooldown = 15;
+                } else if (paScore > haScore + 0.05) {
+                    triggerAction("ぱっ");
+                    voiceCooldown = 15;
+                }
             }
         }
 
@@ -450,11 +361,12 @@
             }
         }
 
-        // --- オブジェクト ---
+        // --- オブジェクト管理 ---
         function spawnDecor() {
             const canvas = document.createElement('canvas');
             canvas.width = 32; canvas.height = 32;
             const ctx = canvas.getContext('2d');
+            
             if(Math.random() < 0.5) {
                 ctx.fillStyle = '#2ecc71';
                 ctx.fillRect(12, 10, 8, 22); ctx.fillRect(4, 14, 8, 4);   
@@ -554,7 +466,7 @@
             dots.forEach(d => d.remove());
 
             const playerX = window.innerWidth * 0.15;
-            const range = window.innerWidth - playerX + 100; // 画面端＝レーダー端
+            const range = window.innerWidth - playerX + 100;
             const mapW = 110; 
             const mapH = 110;
 
@@ -678,24 +590,43 @@
             document.getElementById('groundLayer').style.backgroundImage = `url(${dataUrl})`;
         }
 
-        // ★修正済み保存処理 (ドット記法キーではなくネストオブジェクトで保存)
+        function updateShakeEffect() {
+            const playerX = window.innerWidth * 0.15;
+            const playerY = window.innerHeight - 130;
+            let proximityShake = 0;
+            gameObjects.forEach(obj => {
+                if(obj.type === 'meteor' && obj.alive) {
+                    const dx = obj.x - playerX;
+                    const dy = obj.y - playerY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const shakeRange = 600;
+                    if(dist < shakeRange) {
+                        let intensity = 1.0 - (dist / shakeRange);
+                        if(intensity > proximityShake) proximityShake = intensity;
+                    }
+                }
+            });
+            shakeTrauma = Math.max(0, shakeTrauma - 0.02);
+            let totalShake = Math.max(proximityShake, shakeTrauma);
+            const gameWorld = document.getElementById('gameWorld');
+            if(totalShake > 0) {
+                const shakeAmount = 20 * totalShake * totalShake;
+                const tx = (Math.random() - 0.5) * shakeAmount;
+                const ty = (Math.random() - 0.5) * shakeAmount;
+                gameWorld.style.transform = `translate(${tx}px, ${ty}px)`;
+            } else {
+                gameWorld.style.transform = 'none';
+            }
+        }
+
         window.finishExploration = async function() {
             isGameRunning = false;
-            
-            // 修正: Firestoreの setDoc + merge でネストされたフィールドを更新する場合
-            // { inventory: { usa: 10 } } のように構造化して渡す必要があります。
-            // キーにドットを含めると ("inventory.usa")、トップレベルに "inventory.usa" というフィールドができてしまいます。
-            
-            const saveObj = {
-                inventory: {}
-            };
+            const saveObj = { inventory: {} };
             saveObj.inventory[currentData.id] = inventoryCount;
-
             try {
                 const btn = document.querySelector('.finish-btn');
                 btn.innerText = "保存中...";
                 btn.disabled = true;
-                
                 await setDoc(userRef, saveObj, { merge: true });
                 window.location.href = "stage_select.html";
             } catch(e) {

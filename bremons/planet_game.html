@@ -97,22 +97,32 @@
             text-shadow: 2px 2px 0 #000; opacity: 0; transition: opacity 0.2s;
         }
 
-        .manual-actions {
-            position: absolute; bottom: 20px; right: 20px; display: flex; gap: 15px; pointer-events: auto;
-        }
-        .action-btn-manual {
-            width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff;
-            color: #fff; font-family: 'DotGothic16', sans-serif; font-size: 20px; font-weight: bold;
-            cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; user-select: none;
-        }
-        .btn-ha { background: #f39c12; }
-        .btn-pa { background: #e74c3c; }
-        .action-btn-manual:active { transform: translateY(4px); box-shadow: none; }
-
         .start-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #fff; text-align: center;
+        }
+
+        /* --- ★追加: ナビゲーション吹き出し --- */
+        .navi-bubble {
+            position: absolute; top: 140px; left: 20px; width: 220px;
+            background: rgba(0, 0, 0, 0.85); border: 2px solid #3498db; border-radius: 8px;
+            padding: 10px; z-index: 150; box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+            display: flex; gap: 10px; align-items: center; pointer-events: none;
+            transition: opacity 0.5s; opacity: 0;
+        }
+        .navi-bubble.show { opacity: 1; animation: floatNavi 3s infinite ease-in-out; }
+        
+        .navi-icon {
+            width: 36px; height: 36px; border-radius: 50%; background: #222; border: 1px solid #fff;
+            image-rendering: pixelated;
+        }
+        .navi-text { font-size: 12px; color: #fff; line-height: 1.4; text-align: left; }
+        .navi-text strong { color: #f1c40f; }
+
+        @keyframes floatNavi {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
     </style>
 </head>
@@ -134,6 +144,11 @@
                 <div class="map-player-icon"></div>
             </div>
 
+            <div id="naviBubble" class="navi-bubble">
+                <img src="./nightgame/chara.png" class="navi-icon">
+                <div id="naviText" class="navi-text">...</div>
+            </div>
+
             <div class="header-panel">
                 <div class="status-box">
                     <div id="planetName">惑星 ???</div>
@@ -146,19 +161,14 @@
 
             <div class="voice-feedback" id="voiceFeedback">認識中...</div>
             <div class="mic-indicator"><div class="mic-bar" id="micBar"></div></div>
-
-            <div class="manual-actions">
-                <button class="action-btn-manual btn-ha" id="btnHa">はっ</button>
-                <button class="action-btn-manual btn-pa" id="btnPa">ぱっ</button>
-            </div>
         </div>
 
         <div class="start-overlay" id="startOverlay">
             <h2>探索ミッション開始</h2>
             <p style="margin: 20px 0; line-height: 1.8;">
                 <span style="color:#f1c40f">「はっ！」</span>でモンスターを捕獲<br>
-                <span style="color:#e74c3c">「ぱっ！」</span>で隕石を迎撃<br>
-                設定された音声データを使用します
+                <span style="color:#3c86e7">「ぱっ！」</span>で隕石を迎撃<br>
+                隕石にぶつかるとモンスターが<span style="color:#e2796d">5体</span>逃げ出します...<br>
             </p>
             <button class="pixel-btn start-btn" onclick="gameStart()">START</button>
         </div>
@@ -206,11 +216,9 @@
         let decorTimer = 0;
         let voiceTimer = 0;
 
-        // --- ★音声認識設定 (Load Config) ---
         let audioContext, analyser, dataArray;
         const THOUSAND_INDEX = 24;
         
-        // デフォルト設定（万が一キャリブレーションされていない場合）
         let micConfig = {
             noiseThreshold: 0.05,
             haProfile: [0.096, 0.101, 0.044, 0.005, 0.005, 0.019, 0.030, 0.036, 0.038, 0.010, 0.001, 0.004, 0.018, 0.055, 0.069, 0.040, 0.023, 0.012, 0.027, 0.040, 0.029, 0.022, 0.009, 0.038],
@@ -221,10 +229,7 @@
         // 初期化時にロード
         const savedConfig = localStorage.getItem('mic_config_v2');
         if(savedConfig) {
-            try {
-                micConfig = JSON.parse(savedConfig);
-                console.log("Mic config loaded", micConfig);
-            } catch(e) { console.error("Config parse error"); }
+            try { micConfig = JSON.parse(savedConfig); } catch(e) {}
         }
 
         document.getElementById('planetName').innerText = currentData.name;
@@ -236,13 +241,6 @@
                 inventoryCount = snap.data().inventory[currentData.id] || 0;
                 updateCountDisplay();
             }
-        });
-
-        document.getElementById('btnHa').addEventListener('click', () => {
-            if(isGameRunning) triggerAction("はっ");
-        });
-        document.getElementById('btnPa').addEventListener('click', () => {
-            if(isGameRunning) triggerAction("ぱっ");
         });
 
         window.gameStart = async function() {
@@ -260,6 +258,10 @@
             
             document.getElementById('startOverlay').style.display = 'none';
             isGameRunning = true;
+            
+            // ★ナビゲーション: 開始時
+            showNavi("まずはモンスターを探そう！<br>左上のレーダーに注目だ。");
+            
             requestAnimationFrame(gameLoop);
         };
 
@@ -271,7 +273,6 @@
             document.getElementById('groundLayer').style.backgroundPosition = `${groundOffset}px bottom`;
 
             if(analyser) {
-                // 少し頻度高めに判定してもOK (ロジックがしっかりしたので)
                 processVoice();
             }
 
@@ -293,10 +294,62 @@
             updateMapUI(); 
             updateShakeEffect(); 
 
+            // ★ナビゲーション: 状況に応じた更新
+            updateNavi();
+
             requestAnimationFrame(gameLoop);
         }
 
-        // --- ★新・音声認識ロジック (Training Roomと同じ) ---
+        // --- ナビゲーション管理 ---
+        let naviTimer = 0;
+        let lastNaviType = null;
+
+        function showNavi(html) {
+            const bubble = document.getElementById('naviBubble');
+            const text = document.getElementById('naviText');
+            text.innerHTML = html;
+            bubble.classList.add('show');
+            naviTimer = 300; // 5秒くらい表示
+        }
+
+        function updateNavi() {
+            if(naviTimer > 0) {
+                naviTimer--;
+                if(naviTimer <= 0) {
+                    document.getElementById('naviBubble').classList.remove('show');
+                }
+            }
+
+            // イベント発生時の割り込みナビ
+            const playerX = window.innerWidth * 0.15;
+            
+            // 近くにモンスターがいる
+            const nearMonster = gameObjects.find(o => o.type === 'monster' && o.alive && o.x > playerX && o.x < playerX + 300);
+            if (nearMonster && lastNaviType !== 'monster') {
+                showNavi("チャンス！<br><strong>「はっ！」</strong>と言って捕獲しよう！");
+                lastNaviType = 'monster';
+                return;
+            }
+
+            // 近くに隕石がいる
+            const nearMeteor = gameObjects.find(o => o.type === 'meteor' && o.alive && o.x > playerX - 100 && o.x < playerX + 500);
+            if (nearMeteor && lastNaviType !== 'meteor') {
+                showNavi("危険！<br><strong>「ぱっ！」</strong>と言って迎撃しよう！");
+                lastNaviType = 'meteor';
+                return;
+            }
+
+            // 何もないときはリセット
+            if (!nearMonster && !nearMeteor) lastNaviType = null;
+            
+            // 一定数たまったら帰還を促す (例: 10匹増えるたびに)
+            if (inventoryCount > 0 && inventoryCount % 5 === 0 && naviTimer <= 0) {
+                if (Math.random() < 0.01) { // 頻度調整
+                    showNavi(`現在 ${inventoryCount}匹 確保中。<br>そろそろ帰還してもいい頃かも。`);
+                }
+            }
+        }
+
         function processVoice() {
             if(voiceCooldown > 0) {
                 voiceCooldown--;
@@ -309,17 +362,14 @@
             let average = sum / dataArray.length;
             document.getElementById('micBar').style.width = Math.min(100, average * 2) + "%";
 
-            // ノイズゲートチェック (最大振幅)
             let max_amplitude = 0;
             for(let i=0; i<THOUSAND_INDEX; i++) {
                 const val = dataArray[i] / 255.0;
                 if(val > max_amplitude) max_amplitude = val;
             }
 
-            // ★設定されたノイズ閾値を使う
             if(max_amplitude < micConfig.noiseThreshold) return;
 
-            // ユークリッド距離計算 (設定されたプロファイルと比較)
             let haDist = 0;
             let paDist = 0;
 
@@ -332,7 +382,6 @@
             const haScore = 1 / (1 + Math.sqrt(haDist));
             const paScore = 1 / (1 + Math.sqrt(paDist));
 
-            // ★比較判定 (Training Roomと同じ緩めのロジック)
             if (haScore > 0.6 || paScore > 0.6) {
                 if (haScore > paScore + 0.05) {
                     triggerAction("はっ");
@@ -361,7 +410,6 @@
             }
         }
 
-        // --- オブジェクト管理 ---
         function spawnDecor() {
             const canvas = document.createElement('canvas');
             canvas.width = 32; canvas.height = 32;

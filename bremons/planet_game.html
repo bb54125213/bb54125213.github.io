@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
+        /* ★スマホ対応: dvhを使ってアドレスバー分を考慮 */
         body { 
             overflow: hidden; 
             background: #000; 
@@ -154,7 +155,7 @@
             opacity: 0; transition: opacity 0.2s;
         }
 
-        /* ★追加: 手動アクションボタンエリア */
+        /* 手動アクションボタンエリア */
         .manual-actions {
             position: absolute; bottom: 20px; right: 20px;
             display: flex; gap: 15px;
@@ -299,7 +300,7 @@
             }
         });
 
-        // ★手動ボタンイベント
+        // ボタンイベント
         document.getElementById('btnHa').addEventListener('click', () => {
             if(isGameRunning) triggerAction("はっ");
         });
@@ -332,7 +333,6 @@
             if(groundOffset <= -128) groundOffset = 0; 
             document.getElementById('groundLayer').style.backgroundPosition = `${groundOffset}px bottom`;
 
-            // 音声認識 (マイク許可時のみ)
             if(analyser) {
                 voiceTimer++;
                 if(voiceTimer > 10) { 
@@ -362,7 +362,7 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // --- 振動演出 ---
+        // --- 振動 ---
         function updateShakeEffect() {
             const playerX = window.innerWidth * 0.15;
             const playerY = window.innerHeight - 130;
@@ -481,7 +481,6 @@
             const hue = Math.floor(Math.random() * 60) - 30; 
             el.style.width = (80 * scale) + 'px';
             el.style.filter = `hue-rotate(${hue}deg)`;
-            // ★出現位置を画面外に
             gameObjects.push({ el: el, type: 'monster', x: window.innerWidth + 100, y: 0, alive: true });
         }
 
@@ -549,34 +548,26 @@
             });
         }
 
-        // --- ★戦術マップ更新 (端から湧くように調整) ---
         function updateMapUI() {
             const mapPanel = document.getElementById('mapPanel');
             const dots = mapPanel.querySelectorAll('.dot-generated');
             dots.forEach(d => d.remove());
 
             const playerX = window.innerWidth * 0.15;
-            // ★重要: レーダー範囲を「プレイヤーから画面右端まで」に合わせる
-            // これにより、画面右端に出た瞬間にレーダー右端に点が出る
-            const range = window.innerWidth - playerX + 100; // 少し余裕を持たせる
-            
+            const range = window.innerWidth - playerX + 100; // 画面端＝レーダー端
             const mapW = 110; 
             const mapH = 110;
 
             gameObjects.forEach(obj => {
                 if(!obj.alive) return;
                 const dx = obj.x - playerX;
-                
-                // 範囲内、かつプレイヤーより後ろすぎないものを表示
                 if(dx > -100 && dx < range) {
                     const dot = document.createElement('div');
                     dot.className = 'map-dot dot-generated';
                     if(obj.type === 'monster') dot.classList.add('dot-monster');
                     else dot.classList.add('dot-meteor');
 
-                    // プレイヤー位置(20px) + 距離割合
                     const mapX = 20 + (dx / range) * (mapW - 30);
-                    
                     let mapY = 0;
                     if(obj.type === 'meteor') {
                         const groundY = window.innerHeight - 120;
@@ -585,10 +576,7 @@
                     } else {
                         mapY = mapH - 10;
                     }
-                    
-                    // はみ出し防止
-                    if(mapX > mapW - 5) return;
-
+                    if(mapX > mapW) return;
                     dot.style.left = mapX + 'px';
                     dot.style.top = mapY + 'px';
                     mapPanel.appendChild(dot);
@@ -617,7 +605,7 @@
 
         function destroyMeteor(obj) {
             obj.alive = false;
-            shakeTrauma = 1.0; // 衝撃最大
+            shakeTrauma = 1.0; 
             obj.el.animate([
                 { transform: `rotate(${getRotation(obj.el)}deg) scale(1)`, opacity: 1, filter: 'brightness(2)' },
                 { transform: `rotate(${getRotation(obj.el) + 180}deg) scale(2)`, opacity: 0 }
@@ -638,7 +626,7 @@
         function playerHit(obj) {
             obj.alive = false;
             removeObject(obj);
-            shakeTrauma = 1.0; // 衝撃最大
+            shakeTrauma = 1.0; 
             inventoryCount = Math.max(0, inventoryCount - 5);
             updateCountDisplay();
             const p = document.getElementById('player');
@@ -690,14 +678,24 @@
             document.getElementById('groundLayer').style.backgroundImage = `url(${dataUrl})`;
         }
 
+        // ★修正済み保存処理 (ドット記法キーではなくネストオブジェクトで保存)
         window.finishExploration = async function() {
             isGameRunning = false;
-            const saveObj = {};
-            saveObj[`inventory.${currentData.id}`] = inventoryCount;
+            
+            // 修正: Firestoreの setDoc + merge でネストされたフィールドを更新する場合
+            // { inventory: { usa: 10 } } のように構造化して渡す必要があります。
+            // キーにドットを含めると ("inventory.usa")、トップレベルに "inventory.usa" というフィールドができてしまいます。
+            
+            const saveObj = {
+                inventory: {}
+            };
+            saveObj.inventory[currentData.id] = inventoryCount;
+
             try {
                 const btn = document.querySelector('.finish-btn');
                 btn.innerText = "保存中...";
                 btn.disabled = true;
+                
                 await setDoc(userRef, saveObj, { merge: true });
                 window.location.href = "stage_select.html";
             } catch(e) {

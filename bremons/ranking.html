@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ranking - BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="scrolling-bg"></div>
+        <div class="floating-layer" id="floatingLayer"></div>
+
+        <div class="ui-layer">
+            <header class="stage-select-header">
+                <button onclick="location.href='index.html'" class="pixel-btn back-btn">←戻る</button>
+                <h2 class="screen-title">ランキング</h2>
+            </header>
+
+            <div class="ranking-tabs">
+                <div class="tab-btn active" onclick="switchTab('totalDistance')">総飛行距離</div>
+                <div class="tab-btn" onclick="switchTab('maxFuelTime')">燃料チャージ時間</div>
+                <div class="tab-btn" onclick="switchTab('maxDistance')">最高飛距離</div>
+            </div>
+
+            <div id="loading" style="margin-top:20px;">読み込み中...</div>
+
+            <div id="rankingList" class="ranking-list">
+                </div>
+
+            <div class="my-rank-footer" id="myRankFooter">
+                <div>
+                    <span class="footer-label">あなたの順位</span><br>
+                    <span class="footer-val" id="myRankVal">---</span> <span style="font-size:12px;">位</span>
+                </div>
+                <div>
+                    <span class="footer-label">記録</span><br>
+                    <span class="footer-val" id="myScoreVal">---</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, limit, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+            authDomain: "bremons.firebaseapp.com",
+            projectId: "bremons",
+            storageBucket: "bremons.firebasestorage.app",
+            messagingSenderId: "30413071482",
+            appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+            measurementId: "G-4D4FCXGDBG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const myUid = localStorage.getItem('user_uid');
+
+        // タブ設定
+        const TABS = {
+            totalDistance: { field: "totalGlobalDistance", unit: "km", label: "総距離" },
+            maxFuelTime:   { field: "maxFuelDuration",     unit: "秒", label: "最大秒数" },
+            maxDistance:   { field: "maxSingleFlight",     unit: "km", label: "一撃距離" }
+        };
+        let currentTab = 'totalDistance';
+
+        // 初期化
+        window.onload = () => {
+            loadRanking(currentTab);
+            startBgAnim();
+        };
+
+        window.switchTab = (tabName) => {
+            currentTab = tabName;
+            // タブの見た目更新
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // クリックされたボタンを探すのは簡易的にテキスト等で...今回は簡易実装のため省略し、
+            // event.targetを使いたいが、moduleスコープ外に出すためクラス制御は後回しか
+            // ボタンのonclickでクラスを付け替える処理をここで行う
+            const btns = document.querySelectorAll('.tab-btn');
+            if(tabName === 'totalDistance') btns[0].classList.add('active');
+            if(tabName === 'maxFuelTime') btns[1].classList.add('active');
+            if(tabName === 'maxDistance') btns[2].classList.add('active');
+
+            loadRanking(tabName);
+        };
+
+        async function loadRanking(type) {
+            const listEl = document.getElementById('rankingList');
+            const loadEl = document.getElementById('loading');
+            listEl.innerHTML = '';
+            loadEl.style.display = 'block';
+
+            const targetField = TABS[type].field;
+            const unit = TABS[type].unit;
+
+            try {
+                // 上位50件を取得
+                // 注意: 初回はFirestoreのコンソールでインデックスを作成する必要があります
+                const q = query(collection(db, "users"), orderBy(targetField, "desc"), limit(50));
+                const snapshot = await getDocs(q);
+
+                loadEl.style.display = 'none';
+                
+                let rank = 1;
+                let myDataFound = false;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const isMe = (doc.id === myUid);
+                    const score = data[targetField] || 0;
+                    const name = data.displayName || "名無し";
+
+                    // リストに追加
+                    const card = document.createElement('div');
+                    card.className = `rank-card ${isMe ? 'my-rank-card' : ''}`;
+                    
+                    // 順位に応じたクラス
+                    let rankClass = "";
+                    if(rank === 1) rankClass = "rank-1";
+                    else if(rank === 2) rankClass = "rank-2";
+                    else if(rank === 3) rankClass = "rank-3";
+
+                    card.innerHTML = `
+                        <div class="rank-badge ${rankClass}">${rank}</div>
+                        <div class="rank-user-info">
+                            <span class="rank-name">${name}</span>
+                            <span class="rank-score">${score.toLocaleString()} <span style="font-size:12px">${unit}</span></span>
+                        </div>
+                    `;
+                    listEl.appendChild(card);
+
+                    // 自分のデータが見つかったら下部パネルを更新
+                    if(isMe) {
+                        updateMyFooter(rank, score, unit);
+                        myDataFound = true;
+                    }
+                    rank++;
+                });
+
+                if(!myDataFound) {
+                    // ランキング圏外の場合、個別に自分のデータを取得
+                    fetchMyData(targetField, unit);
+                }
+
+                if(snapshot.empty) {
+                    listEl.innerHTML = '<div style="text-align:center; color:#999;">データがありません</div>';
+                }
+
+            } catch (e) {
+                console.error(e);
+                loadEl.innerText = "データ取得エラー (インデックス未作成の可能性があります)";
+            }
+        }
+
+        async function fetchMyData(field, unit) {
+            if(!myUid) return;
+            try {
+                const docRef = doc(db, "users", myUid);
+                const snap = await getDoc(docRef);
+                if(snap.exists()) {
+                    const val = snap.data()[field] || 0;
+                    updateMyFooter("圏外", val, unit);
+                } else {
+                    updateMyFooter("---", 0, unit);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function updateMyFooter(rank, score, unit) {
+            document.getElementById('myRankVal').innerText = rank;
+            document.getElementById('myScoreVal').innerText = score.toLocaleString() + unit;
+        }
+
+        // 背景アニメーション (簡易版)
+        function startBgAnim() {
+            const container = document.getElementById('floatingLayer');
+            // ... (index.htmlと同様のロジックがあればここに追加)
+        }
+    </script>
+</body>
+</html>

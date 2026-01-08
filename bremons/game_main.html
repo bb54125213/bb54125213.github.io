@@ -173,11 +173,39 @@
                 const stageNum = urlParams.get('stage') || 1;
                 const stageRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
                 const userRef = doc(db, "users", uid);
-                setDoc(userRef, { lastLogin: new Date().toISOString() }, { merge: true });
+
+                // 今回のスコア
+                const thisFlightDist = logData.distance;
+                const thisFuelTime = logData.fuelDuration;
+
+                // 1. ユーザー情報全体を更新（ランキング用）
+                // Firestoreのトランザクションを使うのがベストですが、簡易的にupdateDoc/setDocを使います
+                // incrementを使って累積を加算し、max系はサーバーサイド計算が理想ですが、
+                // ここでは「現在の値を取得して比較」する簡易実装にします。
+                
+                const userSnap = await getDoc(userRef);
+                const userData = userSnap.exists() ? userSnap.data() : {};
+                
+                const newMaxDist = Math.max(userData.maxSingleFlight || 0, thisFlightDist);
+                const newMaxFuel = Math.max(userData.maxFuelDuration || 0, thisFuelTime);
+                // 総距離は increment を使用して安全に加算
+                
+                await setDoc(userRef, { 
+                    lastLogin: new Date().toISOString(),
+                    displayName: localStorage.getItem('user_name') || "名無し", // 名前も保存しておく
+                    maxSingleFlight: newMaxDist,
+                    maxFuelDuration: newMaxFuel,
+                    totalGlobalDistance: increment(thisFlightDist) // 累積加算
+                }, { merge: true });
+
+                // 2. ステージ個別データの保存（グラフ用など）
                 await setDoc(stageRef, {
                     totalDistance: totalDistance,
                     history: arrayUnion(logData)
                 }, { merge: true });
+
+                console.log("Save Complete!");
+
             } catch (e) {
                 console.error("Save Error:", e);
             }

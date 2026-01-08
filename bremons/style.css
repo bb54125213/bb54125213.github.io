@@ -658,3 +658,97 @@ body {
     display: flex; align-items: center; justify-content: space-between;
 }
 .panel-text-info { flex-grow: 1; }
+
+/* --- ランキング画面用 --- */
+.ranking-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 95%;
+}
+
+.tab-btn {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #555;
+    color: #aaa;
+    padding: 10px 0;
+    font-family: 'DotGothic16', sans-serif;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    border-color: #f1c40f;
+    color: #f1c40f;
+    background: rgba(241, 196, 15, 0.1);
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
+}
+
+/* ランキングリスト */
+.ranking-list {
+    width: 95%;
+    max-height: 55vh; /* スクロール可能に */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 80px; /* 下部スペース */
+}
+
+.rank-card {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #555;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* 順位バッジ */
+.rank-badge {
+    width: 40px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+    margin-right: 10px;
+}
+.rank-1 { color: #ffd700; text-shadow: 0 0 5px #ffd700; font-size: 24px; } /* 金 */
+.rank-2 { color: #c0c0c0; text-shadow: 0 0 5px #c0c0c0; } /* 銀 */
+.rank-3 { color: #cd7f32; text-shadow: 0 0 5px #cd7f32; } /* 銅 */
+
+.rank-user-info {
+    flex-grow: 1;
+    text-align: left;
+}
+.rank-name { font-size: 14px; color: #ddd; display: block; }
+.rank-score { font-size: 18px; color: #fff; font-weight: bold; }
+
+/* 自分のカード強調 */
+.my-rank-card {
+    border: 2px solid #2ecc71;
+    background: rgba(46, 204, 113, 0.2);
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
+    order: -1; /* Flexbox内で一番上に持ってくることも可能だが今回はリスト内で強調 */
+}
+
+/* 下部固定の自分の順位表示 */
+.my-rank-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 30, 0, 0.95);
+    border-top: 2px solid #2ecc71;
+    padding: 15px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 50;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+}
+.footer-label { font-size: 12px; color: #aaa; }
+.footer-val { font-size: 20px; color: #2ecc71; font-weight: bold; }

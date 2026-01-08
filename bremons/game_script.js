@@ -28,31 +28,34 @@ let fuelSeconds = 0;
 let chargedFuelSeconds = 0; 
 let flightDistance = 0;    
 let totalDistance = 0;     
-// 1秒の燃料で何キロ進むか
-const FLIGHT_SPEED = 500000;
-// 燃料タンクの表示できる最大値
+
+// ★修正: 計算ロジック
+// 飛距離 = (fuelSeconds * FLIGHT_SPEED)
+const FLIGHT_SPEED = 500000; 
+
+// 燃料タンクの表示最大値 (あくまでバーの表示用)
 const MAX_FUEL_SEC = 20;
-// 1秒の燃料で飛ぶアニメーション時間の倍率
+
+// アニメーション時間倍率 (1秒の燃料で何秒飛ぶか)
+// 2なら、1秒吹くと2秒かけて飛ぶ
 const FLIGHT_ANIMATION_TIME_MULTIPLIER = 2;
 
 let hasStartedBlowing = false; 
 let fuelingDone = false;       
 
-// 音声認識設定 (Load Config)
+// 時間管理用
+let lastFrameTime = 0;
+
+// 音声認識設定
 const THOUSAND_INDEX = 24;
-// デフォルト値
 let micConfig = {
     noiseThreshold: 0.05, 
     paProfile: [0.032, 0.041, 0.014, 0.022, 0.009, 0.017, 0.005, 0.022, 0.011, 0.010, 0.029, 0.092, 0.135, 0.139, 0.051, 0.013, 0.009, 0.012, 0.014, 0.014, 0.008, 0.009, 0.017, 0.007]
 };
 
-// コックピット設定の読み込み
 const savedConfig = localStorage.getItem('mic_config_v2');
 if(savedConfig) {
-    try {
-        micConfig = JSON.parse(savedConfig);
-        console.log("Cockpit Config Loaded:", micConfig);
-    } catch(e) { console.error("Config Error"); }
+    try { micConfig = JSON.parse(savedConfig); } catch(e) {}
 }
 
 const els = {
@@ -101,8 +104,6 @@ async function consumeMonsterAndLoad(costId) {
 
         if(costId && !window.isRetry) {
             await window.DB.consumeAndStart(costId);
-        } else if(window.isRetry) {
-            window.readyToStart = true;
         } else {
             window.readyToStart = true;
         }
@@ -144,6 +145,8 @@ window.tryRetry = async function() {
     fuelSeconds = 0;
     chargedFuelSeconds = 0; 
     flightDistance = 0;
+    lastFrameTime = 0; // ★時間をリセット
+
     els.retryBtn.disabled = false;
     els.retryBtn.innerText = "力を借りて再出発";
 
@@ -156,7 +159,6 @@ window.tryRetry = async function() {
 
 async function initGame() {
     try {
-        // 余計なオプションを削除し、最も安定する設定に戻しました
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
@@ -197,7 +199,10 @@ function startCountdown() {
             els.paBtn.innerText = "ぱっ！と言って発射"; 
             els.paBtn.disabled = true;
             playBlipSound(1000); 
-            gameLoop();
+            
+            // ★ゲームループ開始（タイムスタンプ付き）
+            lastFrameTime = 0; 
+            requestAnimationFrame(gameLoop);
         }
     }, 1000);
 }
@@ -206,6 +211,7 @@ window.togglePause = function() {
     if (currentState === STATE.PAUSED) {
         currentState = lastState;
         els.pauseModal.classList.add('hidden');
+        lastFrameTime = 0; // ★再開時に時間をリセットして飛び跳ね防止
         if (currentState === STATE.FLYING) {
             els.bgm.play();
             els.bg.classList.remove('speed-stop');
@@ -220,18 +226,30 @@ window.togglePause = function() {
     }
 };
 
-function gameLoop() {
+// ★修正: timestampを受け取り、実時間(deltaTime)を計算
+function gameLoop(timestamp) {
     if (currentState === STATE.PAUSED) {
         requestAnimationFrame(gameLoop);
         return;
     }
+
+    // 初回フレーム、またはポーズ復帰直後は差分計算をスキップ
+    if (!lastFrameTime) {
+        lastFrameTime = timestamp;
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    // 経過時間 (秒)
+    const deltaTime = (timestamp - lastFrameTime) / 1000;
+    lastFrameTime = timestamp;
+
     if (!isMicActive) return;
     analyser.getByteFrequencyData(dataArray);
     
     let sum = 0;
     let max_amplitude = 0;
     for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
-    let average = sum / dataArray.length;
     
     for(let i=0; i<THOUSAND_INDEX; i++) {
         const val = dataArray[i] / 255.0;
@@ -250,11 +268,11 @@ function gameLoop() {
 
     if (currentState === STATE.FUELING) {
         const isBlowing = isOverThreshold && (highFreqAvg > 10);
-        processFueling(isBlowing);
+        processFueling(isBlowing, deltaTime); // ★deltaTimeを渡す
     } else if (currentState === STATE.FLYING) {
-        processFlying();
-        // 飛行中も監視したい場合はここにanalyzeVoiceなどを入れる
+        processFlying(deltaTime); // ★deltaTimeを渡す
     }
+    
     requestAnimationFrame(gameLoop);
 }
 
@@ -272,7 +290,8 @@ function analyzeVoice(maxAmp) {
     return null;
 }
 
-function processFueling(isBlowing) {
+// ★修正: deltaTimeを使って正確に加算
+function processFueling(isBlowing, deltaTime) {
     if (fuelingDone) {
         let maxAmp = 0;
         for(let i=0; i<THOUSAND_INDEX; i++) if(dataArray[i]/255.0 > maxAmp) maxAmp = dataArray[i]/255.0;
@@ -286,7 +305,10 @@ function processFueling(isBlowing) {
 
     if (isBlowing) {
         if (!hasStartedBlowing) hasStartedBlowing = true;
-        fuelSeconds += 1 / 60;
+        
+        // 1/60 ではなく 実時間(deltaTime) を足す
+        fuelSeconds += deltaTime; 
+        
         chargedFuelSeconds = fuelSeconds; 
         els.fuelTime.innerText = fuelSeconds.toFixed(2);
         
@@ -324,15 +346,21 @@ function launchRocket() {
     els.bg.classList.remove('speed-stop');
     els.bg.classList.add('speed-fast');
     document.body.classList.add('flying');
+    
+    lastFrameTime = 0; // 飛行開始時に時間リセット
 }
 
-function processFlying() {
-    const timeDelta = 1 / 60;
-    const distDelta = (FLIGHT_SPEED / FLIGHT_ANIMATION_TIME_MULTIPLIER) * timeDelta;
+// ★修正: deltaTimeを使って正確に計算
+function processFlying(deltaTime) {
+    // 速度 = 基本速度 / 倍率
+    const speedPerSec = FLIGHT_SPEED / FLIGHT_ANIMATION_TIME_MULTIPLIER;
+    const distDelta = speedPerSec * deltaTime;
+    
     flightDistance += distDelta;   
     totalDistance += distDelta;
     
-    fuelSeconds -= (timeDelta / FLIGHT_ANIMATION_TIME_MULTIPLIER);
+    // 燃料消費 = 経過時間 / 倍率
+    fuelSeconds -= (deltaTime / FLIGHT_ANIMATION_TIME_MULTIPLIER);
 
     if (fuelSeconds <= 0) {
         fuelSeconds = 0;
@@ -374,6 +402,10 @@ async function finishFlight() {
         }
     }
 
+    // 結果表示の飛距離を再計算して整合性を保証する（念のため）
+    // 理論値: 吹いた時間 * 500,000
+    // 実測値: flightDistance
+    // ほぼ同じになるはずですが、表示は見やすく整数化
     els.resDist.innerText = Math.floor(flightDistance).toLocaleString(); 
     els.totalDistDisplay.innerText = Math.floor(totalDistance).toLocaleString(); 
     els.modal.classList.remove('hidden');

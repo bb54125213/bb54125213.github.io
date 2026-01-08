@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BREMONS</title>
+    <link rel="manifest" href="manifest.json">
+    
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style> .hidden { display: none !important; } </style>
@@ -37,6 +39,10 @@
 
                 <button id="logoutBtn" class="pixel-btn" style="font-size:14px; background:#555;">ログアウト</button>
                 
+                <button id="installBtn" class="pixel-btn" style="display:none; background:#3498db; margin-top:10px; font-weight:bold;">
+                    アプリをインストール
+                </button>
+
                 <button id="resetDataBtn" class="pixel-btn" style="font-size:12px; background:#e74c3c; margin-top:20px;">⚠️ 自分のデータをリセット</button>
             </nav>
             
@@ -49,7 +55,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        // ★追加: writeBatch, doc, collection, getDocs をインポート
         import { getFirestore, doc, writeBatch, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -64,7 +69,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app); // ★DB初期化
+        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
         const loginArea = document.getElementById('loginArea');
@@ -103,22 +108,16 @@
             document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
         });
 
-        // --- ★追加: データリセット処理 ---
         document.getElementById('resetDataBtn').addEventListener('click', async () => {
             const uid = localStorage.getItem('user_uid');
             if (!uid) return;
-
             if (!confirm("本当に自分のデータを全て初期化しますか？\n（ランキングや所持数も0になります）")) return;
-
             const btn = document.getElementById('resetDataBtn');
             btn.innerText = "削除中...";
             btn.disabled = true;
-
             try {
                 const batch = writeBatch(db);
                 const userRef = doc(db, "users", uid);
-
-                // 1. ユーザー情報の初期化
                 batch.set(userRef, {
                     displayName: localStorage.getItem('user_name'),
                     lastLogin: new Date().toISOString(),
@@ -129,20 +128,15 @@
                     totalStars: 0,
                     totalBlueStars: 0
                 });
-
-                // 2. ステージごとのログ削除
                 const stagesRef = collection(db, "users", uid, "stages");
                 const snapshot = await getDocs(stagesRef);
                 snapshot.forEach((doc) => {
                     batch.delete(doc.ref);
                 });
-
                 await batch.commit();
-
                 alert("リセット完了しました！");
                 btn.innerText = "⚠️ 自分のデータをリセット";
                 btn.disabled = false;
-                
             } catch (e) {
                 console.error(e);
                 alert("エラーが発生しました: " + e.message);
@@ -152,5 +146,47 @@
     </script>
     
     <script src="script.js"></script>
+
+    <script>
+        // Service Workerの登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(function(registration) {
+                    console.log('Service Worker Registered');
+                })
+                .catch(function(error) {
+                    console.log('Service Worker Registration Failed');
+                });
+        }
+
+        // インストールボタンの制御
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Chrome 67以前では自動的にプロンプトが出ないようにする
+            e.preventDefault();
+            // イベントを保持しておく
+            deferredPrompt = e;
+            // インストールボタンを表示
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', (e) => {
+            // ボタンを隠す
+            installBtn.style.display = 'none';
+            // プロンプトを表示
+            deferredPrompt.prompt();
+            // ユーザーが応答した後の処理
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the A2HS prompt');
+                } else {
+                    console.log('User dismissed the A2HS prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
+    </script>
 </body>
 </html>

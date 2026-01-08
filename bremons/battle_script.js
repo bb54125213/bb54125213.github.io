@@ -118,6 +118,8 @@ async function initAudio() {
 async function startMatching() {
     els.countdownOverlay.classList.remove('hidden');
     els.countdownText.innerText = "";
+    document.getElementById('matchArea').classList.remove('hidden');
+    monitorWaitingPlayers();
     els.matchMsg.classList.remove('hidden');
 
     const roomsRef = ref(db, 'rooms');
@@ -178,7 +180,7 @@ function setupRoomListener() {
 
         // ゲーム開始判定
         if (data.status === 'playing' && !isGameRunning && els.countdownText.innerText !== "START!") {
-            els.matchMsg.classList.add('hidden');
+            document.getElementById('matchArea').classList.add('hidden');
             startCountdown();
         }
 
@@ -544,4 +546,36 @@ function playSe(freq, type) {
     gain.connect(audioContext.destination);
     osc.start();
     osc.stop(audioContext.currentTime + 0.1);
+}
+
+// キャンセル処理
+window.cancelMatching = function() {
+    if (roomId && myRole === 'host') {
+        // 自分が作った部屋を削除
+        remove(ref(db, `rooms/${roomId}`))
+            .then(() => {
+                location.href = 'battle_select.html';
+            });
+    } else {
+        location.href = 'battle_select.html';
+    }
+};
+
+// 待機プレイヤー数の監視
+function monitorWaitingPlayers() {
+    const roomsRef = ref(db, 'rooms');
+    onValue(roomsRef, (snapshot) => {
+        if (isGameRunning) return; // ゲーム始まったら更新不要
+
+        let count = 0;
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+                if (child.val().status === 'waiting') {
+                    count++;
+                }
+            });
+        }
+        // 自分も含まれるので、最低1人にはなるはず
+        document.getElementById('waitingCount').innerText = `待機中のプレイヤー: ${count}人`;
+    });
 }

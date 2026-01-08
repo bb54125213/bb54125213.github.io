@@ -12,8 +12,8 @@
         .type-flight { background: #2980b9; color: #fff; } 
         .hidden { display: none !important; }
 
-        .stage-list { margin-top: 10px; padding-right: 5px; } 
-        .stage-panel { margin-bottom: 15px; border-width: 2px; border-style: solid; transition: all 0.3s; }
+        .stage-list { margin-top: 10px; padding-right: 5px; position: relative; } /* position relative追加 */
+        .stage-panel { margin-bottom: 15px; border-width: 2px; border-style: solid; transition: all 0.3s; position: relative; }
         .panel-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #aaa; }
         .panel-content-wrapper { display: flex; align-items: center; justify-content: space-between; }
         .panel-text-info { flex-grow: 1; }
@@ -26,7 +26,6 @@
         .progress-bar-bg { width: 100%; height: 4px; background: #333; border-radius: 2px; }
         .progress-bar-fill { height: 100%; background: #3498db; border-radius: 2px; width: 0%; }
 
-        /* コックピットボタン */
         .training-btn {
             display: block; margin: 0 auto 20px auto;
             background: #2c3e50; color: #3498db; border: 2px solid #3498db;
@@ -37,7 +36,6 @@
         }
         .training-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
-        /* 状態別デザイン */
         .locked {
             background-color: rgba(0, 0, 0, 0.8) !important;
             border-color: #333 !important;
@@ -132,6 +130,69 @@
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* --- ★追加: ナビゲーション吹き出し --- */
+        .guide-bubble {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #2ecc71;
+            border-radius: 8px;
+            padding: 10px 15px;
+            width: 200px;
+            z-index: 50;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+            animation: floatBubble 2s infinite ease-in-out;
+            pointer-events: none; /* クリックを邪魔しない */
+            
+            /* 初期位置（JSで制御しますがデフォルト位置） */
+            right: 10px; 
+            top: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* 吹き出しのしっぽ（左向き） */
+        .guide-bubble::after {
+            content: ''; position: absolute;
+            top: 50%; right: 100%; margin-top: -8px;
+            border-width: 8px; border-style: solid;
+            border-color: transparent #2ecc71 transparent transparent;
+        }
+
+        .guide-text {
+            color: #fff; font-size: 12px; line-height: 1.4; text-align: left;
+        }
+        .guide-icon {
+            width: 32px; height: 32px; image-rendering: pixelated;
+            border-radius: 50%; border: 1px solid #fff; background: #222;
+        }
+
+        @keyframes floatBubble {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-5px); }
+        }
+
+        /* Custom Dialog */
+        .custom-dialog-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 300;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .custom-dialog-box {
+            background: #222; border: 2px solid #fff; padding: 20px;
+            text-align: center; border-radius: 8px; width: 80%; max-width: 300px;
+            color: #fff;
+        }
+        .dialog-msg { margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
+        .dialog-btns { display: flex; gap: 10px; justify-content: center; }
+        .dialog-btn {
+            padding: 8px 20px; border: 1px solid #fff; cursor: pointer;
+            font-family: inherit; font-size: 14px;
+        }
+        .btn-yes { background: #e74c3c; color: #fff; }
+        .btn-no { background: #555; color: #fff; }
+
     </style>
 </head>
 <body>
@@ -156,6 +217,11 @@
             </button>
 
             <div id="loadingMsg" style="text-align:center; margin-top:10px;">データ確認中...</div>
+
+            <div id="guideBubble" class="guide-bubble hidden">
+                <img src="./nightgame/chara.png" class="guide-icon">
+                <div id="guideText" class="guide-text"></div>
+            </div>
 
             <div class="stage-list hidden" id="stageList">
                 <div id="panel_planet_1" class="stage-panel unlocked current" onclick="goPlanet(1)">
@@ -311,28 +377,20 @@
                     if (parsed && parsed.noiseThreshold !== undefined) {
                         isConfigValid = true;
                     }
-                } catch (e) {
-                    console.error("設定データ破損");
-                }
+                } catch (e) { console.error("設定データ破損"); }
             }
             
-            // 2. データが無い場合、カスタムメッセージを表示
             if (!isConfigValid) {
-                // ★修正: alert() をやめて、専用レイヤーを表示
                 const overlay = document.getElementById('setupMsgOverlay');
                 const btn = document.getElementById('goToCockpitBtn');
-                
                 if (overlay && btn) {
                     overlay.classList.remove('hidden');
-                    btn.onclick = () => {
-                        location.href = "training_room.html";
-                    };
+                    btn.onclick = () => location.href = "training_room.html";
                 } else {
-                    // 万が一要素がない場合のフォールバック
                     alert("パイロット認証が必要です。コックピットへ移動します。");
                     location.href = "training_room.html";
                 }
-                return; // ここで処理を止める
+                return;
             }
 
             try {
@@ -375,7 +433,58 @@
                 document.getElementById('loadingMsg').classList.add('hidden');
                 document.getElementById('stageList').classList.remove('hidden');
 
+                // ★追加: ナビゲーション表示
+                showGuide(s1Dist, s2Dist);
+
             } catch(e) { console.error(e); }
+        }
+
+        // ★追加: ガイド表示ロジック
+        function showGuide(s1Dist, s2Dist) {
+            const guide = document.getElementById('guideBubble');
+            const text = document.getElementById('guideText');
+            let targetId = null;
+            let msg = "";
+
+            // 条件分岐でメッセージ決定
+            if (inventory.usa < 1 && s1Dist < GOALS[1]) {
+                targetId = 'panel_planet_1';
+                msg = "まずはここで<br>モンスター(Usa)を捕獲しよう！";
+            } 
+            else if (s1Dist < GOALS[1]) {
+                targetId = 'panel_flight_1';
+                msg = "Usaの力を借りて<br>次の惑星へ出発だ！";
+            }
+            else if (inventory.inv < 1 && s2Dist < GOALS[2]) {
+                targetId = 'panel_planet_2';
+                msg = "到着！次はここで<br>Invを集めよう！";
+            }
+            else if (s2Dist < GOALS[2]) {
+                targetId = 'panel_flight_2';
+                msg = "Invの力なら<br>もっと遠くへ行けるはず！";
+            }
+            else if (inventory.him < 1) {
+                targetId = 'panel_planet_3';
+                msg = "ついにここまで来た...<br>Himを仲間にしよう！";
+            }
+
+            if (targetId && msg) {
+                text.innerHTML = msg;
+                guide.classList.remove('hidden');
+                
+                // 位置合わせ（パネルの右側に配置）
+                const target = document.getElementById(targetId);
+                // リストに対する相対位置計算はCSSのflex/gridだと難しいので
+                // シンプルにDOMツリー内でターゲット要素の「中」に吹き出しを移動させる
+                // これなら position: absolute; right: 10px; が効く
+                target.appendChild(guide);
+                
+                // スタイル調整（パネルの中に入れるので位置リセット）
+                guide.style.right = "10px";
+                guide.style.top = "50%";
+                guide.style.transform = "translateY(-50%)";
+                guide.style.animation = "floatBubble 2s infinite ease-in-out";
+            }
         }
 
         function updateProgress(num, dist) {

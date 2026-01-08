@@ -13,14 +13,14 @@
             top: 0; 
             left: 0; 
             width: 100%; 
-            height: 50px; /* 高さを確保 */
-            z-index: 50;  /* 最前面に */
+            height: 50px; 
+            z-index: 50;
             display: flex; 
             justify-content: space-between; 
             align-items: center;
             padding: 0 15px; 
             box-sizing: border-box;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); /* 見やすくする */
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
         
         .stage-title-display { font-size: 16px; text-shadow: 2px 2px 0 #000; color: #fff; }
@@ -38,9 +38,8 @@
         }
 
         /* --- 重なり防止 --- */
-        /* info-panel を少し下げてヘッダーと被らないようにする */
         .info-panel {
-            margin-top: 50px; /* ヘッダーの高さ分下げる */
+            margin-top: 50px; 
         }
 
         /* ポーズメニューモーダル */
@@ -124,8 +123,8 @@
             <div class="pause-content">
                 <h2>PAUSE</h2>
                 <div class="sensitivity-control" style="margin: 30px 0; color:#333; text-align:left;">
-                    <label>マイク感度: <span id="threshVal_pause">30</span></label>
-                    <input type="range" id="sensitivity_pause" min="0" max="100" value="30" style="width:100%;">
+                    <label>マイク感度: <span id="threshVal_pause">45</span></label>
+                    <input type="range" id="sensitivity_pause" min="0" max="100" value="45" style="width:100%;">
                     <p style="font-size:10px; color:#666;">※数値が高いほど小さな音で反応します</p>
                 </div>
                 <div class="modal-btns">
@@ -195,7 +194,7 @@
             }
         };
 
-        // セーブ関数 (アラート削除済み)
+        // セーブ関数
         window.DB.save = async (logData, totalDistance) => {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -211,7 +210,6 @@
                 }, { merge: true });
                 
                 console.log("Cloud Save Complete!");
-                // ★アラートは削除しました
             } catch (e) {
                 console.error("Save Error:", e);
             }

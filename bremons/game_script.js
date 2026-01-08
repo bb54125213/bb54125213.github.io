@@ -29,7 +29,9 @@ let fuelSeconds = 0;
 let chargedFuelSeconds = 0; 
 let flightDistance = 0;    
 let totalDistance = 0;     
-const FLIGHT_SPEED = 50000;
+
+// ★修正: 速度を10倍に変更 (50,000 -> 500,000)
+const FLIGHT_SPEED = 500000;
 const MAX_FUEL_SEC = 20;
 
 // フラグ

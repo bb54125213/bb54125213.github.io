@@ -245,14 +245,88 @@ body {
     color: #ccc;
 }
 
-/* 状態別スタイル */
-.unlocked { cursor: pointer; }
-.unlocked:hover { background-color: rgba(80, 80, 80, 0.9); transform: translate(-2px, -2px); }
-.cleared { border-color: #2ecc71; }
-.cleared .stage-status { color: #2ecc71; }
-.current { border-color: #f1c40f; background-color: rgba(100, 80, 0, 0.6); }
-.current .stage-status { color: #f1c40f; animation: blink 1s infinite alternate; }
-.locked { opacity: 0.6; pointer-events: none; border-color: #555; }
+/* --- ステージ選択画面の状態別スタイル（シンプル・整理版） --- */
+
+/* ベース：すべてのパネルを少し暗くする */
+.stage-panel {
+    background-color: rgba(20, 20, 20, 0.9);
+    border: 2px solid #555;
+    color: #aaa;
+    transition: all 0.3s;
+}
+
+/* 1. ロック中（未到達）: 暗く沈める */
+.locked {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    border-color: #333 !important;
+    color: #444 !important;
+    pointer-events: none !important;
+    opacity: 0.6 !important;
+}
+.locked .hologram-img { opacity: 0 !important; } /* 画像は消す */
+.locked .stage-status { display: none; } /* ステータスも消す */
+
+/* 2. 解放済み（探索可能など）: 白ベースでシンプルに */
+.unlocked {
+    border-color: #fff !important;
+    color: #fff !important;
+    cursor: pointer;
+}
+.unlocked .stage-status {
+    color: #fff !important;
+    border: 1px solid #fff;
+    background: none;
+    padding: 2px 6px;
+}
+
+/* 3. 挑戦中（GO!）: 黄色で目立たせる（一番の基本） */
+.current { 
+    border-color: #f1c40f !important;
+    background-color: rgba(30, 30, 10, 0.9) !important; /* ほんのり黄色背景 */
+    color: #fff !important;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.2);
+}
+.current .stage-status { 
+    color: #000 !important;
+    background-color: #f1c40f !important;
+    border: none !important;
+    font-weight: bold;
+    animation: blink 1s infinite alternate; 
+}
+
+/* 4. クリア済み: 緑色 */
+.cleared {
+    border-color: #2ecc71 !important;
+}
+.cleared .stage-status {
+    color: #2ecc71 !important;
+    border: 1px solid #2ecc71 !important;
+    background: none !important;
+}
+
+/* 5. コスト不足（最優先）: 赤色で警告（黄色を上書きする！） */
+/* ⚠️これが一番下にないと黄色に負けます */
+.insufficient {
+    background-color: rgba(40, 10, 10, 0.95) !important; /* 赤黒い背景 */
+    border-color: #e74c3c !important; /* 赤枠 */
+    color: #aaa !important; /* 文字は少し暗く */
+    pointer-events: none !important; /* クリック不可 */
+    box-shadow: none !important; /* 光らせない */
+}
+.insufficient .stage-name {
+    color: #e74c3c !important; /* タイトルだけ赤く */
+}
+.insufficient .stage-status { 
+    color: #fff !important; 
+    background-color: #e74c3c !important; /* 赤背景のラベル */
+    border: none !important;
+    animation: none !important; /* 点滅させない */
+}
+.insufficient .cost-info {
+    color: #e74c3c !important;
+    font-weight: bold;
+}
+@keyframes pulseBtn { from { transform: scale(1); } to { transform: scale(1.1); } }
 
 @keyframes blink { from { opacity: 1; } to { opacity: 0.5; } }
 

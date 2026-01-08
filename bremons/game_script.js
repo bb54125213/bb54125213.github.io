@@ -310,18 +310,25 @@ function processFueling(volume, threshold, isOverThreshold, recognizedSound) {
     }
 }
 
+// ■ 発射処理
 function launchRocket() {
     currentState = STATE.FLYING;
     flightDistance = 0; 
+    
     els.bgm.currentTime = 0;
     els.bgm.volume = 0.3;
     els.bgm.play();
-    els.paBtn.innerText = "はっ！(キャッチ)";
-    els.paBtn.style.backgroundColor = "#f39c12";
+    
+    // ★修正: 「はっ！」を削除し、操作不要であることを示す
+    els.paBtn.innerText = "航行中...";
+    els.paBtn.style.backgroundColor = "#2980b9"; // 青色になど変更
     els.paBtn.onclick = null; 
+
     els.bg.classList.remove('speed-stop');
     els.bg.classList.add('speed-fast');
     document.body.classList.add('flying');
+    
+    // spawnFlyingMonsters(); // 削除済み
 }
 
 function processFlying(volume, threshold) {

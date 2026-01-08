@@ -6,17 +6,102 @@
     <title>ステージ選択 - BREMONS</title>
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <style>
+<style>
+        /* 基本ラベル設定 */
         .stage-type-label { font-size: 10px; background: #555; padding: 2px 5px; border-radius: 3px; margin-right: 5px; }
         .type-planet { background: #27ae60; color: #fff; } 
         .type-flight { background: #2980b9; color: #fff; } 
-        .cost-info { font-size: 12px; color: #f39c12; margin-top: 5px; }
-        .owned-info { font-size: 14px; color: #fff; text-align: right; margin-top:5px; font-weight:bold; }
-        .insufficient { opacity: 0.6; filter: grayscale(100%); pointer-events: none; border-color: #555 !important; }
-        .insufficient .stage-status { color: #999 !important; }
-        .stage-list { margin-top: 10px; padding-right: 5px; } 
-        .stage-panel { margin-bottom: 15px; }
         .hidden { display: none !important; }
+
+        /* レイアウト調整 */
+        .stage-list { margin-top: 10px; padding-right: 5px; } 
+        .stage-panel { margin-bottom: 15px; border-width: 2px; border-style: solid; transition: all 0.3s; }
+        .panel-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #aaa; }
+        .panel-content-wrapper { display: flex; align-items: center; justify-content: space-between; }
+        .panel-text-info { flex-grow: 1; }
+        .stage-name { font-size: 20px; margin-bottom: 5px; font-weight: bold; }
+        .stage-info, .cost-info { font-size: 12px; color: #ccc; }
+        .owned-info { font-size: 14px; color: #fff; text-align: right; margin-top:5px; font-weight:bold; }
+
+        /* 進捗バー */
+        .progress-area { margin-top: 5px; }
+        .progress-text { font-size: 10px; color: #3498db; text-align: right; }
+        .progress-bar-bg { width: 100%; height: 4px; background: #333; border-radius: 2px; }
+        .progress-bar-fill { height: 100%; background: #3498db; border-radius: 2px; width: 0%; }
+
+        /* --- 【重要】状態別デザイン（優先度順） --- */
+
+        /* 1. ロック中（未到達）: 暗く沈める */
+        .locked {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            border-color: #333 !important;
+            color: #444 !important;
+            pointer-events: none !important;
+            opacity: 0.6 !important;
+        }
+        .locked .hologram-img { opacity: 0 !important; } /* 画像は消す */
+        .locked .stage-status { display: none; } /* ステータスも消す */
+
+        /* 2. 解放済み（通常）: 白ベース */
+        .unlocked {
+            background-color: rgba(30, 30, 30, 0.9);
+            border-color: #888;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        /* 3. 挑戦中（GO!）: 黄色で目立たせる */
+        .current { 
+            border-color: #f1c40f !important;
+            background: linear-gradient(to right, rgba(60, 50, 0, 0.9), rgba(0,0,0,0.8)) !important;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.3) !important;
+        }
+        .current .stage-status { 
+            color: #000 !important;
+            background-color: #f1c40f !important;
+            border: none !important;
+            padding: 2px 8px; border-radius: 4px;
+            font-weight: bold;
+            animation: blink 1s infinite alternate; 
+        }
+
+        /* 4. クリア済み: 緑色 */
+        .cleared {
+            border-color: #2ecc71 !important;
+            box-shadow: none !important;
+        }
+        .cleared .stage-status {
+            color: #2ecc71 !important;
+            border: 1px solid #2ecc71 !important;
+            background: none !important;
+            animation: none !important;
+        }
+
+        /* 5. コスト不足（最優先）: 赤色で警告（黄色を上書き！） */
+        /* !important を多用して確実に黄色を消します */
+        .insufficient {
+            background: rgba(40, 10, 10, 0.95) !important; /* 赤黒い背景 */
+            border-color: #e74c3c !important; /* 赤枠 */
+            color: #aaa !important; /* 文字は少し暗く */
+            pointer-events: none !important; /* クリック不可 */
+            box-shadow: none !important; /* 光らせない */
+        }
+        .insufficient .stage-name {
+            color: #e74c3c !important; /* タイトルだけ赤く */
+        }
+        .insufficient .stage-status { 
+            color: #fff !important; 
+            background-color: #e74c3c !important; /* 赤背景のラベル */
+            border: none !important;
+            animation: none !important; /* 点滅させない */
+            padding: 2px 8px; border-radius: 4px;
+        }
+        .insufficient .cost-info {
+            color: #e74c3c !important;
+            font-weight: bold;
+        }
+
+        @keyframes blink { from { opacity: 1; } to { opacity: 0.7; } }
     </style>
 </head>
 <body>
@@ -244,11 +329,14 @@
 
         function checkCost(panelId, monsterId) {
             const p = document.getElementById(panelId);
+            // まだロックされているなら何もしない
             if(p.classList.contains('locked')) return;
+
             const count = inventory[monsterId] || 0;
             if(count < 1) {
                 p.classList.add('insufficient');
-                p.querySelector('.stage-status').innerText = "探索必要"; // 文言変更
+                // ステータス書き換え
+                p.querySelector('.stage-status').innerText = "⚠️探索必要"; 
             }
         }
 

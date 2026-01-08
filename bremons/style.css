@@ -752,3 +752,28 @@ body {
 }
 .footer-label { font-size: 12px; color: #aaa; }
 .footer-val { font-size: 20px; color: #2ecc71; font-weight: bold; }
+
+/* style.css の末尾に追加 */
+
+/* 星カウンター */
+.star-counters {
+    display: flex; gap: 15px; margin-top: 5px;
+}
+.star-count-item {
+    display: flex; align-items: center; font-size: 16px; color: #f1c40f; text-shadow: 1px 1px 0 #000;
+}
+.icon-sm { width: 20px; height: 20px; margin-right: 5px; }
+
+/* 降ってくる星 */
+.falling-star {
+    position: absolute;
+    width: 30px; height: 30px;
+    z-index: 10;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+}
+
+/* ロケットの動きをスムーズに */
+.rocket {
+    transition: left 0.1s linear, bottom 0.5s ease; /* 横移動を追加 */
+}

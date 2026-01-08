@@ -6,6 +6,7 @@
     <title>BREMONS</title>
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style> .hidden { display: none !important; } </style>
 </head>
 <body>
     <audio id="bgm" src="./bgm/GuideToAdventure.mp3" loop></audio>
@@ -28,11 +29,15 @@
                 <p>ようこそ、宇宙飛行士<span id="userName" style="color:#f1c40f;">パイロット</span></p>
                 <button onclick="startGame()" class="pixel-btn start-btn">ゲームスタート</button>
                 <button onclick="location.href='log_view.html'" class="pixel-btn">軌跡をみる(グラフ)</button>
+                
                 <div style="display:flex; gap:10px; width:100%;">
                     <button onclick="location.href='ranking.html'" class="pixel-btn" style="flex:1; font-size:14px;">ランキング</button>
                     <button onclick="goBattle()" class="pixel-btn" style="flex:1; font-size:14px;">対戦(準備中)</button>
                 </div>
+
                 <button id="logoutBtn" class="pixel-btn" style="font-size:14px; background:#555;">ログアウト</button>
+                
+                <button id="resetDataBtn" class="pixel-btn" style="font-size:12px; background:#e74c3c; margin-top:20px;">⚠️ 自分のデータをリセット</button>
             </nav>
             
             <footer class="footer-area">
@@ -44,84 +49,108 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // ★追加: writeBatch, doc, collection, getDocs をインポート
+        import { getFirestore, doc, writeBatch, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
-        apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
-        authDomain: "bremons.firebaseapp.com",
-        projectId: "bremons",
-        storageBucket: "bremons.firebasestorage.app",
-        messagingSenderId: "30413071482",
-        appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
-        measurementId: "G-4D4FCXGDBG"
+            apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+            authDomain: "bremons.firebaseapp.com",
+            projectId: "bremons",
+            storageBucket: "bremons.firebasestorage.app",
+            messagingSenderId: "30413071482",
+            appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+            measurementId: "G-4D4FCXGDBG"
         };
 
-        // Firebase初期化
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app); // ★DB初期化
         const provider = new GoogleAuthProvider();
 
-        // 要素
         const loginArea = document.getElementById('loginArea');
         const menuArea = document.getElementById('menuArea');
         const loginBtn = document.getElementById('loginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         const userNameSpan = document.getElementById('userName');
 
-        // ログイン処理
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider)
-                .catch((error) => alert("ログイン失敗: " + error.message));
+            signInWithPopup(auth, provider).catch((error) => alert("ログイン失敗: " + error.message));
         });
 
-        // ログアウト処理
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth);
-        });
+        logoutBtn.addEventListener('click', () => { signOut(auth); });
 
-        // ログイン状態の監視
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // ログイン中
                 loginArea.classList.add('hidden');
                 menuArea.classList.remove('hidden');
                 userNameSpan.innerText = user.displayName || "名無しパイロット";
-                
-                // ユーザー情報をローカルストレージにも保存（ゲーム画面へ渡す簡易的な方法）
                 localStorage.setItem('user_uid', user.uid);
                 localStorage.setItem('user_name', user.displayName);
             } else {
-                // ログアウト中
                 loginArea.classList.remove('hidden');
                 menuArea.classList.add('hidden');
                 localStorage.removeItem('user_uid');
             }
         });
         
-        // 通常のJS関数をグローバルに公開（module内だと隠蔽されるため）
-        window.startGame = function() {
-            window.location.href = "stage_select.html";
-        };
+        window.startGame = function() { window.location.href = "stage_select.html"; };
         window.goBattle = function() { alert("リアルタイム対戦は開発中です！"); };
-        // BGM再生の強化
+
         document.addEventListener('DOMContentLoaded', () => {
             const bgm = document.getElementById('bgm');
             bgm.volume = 0.3;
+            bgm.play().catch(() => {});
+            document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
+        });
 
-            // ページ読み込み時に再生を試みる
-            bgm.play().catch(() => {
-                console.log("自動再生がブロックされました。ユーザー操作を待ちます。");
-            });
+        // --- ★追加: データリセット処理 ---
+        document.getElementById('resetDataBtn').addEventListener('click', async () => {
+            const uid = localStorage.getItem('user_uid');
+            if (!uid) return;
 
-            // 画面のどこかをクリックしたら再生
-            document.body.addEventListener('click', () => {
-                if (bgm.paused) {
-                    bgm.play();
-                }
-            }, { once: true });
+            if (!confirm("本当に自分のデータを全て初期化しますか？\n（ランキングや所持数も0になります）")) return;
+
+            const btn = document.getElementById('resetDataBtn');
+            btn.innerText = "削除中...";
+            btn.disabled = true;
+
+            try {
+                const batch = writeBatch(db);
+                const userRef = doc(db, "users", uid);
+
+                // 1. ユーザー情報の初期化
+                batch.set(userRef, {
+                    displayName: localStorage.getItem('user_name'),
+                    lastLogin: new Date().toISOString(),
+                    inventory: { usa: 0, inv: 0, him: 0 },
+                    totalGlobalDistance: 0,
+                    maxSingleFlight: 0,
+                    maxFuelDuration: 0,
+                    totalStars: 0,
+                    totalBlueStars: 0
+                });
+
+                // 2. ステージごとのログ削除
+                const stagesRef = collection(db, "users", uid, "stages");
+                const snapshot = await getDocs(stagesRef);
+                snapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+
+                await batch.commit();
+
+                alert("リセット完了しました！");
+                btn.innerText = "⚠️ 自分のデータをリセット";
+                btn.disabled = false;
+                
+            } catch (e) {
+                console.error(e);
+                alert("エラーが発生しました: " + e.message);
+                btn.disabled = false;
+            }
         });
     </script>
     
     <script src="script.js"></script>
-    <style> .hidden { display: none !important; } </style>
 </body>
 </html>

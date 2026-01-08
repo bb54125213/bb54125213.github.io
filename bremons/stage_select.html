@@ -98,6 +98,40 @@
         .insufficient .cost-info { color: #e74c3c !important; font-weight: bold; }
 
         @keyframes blink { from { opacity: 1; } to { opacity: 0.7; } }
+
+        /* --- 世界観を壊さないメッセージボックス --- */
+        .system-msg-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 20, 40, 0.9); z-index: 200;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .system-msg-box {
+            background: #000; border: 2px solid #3498db; border-radius: 8px;
+            padding: 30px; width: 85%; max-width: 400px; text-align: center;
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+        .system-msg-title {
+            color: #3498db; font-size: 18px; font-weight: bold; margin-bottom: 15px;
+            border-bottom: 1px solid #3498db; padding-bottom: 5px;
+            text-shadow: 0 0 5px #3498db;
+        }
+        .system-msg-text {
+            color: #fff; font-size: 14px; line-height: 1.6; margin-bottom: 25px;
+        }
+        .system-btn {
+            background: #3498db; color: #fff; border: none; padding: 12px 30px;
+            font-family: inherit; font-size: 16px; cursor: pointer;
+            box-shadow: 0 4px 0 #1f618d; border-radius: 4px;
+        }
+        .system-btn:active {
+            transform: translateY(2px); box-shadow: 0 2px 0 #1f618d;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -232,6 +266,18 @@
         </div>
     </div>
 
+    <div id="setupMsgOverlay" class="system-msg-overlay hidden">
+        <div class="system-msg-box">
+            <div class="system-msg-title">SYSTEM ALERT</div>
+            <div class="system-msg-text">
+                パイロット認証データが見つかりません。<br>
+                初回起動セットアップが必要です。<br><br>
+                コックピットへ移動し、<br>マイク感度調整を行ってください。
+            </div>
+            <button id="goToCockpitBtn" class="system-btn">コックピットへ移動</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -255,14 +301,13 @@
         const GOALS = { 1: 100000000, 2: 150000000, 3: 300000000 };
 
         async function init() {
-            // ★強制コックピット遷移チェック
+            // 1. 設定データの検証
             let isConfigValid = false;
             const savedConfig = localStorage.getItem('mic_config_v2');
             
             if (savedConfig) {
                 try {
                     const parsed = JSON.parse(savedConfig);
-                    // 必須項目（ノイズ閾値など）が含まれているかチェック
                     if (parsed && parsed.noiseThreshold !== undefined) {
                         isConfigValid = true;
                     }
@@ -271,10 +316,23 @@
                 }
             }
             
-            if (!localStorage.getItem('mic_config_v2')) {
-                alert("パイロット認証: 初回起動セットアップが必要です。\nコックピットへ移動します。");
-                location.href = "training_room.html";
-                return;
+            // 2. データが無い場合、カスタムメッセージを表示
+            if (!isConfigValid) {
+                // ★修正: alert() をやめて、専用レイヤーを表示
+                const overlay = document.getElementById('setupMsgOverlay');
+                const btn = document.getElementById('goToCockpitBtn');
+                
+                if (overlay && btn) {
+                    overlay.classList.remove('hidden');
+                    btn.onclick = () => {
+                        location.href = "training_room.html";
+                    };
+                } else {
+                    // 万が一要素がない場合のフォールバック
+                    alert("パイロット認証が必要です。コックピットへ移動します。");
+                    location.href = "training_room.html";
+                }
+                return; // ここで処理を止める
             }
 
             try {

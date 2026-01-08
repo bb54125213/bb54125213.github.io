@@ -52,6 +52,20 @@
             80% { transform: scale(1.2); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
         }
+        .tactical-guide {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; max-width: 400px;
+            text-align: center; color: #fff; font-weight: bold;
+            text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 90;
+            animation: pulseGuide 1s infinite alternate;
+        }
+        .guide-big { font-size: 48px; color: #f1c40f; display: block; margin: 10px 0; }
+        .guide-sub { font-size: 18px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; }
+
+        @keyframes pulseGuide {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -50%) scale(1.05); }
+        }
     </style>
 </head>
 <body>
@@ -107,6 +121,11 @@
         
         <div id="countdownOverlay" class="countdown-layer hidden">
             <div id="countdownText">3</div>
+        </div>
+
+        <div id="tacticalGuide" class="tactical-guide hidden">
+            <span class="guide-sub">準備</span>
+            <span class="guide-big">息を吸って...</span>
         </div>
 
         <div id="pauseModal" class="pause-modal hidden">

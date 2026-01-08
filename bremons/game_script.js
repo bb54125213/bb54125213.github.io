@@ -79,7 +79,8 @@ const els = {
     stageNameDisplay: document.getElementById('stageNameDisplay'),
     pauseModal: document.getElementById('pauseModal'),
     retryBtn: document.getElementById('retryBtn'),
-    celOverlay: document.getElementById('celebrationOverlay')
+    celOverlay: document.getElementById('celebrationOverlay'),
+    guide: document.getElementById('tacticalGuide')
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -181,6 +182,8 @@ async function initGame() {
 function startCountdown() {
     currentState = STATE.COUNTDOWN;
     els.cdOverlay.classList.remove('hidden');
+    els.guide.innerHTML = '<span class="guide-sub">準備</span><span class="guide-big" style="font-size:32px">息を大きく吸って...</span>';
+    els.guide.classList.remove('hidden');
     let count = 3;
     els.cdText.innerText = count;
     playBlipSound(600); 
@@ -200,6 +203,7 @@ function startCountdown() {
             els.paBtn.innerText = "ぱっ！と言って発射"; 
             els.paBtn.disabled = true;
             playBlipSound(1000); 
+            els.guide.innerHTML = '<span class="guide-sub">燃料注入</span><span class="guide-big">ふ〜〜〜っと<br>長く吹こう！</span>';
             
             // ★ゲームループ開始（タイムスタンプ付き）
             lastFrameTime = 0; 
@@ -321,6 +325,9 @@ function processFueling(isBlowing, deltaTime) {
             els.fuelBar.classList.remove('overcharge');
         }
         els.fuelBar.style.width = barPercent + '%';
+        if (!els.guide.classList.contains('hidden')) {
+             els.guide.classList.add('hidden');
+        }
 
     } else {
         if (hasStartedBlowing) {
@@ -330,12 +337,18 @@ function processFueling(isBlowing, deltaTime) {
             els.paBtn.style.backgroundColor = "#e74c3c";
             els.paBtn.onclick = launchRocket;
             els.fuelBar.classList.remove('overcharge');
+            
+            // ★追加: 発射指示を表示！
+            els.guide.innerHTML = '<span class="guide-sub">準備完了！</span><span class="guide-big" style="color:#e74c3c">「ぱっ！」<br>で発射！</span>';
+            els.guide.classList.remove('hidden');
+
             playBlipSound(800);
         }
     }
 }
 
 function launchRocket() {
+    els.guide.classList.add('hidden');
     currentState = STATE.FLYING;
     flightDistance = 0; 
     els.bgm.currentTime = 0;

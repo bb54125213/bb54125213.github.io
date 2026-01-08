@@ -7,9 +7,16 @@
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* ローディング中の表示用 */
-        #loadingMsg { text-align: center; margin-top: 20px; color: #f1c40f; }
-        .hidden { display: none; }
+        .stage-type-label { font-size: 10px; background: #555; padding: 2px 5px; border-radius: 3px; margin-right: 5px; }
+        .type-planet { background: #27ae60; color: #fff; } 
+        .type-flight { background: #2980b9; color: #fff; } 
+        .cost-info { font-size: 12px; color: #f39c12; margin-top: 5px; }
+        .owned-info { font-size: 14px; color: #fff; text-align: right; margin-top:5px; font-weight:bold; }
+        .insufficient { opacity: 0.6; filter: grayscale(100%); pointer-events: none; border-color: #555 !important; }
+        .insufficient .stage-status { color: #999 !important; }
+        /* レイアウト調整 */
+        .stage-list { margin-top: 10px; padding-right: 5px; } /* スクロールバーとの余白 */
+        .stage-panel { margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -17,54 +24,90 @@
 
     <div class="game-container stage-select-screen">
         <div class="scrolling-bg"></div>
-        <div class="floating-layer" id="floatingLayer"></div>
-        
         <div class="ui-layer">
-            
             <div class="title-area" style="margin-top: 20px;">
                 <h1 class="game-title" style="font-size: 32px;">BREMONS</h1>
             </div>
 
             <header class="stage-select-header">
                 <button onclick="location.href='index.html'" class="pixel-btn back-btn">←戻る</button>
-                <h2 class="screen-title">ステージ選択</h2>
+                <h2 class="screen-title">ミッション選択</h2>
             </header>
 
-            <div id="loadingMsg">データ確認中...</div>
+            <div id="loadingMsg" style="text-align:center; margin-top:20px;">データ確認中...</div>
 
             <div class="stage-list hidden" id="stageList">
-                
-                <div id="panel_stage_1" class="stage-panel unlocked current" onclick="selectStage(1)">
+                <div id="panel_planet_1" class="stage-panel unlocked current" onclick="goPlanet(1)">
                     <div class="panel-header">
-                        <span class="stage-num">STAGE 1</span>
-                        <span id="status_stage_1" class="stage-status">READY</span>
+                        <span><span class="stage-type-label type-planet">探索</span>PLANET A</span>
+                        <span class="stage-status">OPEN</span>
                     </div>
-                    <div class="stage-name">惑星インハレスへ</div>
-                    <div class="stage-info">距離: 1億km</div> </div>
-
-                <div id="panel_stage_2" class="stage-panel locked">
-                    <div class="panel-header">
-                        <span class="stage-num">STAGE 2</span>
-                        <span id="status_stage_2" class="stage-status">🔒</span>
-                    </div>
-                    <div class="stage-name">惑星エクセールへ</div>
-                    <div class="stage-info">距離: 1億5千万km</div>
+                    <div class="stage-name">惑星インハレス</div>
+                    <div class="stage-info">ターゲット: Usa (Red)</div>
+                    <div class="owned-info">所持: <span id="count_usa" style="color:#2ecc71">0</span> 匹</div>
                 </div>
 
-                <div id="panel_stage_3" class="stage-panel locked">
+                <div id="panel_flight_1" class="stage-panel locked" onclick="goFlight(1, 'usa')">
                     <div class="panel-header">
-                        <span class="stage-num">STAGE 3</span>
-                        <span id="status_stage_3" class="stage-status">🔒</span>
+                        <span><span class="stage-type-label type-flight">飛行</span>FLIGHT 1</span>
+                        <span id="status_flight_1" class="stage-status">🔒</span>
                     </div>
-                    <div class="stage-name">惑星プネウマへ</div>
-                    <div class="stage-info">詳細不明</div>
+                    <div class="stage-name">エクセールへの旅路</div>
+                    <div class="cost-info">必要コスト: Usa 1匹 / 回</div>
+                    <div class="stage-info">距離: 1億km</div>
                 </div>
 
+                <div id="panel_planet_2" class="stage-panel locked" onclick="goPlanet(2)">
+                    <div class="panel-header">
+                        <span><span class="stage-type-label type-planet">探索</span>PLANET B</span>
+                        <span id="status_planet_2" class="stage-status">🔒</span>
+                    </div>
+                    <div class="stage-name">惑星エクセール</div>
+                    <div class="stage-info">ターゲット: Inv (Blue)</div>
+                    <div class="owned-info">所持: <span id="count_inv" style="color:#2ecc71">0</span> 匹</div>
+                </div>
+
+                <div id="panel_flight_2" class="stage-panel locked" onclick="goFlight(2, 'inv')">
+                    <div class="panel-header">
+                        <span><span class="stage-type-label type-flight">飛行</span>FLIGHT 2</span>
+                        <span id="status_flight_2" class="stage-status">🔒</span>
+                    </div>
+                    <div class="stage-name">プネウマへの旅路</div>
+                    <div class="cost-info">必要コスト: Inv 1匹 / 回</div>
+                    <div class="stage-info">距離: 1.5億km</div>
+                </div>
+
+                 <div id="panel_planet_3" class="stage-panel locked" onclick="goPlanet(3)">
+                    <div class="panel-header">
+                        <span><span class="stage-type-label type-planet">探索</span>PLANET C</span>
+                        <span id="status_planet_3" class="stage-status">🔒</span>
+                    </div>
+                    <div class="stage-name">惑星プネウマ</div>
+                    <div class="stage-info">ターゲット: Him (Yellow)</div>
+                    <div class="owned-info">所持: <span id="count_him" style="color:#2ecc71">0</span> 匹</div>
+                </div>
             </div>
             
             <footer class="footer-area" style="margin-top: auto;">
-                <div class="version">Ver 2.1.0</div>
+                <div class="version">Ver 2.4.0</div>
             </footer>
+        </div>
+        
+        <div id="confirmDialog" class="custom-dialog-overlay hidden">
+            <div class="custom-dialog-box">
+                <p id="confirmMsg" class="dialog-msg">メッセージ</p>
+                <div class="dialog-btns">
+                    <button id="btnYes" class="dialog-btn btn-yes">はい</button>
+                    <button id="btnNo" class="dialog-btn btn-no">いいえ</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="alertDialog" class="custom-dialog-overlay hidden">
+            <div class="custom-dialog-box">
+                <p id="alertMsg" class="dialog-msg">メッセージ</p>
+                <button onclick="closeAlert()" class="dialog-btn btn-no">OK</button>
+            </div>
         </div>
     </div>
 
@@ -84,97 +127,120 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // ステージの目標距離設定 (game_script.jsと合わせる)
-        const STAGE_GOALS = {
-            1: 100000000,
-            2: 150000000,
-            3: 300000000
-        };
-
         const uid = localStorage.getItem('user_uid');
-        if(!uid) {
-            alert("ログインしてください");
-            location.href = 'index.html';
-        }
+        if(!uid) location.href = 'index.html';
 
-        // ステージ情報をチェックしてUI更新
-        async function checkStageStatus() {
-            // STAGE 1 の進捗取得
-            const s1Ref = doc(db, "users", uid, "stages", "stage_1");
-            const s1Snap = await getDoc(s1Ref);
-            const s1Dist = s1Snap.exists() ? (s1Snap.data().totalDistance || 0) : 0;
+        let inventory = { usa: 0, inv: 0, him: 0 };
 
-            // STAGE 2 の進捗取得
-            const s2Ref = doc(db, "users", uid, "stages", "stage_2");
-            const s2Snap = await getDoc(s2Ref);
-            const s2Dist = s2Snap.exists() ? (s2Snap.data().totalDistance || 0) : 0;
-
-            // === UI更新ロジック ===
-            
-            // STAGE 1: 常に解放。クリアしたか判定
-            if (s1Dist >= STAGE_GOALS[1]) {
-                markAsCleared(1);
-                unlockStage(2); // 1クリアなら2を解放
-            } else {
-                markAsCurrent(1);
-            }
-
-            // STAGE 2: 解放されている場合、クリア判定
-            if (s1Dist >= STAGE_GOALS[1]) {
-                if (s2Dist >= STAGE_GOALS[2]) {
-                    markAsCleared(2);
-                    unlockStage(3); // 2クリアなら3を解放
-                } else {
-                    markAsCurrent(2);
+        async function init() {
+            try {
+                const userRef = doc(db, "users", uid);
+                const userSnap = await getDoc(userRef);
+                if(userSnap.exists()) {
+                    const data = userSnap.data();
+                    inventory = data.inventory || { usa: 0, inv: 0, him: 0 };
                 }
+                document.getElementById('count_usa').innerText = inventory.usa || 0;
+                document.getElementById('count_inv').innerText = inventory.inv || 0;
+                document.getElementById('count_him').innerText = inventory.him || 0;
+
+                const s1Ref = doc(db, "users", uid, "stages", "stage_1");
+                const s1Snap = await getDoc(s1Ref);
+                const s1Dist = s1Snap.exists() ? (s1Snap.data().totalDistance || 0) : 0;
+
+                const s2Ref = doc(db, "users", uid, "stages", "stage_2");
+                const s2Snap = await getDoc(s2Ref);
+                const s2Dist = s2Snap.exists() ? (s2Snap.data().totalDistance || 0) : 0;
+
+                const f1Unlocked = s1Dist >= 100000000;
+                unlock("panel_flight_1", "status_flight_1", f1Unlocked);
+                checkCost("panel_flight_1", "usa");
+
+                if(f1Unlocked) {
+                    unlock("panel_planet_2", "status_planet_2", false);
+                    const f2Unlocked = s2Dist >= 150000000;
+                    unlock("panel_flight_2", "status_flight_2", f2Unlocked);
+                    checkCost("panel_flight_2", "inv");
+                }
+
+                if(s2Dist >= 150000000) {
+                    unlock("panel_planet_3", "status_planet_3", false);
+                }
+
+                document.getElementById('loadingMsg').classList.add('hidden');
+                document.getElementById('stageList').classList.remove('hidden');
+
+            } catch(e) { console.error(e); }
+        }
+
+        function unlock(panelId, statusId, isCleared) {
+            const p = document.getElementById(panelId);
+            const s = document.getElementById(statusId);
+            if(!p) return;
+            p.classList.remove('locked');
+            p.classList.add('unlocked');
+            if(isCleared) {
+                p.classList.add('cleared');
+                s.innerText = "CLEAR!";
+            } else {
+                p.classList.add('current');
+                s.innerText = "GO!";
             }
-
-            // ロード完了
-            document.getElementById('loadingMsg').classList.add('hidden');
-            document.getElementById('stageList').classList.remove('hidden');
         }
 
-        // ヘルパー関数: クリア済みの見た目にする
-        function markAsCleared(num) {
-            const p = document.getElementById(`panel_stage_${num}`);
-            const s = document.getElementById(`status_stage_${num}`);
-            p.className = "stage-panel unlocked cleared";
-            p.onclick = () => selectStage(num);
-            s.innerText = "CLEAR!";
+        function checkCost(panelId, monsterId) {
+            const p = document.getElementById(panelId);
+            if(p.classList.contains('locked')) return;
+            const count = inventory[monsterId] || 0;
+            if(count < 1) {
+                p.classList.add('insufficient');
+                p.querySelector('.stage-status').innerText = "NO COST";
+            }
         }
 
-        // ヘルパー関数: 現在挑戦中の見た目にする
-        function markAsCurrent(num) {
-            const p = document.getElementById(`panel_stage_${num}`);
-            const s = document.getElementById(`status_stage_${num}`);
-            p.className = "stage-panel unlocked current";
-            p.onclick = () => selectStage(num);
-            s.innerText = "GO!";
-        }
+        init();
 
-        // ヘルパー関数: ロック解除（まだクリアはしてない状態）
-        function unlockStage(num) {
-            // unlock処理は markAsCurrent の中で実質兼ねているが、
-            // 「まだ挑戦権を得たばかり」の状態を明示的にするならここ
-            // 今回は単純に markAsCurrent が呼ばれればOK
-        }
-
-        // グローバル関数への紐づけ
-        window.selectStage = function(n) {
-            window.location.href = `game_main.html?stage=${n}`;
+        window.goPlanet = function(n) {
+            if(document.getElementById(`panel_planet_${n}`).classList.contains('locked')) return;
+            window.location.href = `planet_game.html?planet=${n}`;
         };
 
-        // 実行
-        checkStageStatus();
+        // ★カスタムダイアログ制御
+        window.goFlight = function(n, monsterId) {
+            const p = document.getElementById(`panel_flight_${n}`);
+            if(p.classList.contains('locked')) return;
+            if(p.classList.contains('insufficient')) return;
+            
+            showConfirm(`モンスター(${monsterId})を1匹消費して出発しますか？`, () => {
+                window.location.href = `game_main.html?stage=${n}&cost=${monsterId}`;
+            });
+        };
 
-        // BGM対策
+        // ダイアログ表示関数
+        function showConfirm(msg, onYes) {
+            const dialog = document.getElementById('confirmDialog');
+            document.getElementById('confirmMsg').innerText = msg;
+            dialog.classList.remove('hidden');
+            
+            document.getElementById('btnYes').onclick = () => {
+                dialog.classList.add('hidden');
+                onYes();
+            };
+            document.getElementById('btnNo').onclick = () => {
+                dialog.classList.add('hidden');
+            };
+        }
+        
+        window.closeAlert = function() {
+            document.getElementById('alertDialog').classList.add('hidden');
+        };
+        
         document.body.addEventListener('click', function() {
             var bgm = document.getElementById('bgm');
             if(bgm.paused) bgm.play();
         }, { once: true });
+        
     </script>
-
     <script src="script.js"></script>
 </body>
 </html>

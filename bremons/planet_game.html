@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monster Search</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .planet-container {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; text-align: center; z-index: 10; position: relative;
+        }
+        .monster-display {
+            width: 150px; height: 150px;
+            margin: 20px auto;
+            animation: float 3s ease-in-out infinite;
+        }
+        .monster-name { font-size: 24px; color: #f1c40f; margin-bottom: 10px; }
+        .count-display { font-size: 18px; margin-bottom: 30px; }
+        
+        .catch-btn {
+            background-color: #e74c3c; color: #fff;
+            border: 4px solid #fff; padding: 20px 40px; font-size: 24px;
+            border-radius: 10px; cursor: pointer;
+            box-shadow: 0 6px 0 #c0392b;
+            transition: all 0.1s;
+        }
+        .catch-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c0392b; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        /* ゲット時のエフェクト */
+        .get-effect {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 40px; color: #f1c40f; font-weight: bold; pointer-events: none;
+            opacity: 0;
+        }
+        .pop-anim { animation: popText 0.5s ease-out forwards; }
+        @keyframes popText { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); } 100% { opacity: 0; transform: translate(-50%, -100%) scale(1.5); } }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="scrolling-bg" style="animation: none; background-image: url('./nightgame/background.png');"></div>
+        
+        <div class="ui-layer">
+            <header style="margin-top: 20px; width: 90%; display:flex; justify-content:space-between;">
+                <button onclick="location.href='stage_select.html'" class="pixel-btn back-btn" style="position:static; width:auto;">←戻る</button>
+                <div class="stage-title-display">探索ミッション</div>
+            </header>
+
+            <div class="planet-container">
+                <h2 id="planetName">惑星 ???</h2>
+                <p>探索中...</p>
+                
+                <img id="monsterImg" src="" class="monster-display">
+                
+                <div class="monster-name" id="monsterName">???</div>
+                <div class="count-display">確保数: <span id="currentCount" style="color:#2ecc71; font-size:24px;">0</span> 匹</div>
+
+                <button class="pixel-btn catch-btn" onclick="catchMonster()">捕獲する！</button>
+            </div>
+            
+            <div id="effectLayer"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+            authDomain: "bremons.firebaseapp.com",
+            projectId: "bremons",
+            storageBucket: "bremons.firebasestorage.app",
+            messagingSenderId: "30413071482",
+            appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+            measurementId: "G-4D4FCXGDBG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const uid = localStorage.getItem('user_uid');
+        if(!uid) location.href = 'index.html';
+
+        // 設定データ
+        const PLANET_DATA = {
+            1: { name: "惑星インハレス", monster: "Usa", img: "./nightgame/red.png", id: "usa" },
+            2: { name: "惑星エクセール", monster: "Inv", img: "./nightgame/blue.png", id: "inv" },
+            3: { name: "惑星プネウマ", monster: "Him", img: "./nightgame/yellow.png", id: "him" }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const pId = urlParams.get('planet') || 1;
+        const currentData = PLANET_DATA[pId];
+
+        // 画面初期化
+        document.getElementById('planetName').innerText = currentData.name;
+        document.getElementById('monsterName').innerText = currentData.monster;
+        document.getElementById('monsterImg').src = currentData.img;
+
+        // データロード
+        const userRef = doc(db, "users", uid);
+        
+        async function loadData() {
+            try {
+                const snap = await getDoc(userRef);
+                if(snap.exists() && snap.data().inventory) {
+                    const count = snap.data().inventory[currentData.id] || 0;
+                    document.getElementById('currentCount').innerText = count;
+                }
+            } catch(e) {
+                console.error("Load failed:", e);
+            }
+        }
+        loadData();
+
+        // 捕獲処理
+        window.catchMonster = async function() {
+            // エフェクト
+            const effect = document.createElement('div');
+            effect.className = 'get-effect pop-anim';
+            effect.innerText = "GET!!";
+            document.getElementById('effectLayer').appendChild(effect);
+            setTimeout(() => effect.remove(), 600);
+
+            // クライアント側表示更新
+            const countEl = document.getElementById('currentCount');
+            countEl.innerText = parseInt(countEl.innerText) + 1;
+
+            // ★修正ポイント: 正しい階層構造で保存する
+            // setDoc + merge を使う場合、ネストしたオブジェクトとして渡す必要があります
+            const updatePayload = {
+                inventory: {}
+            };
+            updatePayload.inventory[currentData.id] = increment(1);
+            
+            try {
+                await setDoc(userRef, updatePayload, { merge: true });
+            } catch(e) {
+                console.error("Save failed", e);
+                alert("保存に失敗しました: " + e.message);
+            }
+        };
+    </script>
+</body>
+</html>

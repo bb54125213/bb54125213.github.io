@@ -506,3 +506,44 @@ body {
 /* 速度制御用クラス (game_script.jsから操作) */
 .speed-stop { animation-play-state: paused; }
 .speed-fast { animation-duration: 2s; } /* 高速化 */
+
+/* --- 追加: スクロールバーのカスタマイズ (Webkit系) --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #111; 
+    border-left: 1px solid #333;
+}
+::-webkit-scrollbar-thumb {
+    background: #555; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* --- 追加: 汎用カスタムダイアログ (alert/confirmの代わり) --- */
+.custom-dialog-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); z-index: 200;
+    display: flex; justify-content: center; align-items: center;
+}
+.custom-dialog-box {
+    background: #fff; color: #333; padding: 20px; 
+    border-radius: 10px; border: 4px solid #333;
+    width: 80%; max-width: 300px; text-align: center;
+    box-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+.dialog-msg { font-size: 16px; margin-bottom: 20px; line-height: 1.5; }
+.dialog-btns { display: flex; justify-content: center; gap: 15px; }
+/* はい/いいえ ボタン */
+.dialog-btn {
+    font-family: 'DotGothic16', sans-serif;
+    padding: 10px 20px; border: 2px solid #333; background: #eee;
+    cursor: pointer; border-radius: 5px;
+}
+.btn-yes { background: #e74c3c; color: #fff; border-color: #c0392b; }
+.btn-no { background: #95a5a6; color: #fff; border-color: #7f8c8d; }
+
+.hidden { display: none !important; }

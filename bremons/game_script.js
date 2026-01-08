@@ -8,6 +8,7 @@ const STAGE_DATA = {
 // ゲームの状態管理
 const STATE = {
     INIT: 0,
+    WAIT_DB: 0.5, // DB処理待ち
     COUNTDOWN: 1,
     FUELING: 2,
     FLYING: 3,
@@ -23,6 +24,7 @@ let isMicActive = false;
 // ステージ設定
 let currentStageNum = 1;
 let goalDistance = 100000000;
+let currentCostId = null; // ★追加: 消費するモンスターIDを記憶
 
 // パラメータ
 let fuelSeconds = 0;       
@@ -36,11 +38,8 @@ const MAX_FUEL_SEC = 20;
 let hasStartedBlowing = false; 
 let fuelingDone = false;       
 
-// --- 音声認識用データ (C#から移植) ---
-// 0~23番目の周波数ビン（低音域）の特徴量
+// 音声認識用データ (Paのみ)
 const THOUSAND_INDEX = 24;
-const Fu_array = [0.04663889, 0.08273548, 0.1707033, 0.1037671, 0.05075672, 0.02912107, 0.07029577, 0.02660729, 0.07701397, 0.07358543, 0.03582431, 0.034128, 0.06408661, 0.0669658, 0.04760632, 0.03390676, 0.04892594, 0.04976312, 0.0779156, 0.08174721, 0.05171812, 0.03128907, 0.03644949, 0.0191151];
-const Ha_array = [0.09666242, 0.1010209, 0.04417039, 0.005689631, 0.005637815, 0.01925762, 0.03026361, 0.0365145, 0.0382, 0.01092663, 0.00179, 0.00457, 0.01878265, 0.055, 0.06935102, 0.0409, 0.0239, 0.0127, 0.027, 0.0401, 0.0292, 0.0226, 0.00922, 0.0389];
 const Pa_array = [0.03245861, 0.04191279, 0.01490102, 0.02225155, 0.009038828, 0.01731531, 0.005591091, 0.02210945, 0.0117, 0.0108, 0.0292, 0.0925, 0.135, 0.139, 0.0511, 0.0134, 0.00949, 0.0122, 0.014, 0.0142, 0.0084, 0.00948, 0.0178, 0.00705];
 
 // DOM要素
@@ -68,13 +67,16 @@ const els = {
     
     gameHeader: document.getElementById('gameHeader'),
     stageNameDisplay: document.getElementById('stageNameDisplay'),
-    pauseModal: document.getElementById('pauseModal')
+    pauseModal: document.getElementById('pauseModal'),
+    retryBtn: document.getElementById('retryBtn') // ★追加
 };
 
-// ■ 初期化・データロード
+// ■ 初期化
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const stageParam = urlParams.get('stage');
+    currentCostId = urlParams.get('cost'); // モンスターID
+
     if (stageParam && STAGE_DATA[stageParam]) {
         currentStageNum = parseInt(stageParam);
     }
@@ -86,19 +88,85 @@ document.addEventListener('DOMContentLoaded', () => {
          els.threshVal.innerText = els.sensitivity.value;
     });
 
-    loadGameData();
-    updateDistanceDisplay();
+    consumeMonsterAndLoad(currentCostId);
 });
 
-async function loadGameData() {
-    if (window.DB && window.DB.load) {
+async function consumeMonsterAndLoad(costId) {
+    currentState = STATE.WAIT_DB;
+    
+    if (window.DB && window.DB.load && window.DB.consumeAndStart) {
+        // 1. 距離ロード
         totalDistance = await window.DB.load();
-        console.log("Cloud Loaded: " + totalDistance);
         updateDistanceDisplay();
+
+        // 2. モンスター消費 (初回)
+        if(costId && !window.isRetry) {
+            await window.DB.consumeAndStart(costId);
+        } else if(window.isRetry) {
+            // リトライ時は既にconsumeAndStartを呼んでいるのでスキップ（フラグだけ立てる）
+            window.readyToStart = true;
+        } else {
+            // テスト用
+            window.readyToStart = true;
+        }
+
+        // 3. 準備完了ボタン表示
+        if(window.readyToStart) {
+            els.msgArea.innerHTML = '<p>エネルギー充填完了！<br>準備完了を押してください</p><button onclick="initGame()" class="pixel-btn start-btn">準備完了</button>';
+            currentState = STATE.INIT;
+        }
     }
 }
 
-// ■ マイク初期化
+// ■ その場から再挑戦（リトライボタン）
+window.tryRetry = async function() {
+    els.retryBtn.disabled = true;
+    els.retryBtn.innerText = "確認中...";
+
+    // 在庫チェック
+    if(window.DB.checkInventory) {
+        const hasStock = await window.DB.checkInventory(currentCostId);
+        if(!hasStock) {
+            alert("モンスターの在庫がありません！惑星に戻って捕獲してください。");
+            location.href = "stage_select.html";
+            return;
+        }
+    }
+
+    // 消費実行
+    if(window.DB.consumeAndStart) {
+        const success = await window.DB.consumeAndStart(currentCostId);
+        if(!success) {
+            alert("通信エラーが発生しました");
+            return;
+        }
+    }
+
+    // リトライ処理開始
+    els.modal.classList.add('hidden');
+    els.gameHeader.style.display = 'flex';
+    
+    // 変数リセット
+    fuelingDone = false;
+    hasStartedBlowing = false;
+    fuelSeconds = 0;
+    chargedFuelSeconds = 0; 
+    flightDistance = 0;
+    els.retryBtn.disabled = false;
+    els.retryBtn.innerText = "モンスター消費して再挑戦";
+
+    els.fuelTime.innerText = "0.00";
+    els.fuelBar.style.width = "0%";
+    
+    // 背景速度戻す
+    els.bg.classList.remove('speed-stop');
+    
+    // カウントダウンへ
+    startCountdown();
+};
+
+// ... 以下、既存のロジック（変更なし） ...
+
 async function initGame() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -106,27 +174,19 @@ async function initGame() {
         analyser = audioContext.createAnalyser();
         microphone = audioContext.createMediaStreamSource(stream);
         microphone.connect(analyser);
-        
-        // ★重要: C#のFFT設定に近づけるためサイズを調整
-        // UnityのsamplingRange=512に近づけるため、fftSize=1024 (bin数512) に設定
         analyser.fftSize = 1024; 
-        
         dataArray = new Uint8Array(analyser.frequencyBinCount);
         isMicActive = true;
         
         els.msgArea.style.display = 'none';
-        
         els.bgm.pause();
         els.bgm.currentTime = 0;
-
         startCountdown();
-
     } catch (err) {
         alert("マイクの使用が許可されませんでした。");
     }
 }
 
-// ■ カウントダウン
 function startCountdown() {
     currentState = STATE.COUNTDOWN;
     els.cdOverlay.classList.remove('hidden');
@@ -146,20 +206,14 @@ function startCountdown() {
             clearInterval(timer);
             els.cdOverlay.classList.add('hidden');
             currentState = STATE.FUELING;
-            
-            els.gameHeader.style.display = 'flex';
-            
-            // ボタンの文言変更（音声認識を促す）
             els.paBtn.innerText = "ぱっ！と言って発射"; 
             els.paBtn.disabled = true;
             playBlipSound(1000); 
-            
             gameLoop();
         }
     }, 1000);
 }
 
-// ■ ポーズ切り替え
 window.togglePause = function() {
     if (currentState === STATE.PAUSED) {
         currentState = lastState;
@@ -169,7 +223,7 @@ window.togglePause = function() {
             els.bg.classList.remove('speed-stop');
         }
     } else {
-        if (currentState === STATE.RESULT) return;
+        if (currentState === STATE.RESULT || currentState === STATE.WAIT_DB) return;
         lastState = currentState;
         currentState = STATE.PAUSED;
         els.pauseModal.classList.remove('hidden');
@@ -178,17 +232,14 @@ window.togglePause = function() {
     }
 };
 
-// ■ メインループ
 function gameLoop() {
     if (currentState === STATE.PAUSED) {
         requestAnimationFrame(gameLoop);
         return;
     }
-
     if (!isMicActive) return;
     analyser.getByteFrequencyData(dataArray);
     
-    // 音量計算
     let sum = 0;
     for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
     let average = sum / dataArray.length;
@@ -202,11 +253,9 @@ function gameLoop() {
     const isOverThreshold = average > threshold;
     els.micLevel.style.backgroundColor = isOverThreshold ? '#e74c3c' : '#2ecc71';
 
-    // ★音声認識の実行
     const recognizedSound = analyzeVoice(dataArray);
 
     if (currentState === STATE.FUELING) {
-        // 給油処理
         processFueling(average, threshold, isOverThreshold, recognizedSound);
     } else if (currentState === STATE.FLYING) {
         processFlying(average, threshold);
@@ -214,68 +263,32 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// ★音声認識ロジック (C#から移植・JS用に調整)
 function analyzeVoice(data) {
-    // データがない、または音が小さすぎる場合は計算しない
-    // 0.05 (Unity) ≒ 12.75 (Byte: 0-255) なので、少し余裕を見て判定
     let max_amplitude = 0;
-    
-    // 類似度計算用変数
-    let Fu_euclid = 0;
-    let Ha_euclid = 0;
     let Pa_euclid = 0;
-
-    // 低周波数帯 (0~23) のみを比較
     for (let i = 0; i < THOUSAND_INDEX; i++) {
-        // data[i] は 0-255 なので 0.0-1.0 に正規化
         const spectrumVal = data[i] / 255.0; 
-
         if (spectrumVal > max_amplitude) max_amplitude = spectrumVal;
-
-        // 差の二乗を足していく
-        Fu_euclid += Math.pow(Fu_array[i] - spectrumVal, 2);
-        Ha_euclid += Math.pow(Ha_array[i] - spectrumVal, 2);
         Pa_euclid += Math.pow(Pa_array[i] - spectrumVal, 2);
     }
-
-    // オッズ計算 (1 / (1 + √誤差和))
-    const Fu_odds = 1 / (1 + Math.sqrt(Fu_euclid));
-    const Ha_odds = 1 / (1 + Math.sqrt(Ha_euclid));
     const Pa_odds = 1 / (1 + Math.sqrt(Pa_euclid));
-
-    // 判定 (C#の閾値をそのまま使用)
-    // 音量が小さい(max_amplitude < 0.05)場合は無視
     if (max_amplitude < 0.05) return null;
-
-    if (Ha_odds >= 0.83) {
-        // console.log("検出: はっ", Ha_odds);
-        return "はっ";
-    } else if (Pa_odds >= 0.70) {
-        console.log("検出: ぱっ！", Pa_odds); // ログで確認用
-        return "ぱっ";
-    }
-
+    if (Pa_odds >= 0.70) return "ぱっ";
     return null;
 }
 
-// ■ 給油ロジック
 function processFueling(volume, threshold, isOverThreshold, recognizedSound) {
     if (fuelingDone) {
-        // 給油完了後、発射待ち状態
-        // ★修正: 「ぱっ」と聞こえたら発射
         if (recognizedSound === "ぱっ") {
             launchRocket();
         }
         return;
     }
-
     if (isOverThreshold) {
         if (!hasStartedBlowing) hasStartedBlowing = true;
-        
         fuelSeconds += 1 / 60;
         chargedFuelSeconds = fuelSeconds; 
         els.fuelTime.innerText = fuelSeconds.toFixed(2);
-        
         let barPercent = (fuelSeconds / MAX_FUEL_SEC) * 100;
         if (fuelSeconds > MAX_FUEL_SEC) {
             barPercent = 100;
@@ -284,65 +297,46 @@ function processFueling(volume, threshold, isOverThreshold, recognizedSound) {
             els.fuelBar.classList.remove('overcharge');
         }
         els.fuelBar.style.width = barPercent + '%';
-
     } else {
         if (hasStartedBlowing) {
             fuelingDone = true;
-            
-            // ボタンでも発射できるようにしておく
             els.paBtn.disabled = false;
-            els.paBtn.innerText = "「ぱっ！」と言って発射"; // 文言変更
+            els.paBtn.innerText = "「ぱっ！」と言って発射";
             els.paBtn.style.backgroundColor = "#e74c3c";
             els.paBtn.onclick = launchRocket;
-            
             els.fuelBar.classList.remove('overcharge');
             playBlipSound(800);
         }
     }
 }
 
-// ■ 発射処理
 function launchRocket() {
     currentState = STATE.FLYING;
     flightDistance = 0; 
-    
     els.bgm.currentTime = 0;
     els.bgm.volume = 0.3;
     els.bgm.play();
-    
     els.paBtn.innerText = "はっ！(キャッチ)";
     els.paBtn.style.backgroundColor = "#f39c12";
     els.paBtn.onclick = null; 
-
     els.bg.classList.remove('speed-stop');
     els.bg.classList.add('speed-fast');
     document.body.classList.add('flying');
-    
-    spawnFlyingMonsters();
 }
 
-// ■ 飛行中ロジック
 function processFlying(volume, threshold) {
     const timeDelta = 1 / 60;
-    
     const distDelta = FLIGHT_SPEED * timeDelta;
     flightDistance += distDelta;   
     totalDistance += distDelta;    
-    
     fuelSeconds -= (timeDelta * 2); 
-
     if (fuelSeconds <= 0) {
         fuelSeconds = 0;
         finishFlight();
     }
-    
     els.fuelTime.innerText = fuelSeconds.toFixed(2);
     els.fuelBar.style.width = Math.min(100, (fuelSeconds / MAX_FUEL_SEC) * 100) + '%';
-    
     updateDistanceDisplay();
-
-    // ★ 今後ここに「はっ」の認識を入れる予定
-    // if (volume > threshold + 20) { catchMonster(); }
 }
 
 function updateDistanceDisplay() {
@@ -369,6 +363,20 @@ async function finishFlight() {
         console.error("セーブ失敗:", e);
     }
 
+    // ★追加: 現在の所持数を取得して表示
+    if (window.DB && window.DB.getInventoryCount && currentCostId) {
+        const count = await window.DB.getInventoryCount(currentCostId);
+        const stockEl = document.getElementById('currentStock');
+        if(stockEl) stockEl.innerText = count;
+        
+        // 0匹ならボタン押せないようにする
+        if(count < 1) {
+            els.retryBtn.disabled = true;
+            els.retryBtn.innerText = "在庫なし";
+            els.retryBtn.style.backgroundColor = "#555";
+        }
+    }
+
     els.resDist.innerText = Math.floor(flightDistance).toLocaleString(); 
     els.totalDistDisplay.innerText = Math.floor(totalDistance).toLocaleString(); 
     els.modal.classList.remove('hidden');
@@ -380,32 +388,12 @@ async function saveGameData() {
         fuelDuration: parseFloat(chargedFuelSeconds.toFixed(2)),
         distance: Math.floor(flightDistance)
     };
-    
     if (window.DB && window.DB.save) {
         await window.DB.save(newLog, totalDistance);
-    } else {
-        console.warn("DB接続がありません。");
     }
 }
 
-// ■ その場から再挑戦
-function retryGame() {
-    els.modal.classList.add('hidden');
-    els.gameHeader.style.display = 'flex';
-    
-    fuelingDone = false;
-    hasStartedBlowing = false;
-    fuelSeconds = 0;
-    chargedFuelSeconds = 0; 
-    flightDistance = 0;
-
-    els.fuelTime.innerText = "0.00";
-    els.fuelBar.style.width = "0%";
-    
-    startCountdown();
-}
-
-// --- そのほか (変更なし) ---
+// 変更なし関数群
 function updateMap() {
     let progress = totalDistance / goalDistance;
     if (progress > 1) progress = 1;
@@ -437,41 +425,4 @@ function playEngineStallSound() {
     gain.connect(audioContext.destination);
     osc.start();
     osc.stop(audioContext.currentTime + 0.8);
-}
-let monsters = [];
-function spawnFlyingMonsters() {
-    const interval = setInterval(() => {
-        if (currentState !== STATE.FLYING) { clearInterval(interval); return; }
-        const m = document.createElement('img');
-        const types = ['./nightgame/blue.png', './nightgame/red.png', './nightgame/yellow.png'];
-        m.src = types[Math.floor(Math.random() * 3)];
-        m.className = 'floater flying-monster';
-        m.style.left = Math.random() * 80 + 10 + '%';
-        m.style.top = '-50px';
-        m.style.width = '40px';
-        m.style.transition = 'top 3s linear, transform 0.5s ease'; 
-        els.gameLayer.appendChild(m);
-        requestAnimationFrame(() => { m.style.top = '120%'; });
-        monsters.push(m);
-        setTimeout(() => { if(m.parentNode) m.remove(); monsters = monsters.filter(item => item !== m); }, 3000);
-    }, 800);
-}
-function catchMonster() {
-    const catchRange = 300;
-    const rocketRect = els.rocket.getBoundingClientRect();
-    const rCx = rocketRect.left + rocketRect.width/2;
-    const rCy = rocketRect.top + rocketRect.height/2;
-    monsters.forEach(m => {
-        if(m.caught) return;
-        const mRect = m.getBoundingClientRect();
-        const mCx = mRect.left + mRect.width/2;
-        const mCy = mRect.top + mRect.height/2;
-        if (Math.hypot(rCx - mCx, rCy - mCy) < catchRange) {
-            m.caught = true;
-            m.style.left = rocketRect.left + 20 + 'px';
-            m.style.top = rocketRect.top + 30 + 'px';
-            m.style.opacity = 0;
-            m.style.transform = 'scale(0.1)';
-        }
-    });
 }

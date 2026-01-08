@@ -7,55 +7,24 @@
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* --- ヘッダーレイアウト調整 --- */
         .game-header {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 50px; 
-            z-index: 50;
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            padding: 0 15px; 
-            box-sizing: border-box;
+            position: absolute; top: 0; left: 0; width: 100%; height: 50px; z-index: 50;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 15px; box-sizing: border-box;
             background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
-        
         .stage-title-display { font-size: 16px; text-shadow: 2px 2px 0 #000; color: #fff; }
-        
-        .pause-btn { 
-            background: rgba(0,0,0,0.5); 
-            border: 2px solid #fff; 
-            border-radius: 5px; 
-            font-size: 20px; 
-            color: #fff; 
-            cursor: pointer; 
-            text-shadow: 2px 2px 0 #000; 
-            width: 40px; 
-            height: 40px; 
-        }
-
-        /* --- 重なり防止 --- */
-        .info-panel {
-            margin-top: 50px; 
-        }
-
-        /* ポーズメニューモーダル */
-        .pause-modal {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .pause-content {
-            background: #fff; color: #333; padding: 30px; border-radius: 10px;
-            text-align: center; width: 80%; border: 4px solid #333;
-        }
+        .pause-btn { background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 5px; font-size: 20px; color: #fff; cursor: pointer; text-shadow: 2px 2px 0 #000; width: 40px; height: 40px; }
+        .info-panel { margin-top: 50px; }
+        .rocket { bottom: 220px !important; }
         .hidden { display: none !important; }
-
-        /* ロケット位置の修正 */
-        .rocket { bottom: 220px !important; } 
+        .pause-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .pause-content { background: #fff; color: #333; padding: 30px; border-radius: 10px; text-align: center; width: 80%; border: 4px solid #333; }
+        
+        /* ポーズ画面の警告文 */
+        .pause-warning { font-size: 12px; color: #e74c3c; margin-top: 5px; font-weight: bold; }
+        /* リザルトの所持数 */
+        .result-inventory { font-size: 14px; margin: 10px 0; color: #2ecc71; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -87,20 +56,15 @@
 
         <div class="ui-layer game-ui">
             <div class="info-panel">
-                <div class="distance-meter">
-                    あと: <span id="remainDist">---</span> km
-                </div>
+                <div class="distance-meter">あと: <span id="remainDist">---</span> km</div>
                 <div class="fuel-meter">
                     燃料: <span id="fuelTime">0.00</span> 秒分
-                    <div class="fuel-bar-container">
-                        <div class="fuel-bar" id="fuelBar"></div>
-                    </div>
+                    <div class="fuel-bar-container"><div class="fuel-bar" id="fuelBar"></div></div>
                 </div>
             </div>
 
             <div id="messageArea" class="message-area">
-                <p>マイクを許可して<br>準備完了を押してください</p>
-                <button onclick="initGame()" class="pixel-btn start-btn">準備完了</button>
+                <p>エネルギー充填中...<br>(モンスター消費)</p>
             </div>
 
             <div class="control-panel">
@@ -108,7 +72,6 @@
                     <div>Input Level</div>
                     <div class="mic-level-bar"><div id="micLevel"></div></div>
                 </div>
-                
                 <div id="actionBtnArea">
                     <button id="paBtn" class="pixel-btn action-btn" disabled>ぱっ！(発射)</button>
                 </div>
@@ -122,11 +85,14 @@
         <div id="pauseModal" class="pause-modal hidden">
             <div class="pause-content">
                 <h2>PAUSE</h2>
-                <div class="sensitivity-control" style="margin: 30px 0; color:#333; text-align:left;">
+                <div class="sensitivity-control" style="margin: 20px 0; color:#333; text-align:left;">
                     <label>マイク感度: <span id="threshVal_pause">45</span></label>
                     <input type="range" id="sensitivity_pause" min="0" max="100" value="45" style="width:100%;">
                     <p style="font-size:10px; color:#666;">※数値が高いほど小さな音で反応します</p>
                 </div>
+                
+                <p class="pause-warning">※中断すると消費したモンスターは<br>戻りません！</p>
+
                 <div class="modal-btns">
                     <button onclick="togglePause()" class="pixel-btn start-btn">ゲーム再開</button>
                     <button onclick="location.href='stage_select.html'" class="pixel-btn">中断してメニューへ</button>
@@ -141,11 +107,12 @@
                     <p>今回の飛行: <span id="resultDist" style="color:#f1c40f">0</span> km</p>
                     <p>現在の地点: <span id="totalDistDisplay">0</span> km</p>
                 </div>
-                <p style="font-size: 12px; color: #aaa;">記録を保存しました</p>
+                
+                <div class="result-inventory">所持: <span id="currentStock">?</span> 匹</div>
                 
                 <div class="modal-btns">
-                    <button onclick="retryGame()" class="pixel-btn start-btn">この場所から再出発</button>
-                    <button onclick="location.href='stage_select.html'" class="pixel-btn">一時中断して戻る</button>
+                    <button id="retryBtn" onclick="tryRetry()" class="pixel-btn start-btn">消費して再挑戦</button>
+                    <button onclick="location.href='stage_select.html'" class="pixel-btn">惑星へ戻る</button>
                 </div>
             </div>
         </div>
@@ -153,7 +120,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
@@ -167,40 +134,53 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         const uid = localStorage.getItem('user_uid');
-        if(!uid) {
-            alert("ログイン情報がありません。トップに戻ります。");
-            window.location.href = "index.html";
-        }
+        if(!uid) { location.href = "index.html"; }
 
         window.DB = {};
 
-        // ロード関数
         window.DB.load = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const stageNum = urlParams.get('stage') || 1;
+            const docRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
+            const docSnap = await getDoc(docRef);
+            return docSnap.exists() ? (docSnap.data().totalDistance || 0) : 0;
+        };
+
+        // ★現在の所持数を取得
+        window.DB.getInventoryCount = async (costId) => {
+            if(!costId) return 0;
+            const userRef = doc(db, "users", uid);
+            const snap = await getDoc(userRef);
+            if(snap.exists() && snap.data().inventory) {
+                return snap.data().inventory[costId] || 0;
+            }
+            return 0;
+        };
+
+        window.DB.consumeAndStart = async (costId) => {
+            const userRef = doc(db, "users", uid);
+            const updateField = {};
+            updateField[`inventory.${costId}`] = increment(-1);
+            
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const stageNum = urlParams.get('stage') || 1;
-                const docRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    return docSnap.data().totalDistance || 0;
-                }
-                return 0;
-            } catch (e) {
-                console.error("Load Error:", e);
-                return 0;
+                await updateDoc(userRef, updateField);
+                window.readyToStart = true;
+                return true;
+            } catch(e) {
+                console.error(e);
+                alert("エラー: モンスターを消費できませんでした");
+                location.href = "stage_select.html"; // 強制送還
+                return false;
             }
         };
 
-        // セーブ関数
         window.DB.save = async (logData, totalDistance) => {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const stageNum = urlParams.get('stage') || 1;
-                const userRef = doc(db, "users", uid);
                 const stageRef = doc(db, "users", uid, "stages", `stage_${stageNum}`);
+                const userRef = doc(db, "users", uid);
 
                 setDoc(userRef, { lastLogin: new Date().toISOString() }, { merge: true });
 
@@ -208,8 +188,6 @@
                     totalDistance: totalDistance,
                     history: arrayUnion(logData)
                 }, { merge: true });
-                
-                console.log("Cloud Save Complete!");
             } catch (e) {
                 console.error("Save Error:", e);
             }
@@ -217,5 +195,10 @@
     </script>
 
     <script src="game_script.js"></script>
+    <script>
+        // game_script.js の finishFlight 関数内で、この関数を呼ぶように後で連携します
+        // が、game_script.js から window.DB を呼ぶ形になっているので、
+        // 実際には game_script.js 側で updateInventoryDisplay を呼ぶように修正します。
+    </script>
 </body>
 </html>

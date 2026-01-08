@@ -256,6 +256,21 @@
 
         async function init() {
             // ★強制コックピット遷移チェック
+            let isConfigValid = false;
+            const savedConfig = localStorage.getItem('mic_config_v2');
+            
+            if (savedConfig) {
+                try {
+                    const parsed = JSON.parse(savedConfig);
+                    // 必須項目（ノイズ閾値など）が含まれているかチェック
+                    if (parsed && parsed.noiseThreshold !== undefined) {
+                        isConfigValid = true;
+                    }
+                } catch (e) {
+                    console.error("設定データ破損");
+                }
+            }
+            
             if (!localStorage.getItem('mic_config_v2')) {
                 alert("パイロット認証: 初回起動セットアップが必要です。\nコックピットへ移動します。");
                 location.href = "training_room.html";

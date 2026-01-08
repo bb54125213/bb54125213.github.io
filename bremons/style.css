@@ -11,8 +11,12 @@ body {
     color: #fff;
     display: flex;
     justify-content: center;
-    height: 100vh;
+    /* height: 100vh;  <-- これを削除 */
+    height: 100dvh; /* ★修正: アドレスバー対応の高さ */
     overflow: hidden;
+    /* iPhoneのセーフエリア対応 */
+    padding-bottom: env(safe-area-inset-bottom); 
+    box-sizing: border-box; /* paddingを含めた高さ計算にする */
 }
 
 /* ゲーム画面コンテナ（共通） */
@@ -23,6 +27,8 @@ body {
     position: relative;
     overflow: hidden;
     box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    display: flex; /* 子要素の配置を安定させる */
+    flex-direction: column;
 }
 
 /* =========================================

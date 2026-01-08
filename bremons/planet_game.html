@@ -7,14 +7,25 @@
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        body { overflow: hidden; background: #000; touch-action: none; }
+        body { 
+            overflow: hidden; 
+            background: #000; 
+            touch-action: manipulation; /* ダブルタップ拡大防止 */
+            height: 100dvh; 
+            margin: 0;
+            user-select: none; /* テキスト選択防止 */
+        }
         
+        .game-container {
+            width: 100%; height: 100%; position: relative; overflow: hidden;
+        }
+
         .game-world {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             overflow: hidden;
+            will-change: transform;
         }
 
-        /* 背景（宇宙） */
         .sky-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('./nightgame/background2.png');
@@ -22,45 +33,38 @@
             z-index: 0;
         }
 
-        /* 地面 */
         .ground-layer {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 150px;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 160px;
             z-index: 10;
             background-repeat: repeat-x;
             background-size: auto 100%;
         }
 
-        /* 背景装飾 */
         .decor-obj {
-            position: absolute; bottom: 130px; z-index: 5;
-            opacity: 0.8; filter: brightness(0.7);
-            pointer-events: none;
+            position: absolute; bottom: 140px; z-index: 5;
+            image-rendering: pixelated; pointer-events: none;
         }
 
-        /* プレイヤー */
         .player-char {
             position: absolute; 
-            bottom: 120px; 
+            bottom: 130px; 
             left: 15%; 
-            width: 80px; 
+            width: 120px; 
             z-index: 20;
             transition: transform 0.1s;
+            image-rendering: pixelated;
         }
-        .player-walking {
-            animation: walkBob 0.8s infinite alternate; 
-        }
-        @keyframes walkBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
-
+        .player-walking { animation: walkBob 0.8s infinite alternate; }
+        @keyframes walkBob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
         .player-damage { animation: damageFlash 0.5s infinite; }
         @keyframes damageFlash { 0% { opacity: 1; } 50% { opacity: 0.2; filter: hue-rotate(90deg); } 100% { opacity: 1; } }
 
-        /* オブジェクト共通 */
-        .game-obj { position: absolute; z-index: 15; will-change: transform; }
+        .game-obj { position: absolute; z-index: 15; will-change: transform; image-rendering: pixelated; }
+        .monster-obj { bottom: 135px; }
+        .monster-anim { animation: monsterWalk 0.6s infinite alternate ease-in-out; }
+        @keyframes monsterWalk { 0% { transform: translateY(0) scaleY(1); } 100% { transform: translateY(-10px) scaleY(0.95); } }
+        .meteo-obj { width: 90px; top: -100px; }
 
-        .monster-obj { width: 80px; bottom: 125px; }
-        .meteo-obj { width: 80px; top: -100px; }
-
-        /* エフェクト */
         .effect-text {
             position: absolute; font-size: 32px; font-weight: bold; 
             color: #fff; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 100;
@@ -68,36 +72,43 @@
         }
         @keyframes popUpFade { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
 
-        /* UI類 */
+        /* UIレイヤー */
         .hud-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 50; pointer-events: none;
+            padding-bottom: env(safe-area-inset-bottom);
         }
+        
         .header-panel {
             position: absolute; top: 10px; right: 10px; 
             display: flex; gap: 10px;
             pointer-events: auto;
+            align-items: flex-start;
         }
+        
         .status-box {
-            background: rgba(0,0,0,0.7); border: 2px solid #fff; padding: 10px;
-            border-radius: 8px; color: #fff; font-size: 16px;
+            background: rgba(0,0,0,0.8); border: 2px solid #fff; padding: 8px 15px;
+            border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 120px;
         }
         .finish-btn {
             background: #e74c3c; color: #fff; border: 2px solid #fff;
-            padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px;
+            padding: 8px 15px; font-size: 14px; cursor: pointer; border-radius: 5px;
             font-family: 'DotGothic16', sans-serif;
+            white-space: nowrap;
         }
 
-        /* --- 戦術マップ (旧レーダー) --- */
+        /* 戦術マップ */
         .map-panel {
             position: absolute; top: 10px; left: 10px;
-            width: 240px; height: 100px; /* 横長 */
+            width: 110px; height: 110px;
             background: rgba(0, 20, 0, 0.9);
             border: 2px solid #2ecc71;
             border-radius: 4px;
             overflow: hidden;
             box-shadow: 0 0 10px #2ecc71;
+            pointer-events: none;
         }
-        /* グリッド線 */
         .map-grid {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-image: 
@@ -105,14 +116,12 @@
                 linear-gradient(90deg, rgba(46, 204, 113, 0.2) 1px, transparent 1px);
             background-size: 20px 20px;
         }
-        /* 地面ライン */
         .map-ground-line {
             position: absolute; bottom: 10px; left: 0; width: 100%; height: 2px;
             background: #2ecc71;
         }
-        /* プレイヤーアイコン（マップ内） */
         .map-player-icon {
-            position: absolute; bottom: 10px; left: 20px; /* 固定位置 */
+            position: absolute; bottom: 10px; left: 20px;
             width: 0; height: 0;
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
@@ -120,34 +129,57 @@
             transform: translate(-50%, 0);
             filter: drop-shadow(0 0 4px #fff);
         }
-        /* 敵・隕石ドット */
         .map-dot {
             position: absolute; width: 8px; height: 8px; border-radius: 50%;
             transform: translate(-50%, -50%);
-            transition: all 0.1s linear; /* なめらかに動く */
+            transition: all 0.1s linear;
         }
         .dot-monster { 
             background: #f1c40f; box-shadow: 0 0 5px #f1c40f; 
-            width: 10px; height: 10px; border-radius: 2px; /* 四角っぽく */
+            width: 8px; height: 8px; border-radius: 2px;
         }
         .dot-meteor { 
             background: #e74c3c; box-shadow: 0 0 5px #e74c3c; 
-            border: 2px solid #fff; /* 枠線 */
+            border: 1px solid #fff;
         }
 
-        /* 音声認識インジケータ */
         .mic-indicator {
-            position: absolute; bottom: 10px; left: 10px;
-            width: 200px; height: 10px; background: #333; border: 1px solid #fff;
+            position: absolute; bottom: 20px; left: 10px;
+            width: 150px; height: 8px; background: #333; border: 1px solid #fff;
         }
         .mic-bar { height: 100%; background: #2ecc71; width: 0%; }
         .voice-feedback {
-            position: absolute; bottom: 30px; left: 10px;
-            font-size: 24px; color: #f1c40f; text-shadow: 2px 2px 0 #000;
+            position: absolute; bottom: 40px; left: 10px;
+            font-size: 20px; color: #f1c40f; text-shadow: 2px 2px 0 #000;
             opacity: 0; transition: opacity 0.2s;
         }
 
-        /* スタートオーバーレイ */
+        /* ★追加: 手動アクションボタンエリア */
+        .manual-actions {
+            position: absolute; bottom: 20px; right: 20px;
+            display: flex; gap: 15px;
+            pointer-events: auto;
+        }
+        .action-btn-manual {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            color: #fff;
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+            user-select: none;
+        }
+        .btn-ha { background: #f39c12; } /* オレンジ */
+        .btn-pa { background: #e74c3c; } /* 赤 */
+        .action-btn-manual:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
         .start-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 200;
@@ -174,7 +206,7 @@
                 <div class="map-grid"></div>
                 <div class="map-ground-line"></div>
                 <div class="map-player-icon"></div>
-                </div>
+            </div>
 
             <div class="header-panel">
                 <div class="status-box">
@@ -188,12 +220,17 @@
 
             <div class="voice-feedback" id="voiceFeedback">認識中...</div>
             <div class="mic-indicator"><div class="mic-bar" id="micBar"></div></div>
+
+            <div class="manual-actions">
+                <button class="action-btn-manual btn-ha" id="btnHa">はっ</button>
+                <button class="action-btn-manual btn-pa" id="btnPa">ぱっ</button>
+            </div>
         </div>
 
         <div class="start-overlay" id="startOverlay">
             <h2>探索ミッション開始</h2>
             <p style="margin: 20px 0; line-height: 1.8;">
-                マイクを使用します。<br>
+                マイクまたはボタンを使用します。<br>
                 <span style="color:#f1c40f">「はっ！」</span>でモンスターを捕獲<br>
                 <span style="color:#e74c3c">「ぱっ！」</span>で隕石を迎撃<br>
                 隕石に当たると -5 匹！
@@ -221,7 +258,6 @@
         const uid = localStorage.getItem('user_uid');
         if(!uid) location.href = 'index.html';
 
-        // --- 設定 ---
         const PLANET_DATA = {
             1: { name: "惑星インハレス", monster: "Usa", img: "./nightgame/red.png", id: "usa", groundColor: "#8B4513" },
             2: { name: "惑星エクセール", monster: "Inv", img: "./nightgame/blue.png", id: "inv", groundColor: "#2F4F4F" },
@@ -232,25 +268,26 @@
         const pId = urlParams.get('planet') || 1;
         const currentData = PLANET_DATA[pId];
 
-        // 状態管理
+        // 状態変数
         let inventoryCount = 0;
         let isGameRunning = false;
         let gameSpeed = 1.5; 
         let groundOffset = 0;
+        let shakeTrauma = 0; 
         
         let gameObjects = []; 
         let decorObjects = [];
         let spawnTimer = 0;
         let decorTimer = 0;
+        let voiceTimer = 0;
 
-        // 音声認識用
+        // 音声認識
         let audioContext, analyser, dataArray;
         const THOUSAND_INDEX = 24;
         const Ha_array = [0.09666242, 0.1010209, 0.04417039, 0.005689631, 0.005637815, 0.01925762, 0.03026361, 0.0365145, 0.0382, 0.01092663, 0.00179, 0.00457, 0.01878265, 0.055, 0.06935102, 0.0409, 0.0239, 0.0127, 0.027, 0.0401, 0.0292, 0.0226, 0.00922, 0.0389];
         const Pa_array = [0.03245861, 0.04191279, 0.01490102, 0.02225155, 0.009038828, 0.01731531, 0.005591091, 0.02210945, 0.0117, 0.0108, 0.0292, 0.0925, 0.135, 0.139, 0.0511, 0.0134, 0.00949, 0.0122, 0.014, 0.0142, 0.0084, 0.00948, 0.0178, 0.00705];
         let voiceCooldown = 0; 
 
-        // 初期化
         document.getElementById('planetName').innerText = currentData.name;
         createGroundTexture(currentData.groundColor);
         
@@ -262,7 +299,14 @@
             }
         });
 
-        // ■ ゲーム開始
+        // ★手動ボタンイベント
+        document.getElementById('btnHa').addEventListener('click', () => {
+            if(isGameRunning) triggerAction("はっ");
+        });
+        document.getElementById('btnPa').addEventListener('click', () => {
+            if(isGameRunning) triggerAction("ぱっ");
+        });
+
         window.gameStart = async function() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -272,17 +316,15 @@
                 microphone.connect(analyser);
                 analyser.fftSize = 1024;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                document.getElementById('startOverlay').style.display = 'none';
-                isGameRunning = true;
-                requestAnimationFrame(gameLoop);
-
             } catch(e) {
-                alert("マイクが許可されていません。設定を確認してください。");
+                console.log("マイクなしモードで起動");
             }
+            
+            document.getElementById('startOverlay').style.display = 'none';
+            isGameRunning = true;
+            requestAnimationFrame(gameLoop);
         };
 
-        // ■ メインループ
         function gameLoop() {
             if(!isGameRunning) return;
 
@@ -290,11 +332,18 @@
             if(groundOffset <= -128) groundOffset = 0; 
             document.getElementById('groundLayer').style.backgroundPosition = `${groundOffset}px bottom`;
 
-            processVoice();
+            // 音声認識 (マイク許可時のみ)
+            if(analyser) {
+                voiceTimer++;
+                if(voiceTimer > 10) { 
+                    processVoice();
+                    voiceTimer = 0;
+                }
+            }
 
             spawnTimer++;
             if(spawnTimer > 180) { 
-                if(Math.random() < 0.6) spawnMonster();
+                if(Math.random() < 0.8) spawnMonster();
                 else spawnMeteor();
                 spawnTimer = Math.floor(Math.random() * 60); 
             }
@@ -307,9 +356,43 @@
 
             updateObjects();
             updateDecor();
-            updateMapUI(); // 更新関数名を変更
+            updateMapUI(); 
+            updateShakeEffect(); 
 
             requestAnimationFrame(gameLoop);
+        }
+
+        // --- 振動演出 ---
+        function updateShakeEffect() {
+            const playerX = window.innerWidth * 0.15;
+            const playerY = window.innerHeight - 130;
+            
+            let proximityShake = 0;
+            gameObjects.forEach(obj => {
+                if(obj.type === 'meteor' && obj.alive) {
+                    const dx = obj.x - playerX;
+                    const dy = obj.y - playerY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const shakeRange = 600;
+                    if(dist < shakeRange) {
+                        let intensity = 1.0 - (dist / shakeRange);
+                        if(intensity > proximityShake) proximityShake = intensity;
+                    }
+                }
+            });
+
+            shakeTrauma = Math.max(0, shakeTrauma - 0.02);
+            let totalShake = Math.max(proximityShake, shakeTrauma);
+
+            const gameWorld = document.getElementById('gameWorld');
+            if(totalShake > 0) {
+                const shakeAmount = 20 * totalShake * totalShake;
+                const tx = (Math.random() - 0.5) * shakeAmount;
+                const ty = (Math.random() - 0.5) * shakeAmount;
+                gameWorld.style.transform = `translate(${tx}px, ${ty}px)`;
+            } else {
+                gameWorld.style.transform = 'none';
+            }
         }
 
         // --- 音声認識 ---
@@ -343,10 +426,10 @@
 
             if(Ha_odds >= 0.83) {
                 triggerAction("はっ");
-                voiceCooldown = 30; 
+                voiceCooldown = 5;
             } else if(Pa_odds >= 0.70) {
                 triggerAction("ぱっ");
-                voiceCooldown = 30;
+                voiceCooldown = 5;
             }
         }
 
@@ -362,39 +445,44 @@
                 const targets = gameObjects.filter(o => o.type === 'monster' && o.alive && o.x > playerX && o.x < playerX + 400);
                 if(targets.length > 0) captureMonster(targets[0]);
             } else if(type === "ぱっ") {
-                const targets = gameObjects.filter(o => o.type === 'meteor' && o.alive && o.x > playerX - 100 && o.x < playerX + 600);
+                const targets = gameObjects.filter(o => o.type === 'meteor' && o.alive && o.x > playerX - 100 && o.x < playerX + 700);
                 if(targets.length > 0) destroyMeteor(targets[0]);
             }
         }
 
-        // --- オブジェクト管理 ---
+        // --- オブジェクト ---
         function spawnDecor() {
-            const el = document.createElement('div');
-            el.className = 'decor-obj';
-            const types = ['🌵', '🪨', '⛰️'];
-            el.innerText = types[Math.floor(Math.random() * types.length)];
-            el.style.fontSize = (Math.random() * 30 + 30) + 'px';
-            document.getElementById('decorLayer').appendChild(el);
-            
-            decorObjects.push({
-                el: el,
-                x: window.innerWidth + 50
-            });
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            if(Math.random() < 0.5) {
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(12, 10, 8, 22); ctx.fillRect(4, 14, 8, 4);   
+                ctx.fillRect(4, 10, 4, 4); ctx.fillRect(20, 18, 8, 4); ctx.fillRect(24, 14, 4, 4);
+            } else {
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(4, 20, 24, 12); ctx.fillRect(8, 16, 16, 4);
+                ctx.fillStyle = '#95a5a6'; ctx.fillRect(6, 22, 4, 4);
+            }
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL();
+            img.className = 'decor-obj';
+            img.style.width = (Math.random() * 40 + 40) + 'px'; 
+            document.getElementById('decorLayer').appendChild(img);
+            decorObjects.push({ el: img, x: window.innerWidth + 50 });
         }
 
         function spawnMonster() {
             const el = document.createElement('img');
             el.src = currentData.img;
-            el.className = 'game-obj monster-obj';
+            el.className = 'game-obj monster-obj monster-anim';
             document.getElementById('objContainer').appendChild(el);
-            
-            gameObjects.push({
-                el: el,
-                type: 'monster',
-                x: window.innerWidth + 100,
-                y: 0, 
-                alive: true
-            });
+            const scale = 0.8 + Math.random() * 0.5;
+            const hue = Math.floor(Math.random() * 60) - 30; 
+            el.style.width = (80 * scale) + 'px';
+            el.style.filter = `hue-rotate(${hue}deg)`;
+            // ★出現位置を画面外に
+            gameObjects.push({ el: el, type: 'monster', x: window.innerWidth + 100, y: 0, alive: true });
         }
 
         function spawnMeteor() {
@@ -402,50 +490,32 @@
             el.src = './nightgame/meteo.png';
             el.className = 'game-obj meteo-obj';
             document.getElementById('objContainer').appendChild(el);
-            
             const startX = window.innerWidth + Math.random() * 200; 
             const startY = -150; 
-            
             const targetX = window.innerWidth * 0.15; 
             const targetY = window.innerHeight - 150; 
-
             const dx = targetX - startX;
             const dy = targetY - startY;
             const angleRad = Math.atan2(dy, dx);
             const speed = gameSpeed + 2; 
-
             const vx = Math.cos(angleRad) * speed;
             const vy = Math.sin(angleRad) * speed;
-
             const angleDeg = (angleRad * 180 / Math.PI) - 90;
             el.style.transform = `rotate(${angleDeg}deg)`;
-
-            gameObjects.push({
-                el: el,
-                type: 'meteor',
-                x: startX,
-                y: startY,
-                vx: vx,
-                vy: vy,
-                alive: true
-            });
+            gameObjects.push({ el: el, type: 'meteor', x: startX, y: startY, vx: vx, vy: vy, alive: true });
         }
 
         function updateDecor() {
             decorObjects.forEach(obj => {
                 obj.x -= gameSpeed * 0.8; 
                 obj.el.style.left = obj.x + 'px';
-                if(obj.x < -100) {
-                    obj.el.remove();
-                    obj.dead = true;
-                }
+                if(obj.x < -100) { obj.el.remove(); obj.dead = true; }
             });
             decorObjects = decorObjects.filter(o => !o.dead);
         }
 
         function updateObjects() {
             const playerX = window.innerWidth * 0.15;
-            const pHitX = playerX + 40; 
             const pHitY = window.innerHeight - 120; 
 
             gameObjects.forEach(obj => {
@@ -454,16 +524,15 @@
                 if(obj.type === 'monster') {
                     obj.x -= gameSpeed;
                     obj.el.style.left = obj.x + 'px';
-
                     if(obj.x < playerX + 80 && obj.x > playerX + 70) {
                         obj.alive = false; 
                         obj.el.style.transition = "none"; 
+                        obj.el.classList.remove('monster-anim');
                         obj.el.animate([
                             { transform: 'translate(0, 0)' },
-                            { transform: 'translate(-200px, -150px) rotate(-45deg)' }, 
+                            { transform: 'translate(-200px, -200px) rotate(-45deg)' }, 
                             { transform: 'translate(-400px, 0) rotate(-90deg)' } 
                         ], { duration: 1000, fill: 'forwards' });
-                        
                         setTimeout(() => removeObject(obj), 1000);
                         showEffect("逃げられた...", "#aaa", playerX, pHitY - 50);
                     }
@@ -472,56 +541,53 @@
                     obj.y += obj.vy;
                     obj.el.style.left = obj.x + 'px';
                     obj.el.style.top = obj.y + 'px';
-
-                    if(Math.abs(obj.x - playerX) < 50 && Math.abs(obj.y - pHitY) < 50) {
+                    if(Math.abs(obj.x - playerX) < 60 && Math.abs(obj.y - pHitY) < 60) {
                         playerHit(obj);
                     }
-                    
                     if(obj.y > window.innerHeight) removeObject(obj);
                 }
             });
         }
 
-        // --- 戦術マップ更新 ---
+        // --- ★戦術マップ更新 (端から湧くように調整) ---
         function updateMapUI() {
             const mapPanel = document.getElementById('mapPanel');
             const dots = mapPanel.querySelectorAll('.dot-generated');
             dots.forEach(d => d.remove());
 
             const playerX = window.innerWidth * 0.15;
-            const range = 1200; // 探知範囲 (px)
-            const mapW = 240; // マップUIの幅
-            const mapH = 100; // マップUIの高さ
+            // ★重要: レーダー範囲を「プレイヤーから画面右端まで」に合わせる
+            // これにより、画面右端に出た瞬間にレーダー右端に点が出る
+            const range = window.innerWidth - playerX + 100; // 少し余裕を持たせる
+            
+            const mapW = 110; 
+            const mapH = 110;
 
             gameObjects.forEach(obj => {
                 if(!obj.alive) return;
-                
                 const dx = obj.x - playerX;
-                // 範囲内にある場合のみ表示
+                
+                // 範囲内、かつプレイヤーより後ろすぎないものを表示
                 if(dx > -100 && dx < range) {
                     const dot = document.createElement('div');
                     dot.className = 'map-dot dot-generated';
-                    
                     if(obj.type === 'monster') dot.classList.add('dot-monster');
                     else dot.classList.add('dot-meteor');
 
-                    // プレイヤー位置をマップ左端(20px)とする
-                    // マップ上のX座標: 20px(プレイヤー) + (dx / range) * (残りの幅)
-                    const mapX = 20 + (dx / range) * (mapW - 40);
+                    // プレイヤー位置(20px) + 距離割合
+                    const mapX = 20 + (dx / range) * (mapW - 30);
                     
-                    // マップ上のY座標
                     let mapY = 0;
                     if(obj.type === 'meteor') {
-                        // 上空(-100)から地面(innerHeight)までをマップ0~100%に
                         const groundY = window.innerHeight - 120;
                         const progressY = (obj.y + 100) / (groundY + 100);
-                        mapY = progressY * (mapH - 10); // 下端10pxは地面ライン
+                        mapY = progressY * (mapH - 10);
                     } else {
-                        mapY = mapH - 10; // 地面固定
+                        mapY = mapH - 10;
                     }
-
-                    // 範囲外クリップ
-                    if(mapX > mapW) return;
+                    
+                    // はみ出し防止
+                    if(mapX > mapW - 5) return;
 
                     dot.style.left = mapX + 'px';
                     dot.style.top = mapY + 'px';
@@ -537,13 +603,13 @@
             const deltaX = pRect.left - mRect.left;
             const deltaY = pRect.top - mRect.top;
 
+            obj.el.classList.remove('monster-anim');
             obj.el.animate([
                 { transform: 'translate(0, 0) scale(1)', opacity: 1 },
                 { transform: `translate(${deltaX}px, ${deltaY}px) scale(0.1)`, opacity: 0 }
             ], { duration: 400, easing: 'ease-in', fill: 'forwards' });
 
             setTimeout(() => removeObject(obj), 400);
-
             inventoryCount++;
             updateCountDisplay();
             showEffect("GET!", "#f1c40f", pRect.left, pRect.top - 50);
@@ -551,11 +617,11 @@
 
         function destroyMeteor(obj) {
             obj.alive = false;
+            shakeTrauma = 1.0; // 衝撃最大
             obj.el.animate([
                 { transform: `rotate(${getRotation(obj.el)}deg) scale(1)`, opacity: 1, filter: 'brightness(2)' },
                 { transform: `rotate(${getRotation(obj.el) + 180}deg) scale(2)`, opacity: 0 }
             ], { duration: 300, fill: 'forwards' });
-            
             setTimeout(() => removeObject(obj), 300);
             showEffect("BREAK!", "#e74c3c", obj.x, obj.y);
         }
@@ -565,22 +631,19 @@
             const tr = st.getPropertyValue("transform");
             if(tr === 'none') return 0;
             const values = tr.split('(')[1].split(')')[0].split(',');
-            const a = values[0];
-            const b = values[1];
+            const a = values[0]; const b = values[1];
             return Math.round(Math.atan2(b, a) * (180/Math.PI));
         }
 
         function playerHit(obj) {
             obj.alive = false;
             removeObject(obj);
-            
+            shakeTrauma = 1.0; // 衝撃最大
             inventoryCount = Math.max(0, inventoryCount - 5);
             updateCountDisplay();
-            
             const p = document.getElementById('player');
             p.classList.add('player-damage');
             setTimeout(() => p.classList.remove('player-damage'), 1000);
-            
             showEffect("-5...", "#ff0000", window.innerWidth * 0.15, window.innerHeight - 200);
         }
 
@@ -606,28 +669,23 @@
 
         function createGroundTexture(baseColor) {
             const canvas = document.createElement('canvas');
-            canvas.width = 128; 
-            canvas.height = 150;
+            canvas.width = 128; canvas.height = 160;
             const ctx = canvas.getContext('2d');
-
             ctx.fillStyle = baseColor;
-            ctx.fillRect(0, 0, 128, 150);
-
+            ctx.fillRect(0, 0, 128, 160);
             ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             ctx.beginPath();
             ctx.moveTo(0, 20);
             ctx.bezierCurveTo(40, 0, 80, 40, 128, 10);
-            ctx.lineTo(128, 150);
-            ctx.lineTo(0, 150);
+            ctx.lineTo(128, 160);
+            ctx.lineTo(0, 160);
             ctx.fill();
-
-            for(let i=0; i<300; i++) {
+            for(let i=0; i<400; i++) {
                 ctx.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
                 const x = Math.floor(Math.random() * 128);
-                const y = Math.floor(Math.random() * 150);
+                const y = Math.floor(Math.random() * 160);
                 ctx.fillRect(x, y, 2, 2);
             }
-
             const dataUrl = canvas.toDataURL();
             document.getElementById('groundLayer').style.backgroundImage = `url(${dataUrl})`;
         }
@@ -636,7 +694,6 @@
             isGameRunning = false;
             const saveObj = {};
             saveObj[`inventory.${currentData.id}`] = inventoryCount;
-
             try {
                 const btn = document.querySelector('.finish-btn');
                 btn.innerText = "保存中...";

@@ -6,7 +6,7 @@
     <title>ステージ選択 - BREMONS</title>
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-<style>
+    <style>
         /* 基本ラベル設定 */
         .stage-type-label { font-size: 10px; background: #555; padding: 2px 5px; border-radius: 3px; margin-right: 5px; }
         .type-planet { background: #27ae60; color: #fff; } 
@@ -29,9 +29,18 @@
         .progress-bar-bg { width: 100%; height: 4px; background: #333; border-radius: 2px; }
         .progress-bar-fill { height: 100%; background: #3498db; border-radius: 2px; width: 0%; }
 
-        /* --- 【重要】状態別デザイン（優先度順） --- */
+        /* トレーニングボタン */
+        .training-btn {
+            display: block; margin: 0 auto 20px auto;
+            background: #8e44ad; color: #fff; border: 2px solid #fff;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer;
+            font-family: 'DotGothic16', sans-serif; font-size: 16px;
+            width: 90%; text-align: center;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+        }
+        .training-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
-        /* 1. ロック中（未到達）: 暗く沈める */
+        /* --- 状態別デザイン --- */
         .locked {
             background-color: rgba(0, 0, 0, 0.8) !important;
             border-color: #333 !important;
@@ -39,10 +48,9 @@
             pointer-events: none !important;
             opacity: 0.6 !important;
         }
-        .locked .hologram-img { opacity: 0 !important; } /* 画像は消す */
-        .locked .stage-status { display: none; } /* ステータスも消す */
+        .locked .hologram-img { opacity: 0 !important; } 
+        .locked .stage-status { display: none; }
 
-        /* 2. 解放済み（通常）: 白ベース */
         .unlocked {
             background-color: rgba(30, 30, 30, 0.9);
             border-color: #888;
@@ -50,7 +58,6 @@
             cursor: pointer;
         }
 
-        /* 3. 挑戦中（GO!）: 黄色で目立たせる */
         .current { 
             border-color: #f1c40f !important;
             background: linear-gradient(to right, rgba(60, 50, 0, 0.9), rgba(0,0,0,0.8)) !important;
@@ -65,7 +72,6 @@
             animation: blink 1s infinite alternate; 
         }
 
-        /* 4. クリア済み: 緑色 */
         .cleared {
             border-color: #2ecc71 !important;
             box-shadow: none !important;
@@ -77,29 +83,22 @@
             animation: none !important;
         }
 
-        /* 5. コスト不足（最優先）: 赤色で警告（黄色を上書き！） */
-        /* !important を多用して確実に黄色を消します */
         .insufficient {
-            background: rgba(40, 10, 10, 0.95) !important; /* 赤黒い背景 */
-            border-color: #e74c3c !important; /* 赤枠 */
-            color: #aaa !important; /* 文字は少し暗く */
-            pointer-events: none !important; /* クリック不可 */
-            box-shadow: none !important; /* 光らせない */
+            background: rgba(40, 10, 10, 0.95) !important; 
+            border-color: #e74c3c !important; 
+            color: #aaa !important; 
+            pointer-events: none !important; 
+            box-shadow: none !important; 
         }
-        .insufficient .stage-name {
-            color: #e74c3c !important; /* タイトルだけ赤く */
-        }
+        .insufficient .stage-name { color: #e74c3c !important; }
         .insufficient .stage-status { 
             color: #fff !important; 
-            background-color: #e74c3c !important; /* 赤背景のラベル */
+            background-color: #e74c3c !important;
             border: none !important;
-            animation: none !important; /* 点滅させない */
+            animation: none !important;
             padding: 2px 8px; border-radius: 4px;
         }
-        .insufficient .cost-info {
-            color: #e74c3c !important;
-            font-weight: bold;
-        }
+        .insufficient .cost-info { color: #e74c3c !important; font-weight: bold; }
 
         @keyframes blink { from { opacity: 1; } to { opacity: 0.7; } }
     </style>
@@ -121,7 +120,11 @@
                 <h2 class="screen-title">ミッション選択</h2>
             </header>
 
-            <div id="loadingMsg" style="text-align:center; margin-top:20px;">データ確認中...</div>
+            <button class="training-btn" onclick="location.href='training_room.html'">
+                🔊 トレーニングルームへ
+            </button>
+
+            <div id="loadingMsg" style="text-align:center; margin-top:10px;">データ確認中...</div>
 
             <div class="stage-list hidden" id="stageList">
                 
@@ -253,7 +256,6 @@
         if(!uid) location.href = 'index.html';
 
         let inventory = { usa: 0, inv: 0, him: 0 };
-        // ステージの目標距離
         const GOALS = { 1: 100000000, 2: 150000000, 3: 300000000 };
 
         async function init() {
@@ -268,7 +270,6 @@
                 document.getElementById('count_inv').innerText = inventory.inv || 0;
                 document.getElementById('count_him').innerText = inventory.him || 0;
 
-                // フライト進捗
                 const s1Ref = doc(db, "users", uid, "stages", "stage_1");
                 const s1Snap = await getDoc(s1Ref);
                 const s1Dist = s1Snap.exists() ? (s1Snap.data().totalDistance || 0) : 0;
@@ -277,11 +278,9 @@
                 const s2Snap = await getDoc(s2Ref);
                 const s2Dist = s2Snap.exists() ? (s2Snap.data().totalDistance || 0) : 0;
 
-                // ★進捗率の計算と表示
                 updateProgress(1, s1Dist);
                 updateProgress(2, s2Dist);
 
-                // === ロック解除＆コスト判定 ===
                 const f1Unlocked = s1Dist >= GOALS[1];
                 unlock("panel_flight_1", "status_flight_1", f1Unlocked);
                 checkCost("panel_flight_1", "usa");
@@ -307,7 +306,6 @@
             const goal = GOALS[num];
             let percent = Math.floor((dist / goal) * 100);
             if(percent > 100) percent = 100;
-            
             document.getElementById(`prog_text_${num}`).innerText = percent;
             document.getElementById(`prog_bar_${num}`).style.width = percent + "%";
         }
@@ -329,13 +327,10 @@
 
         function checkCost(panelId, monsterId) {
             const p = document.getElementById(panelId);
-            // まだロックされているなら何もしない
             if(p.classList.contains('locked')) return;
-
             const count = inventory[monsterId] || 0;
             if(count < 1) {
                 p.classList.add('insufficient');
-                // ステータス書き換え
                 p.querySelector('.stage-status').innerText = "⚠️探索必要"; 
             }
         }

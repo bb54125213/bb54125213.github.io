@@ -83,7 +83,7 @@
             z-index: 5; overflow: hidden;
         }
         
-        /* 宇宙船（サイズ拡大版） */
+        /* 宇宙船 */
         .ship {
             position: absolute; width: 100px; height: 130px; 
             left: 50%; transform: translateX(-50%);
@@ -91,15 +91,8 @@
         }
         .ship img { width: 100%; height: 100%; }
         
-        /* 敵船（赤色フィルター） */
-        .enemy-ship { 
-            top: 60px; 
-            transform: translateX(-50%) rotate(180deg); 
-        }
-        .enemy-ship img {
-            filter: hue-rotate(150deg) brightness(0.9);
-        }
-
+        .enemy-ship { top: 60px; transform: translateX(-50%) rotate(180deg); }
+        .enemy-ship img { filter: hue-rotate(150deg) brightness(0.9); }
         .my-ship { bottom: 160px; } 
 
         /* 被弾エフェクト */
@@ -112,31 +105,38 @@
             100% { transform: translateX(-50%) translate(0, 0); }
         }
 
-        /* 弾（スター・サイズ拡大版） */
+        /* 弾 */
         .bullet {
             position: absolute; width: 60px; height: 60px;
             image-rendering: pixelated; z-index: 6;
             filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
         }
         
-        /* カウントダウン演出 */
+        /* カウントダウン・待機メッセージ */
         .countdown-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 50;
             display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
         }
         #countdownText {
-            font-size: 120px; color: #f1c40f; font-weight: bold;
+            font-size: 100px; color: #f1c40f; font-weight: bold;
             text-shadow: 4px 4px 0 #e74c3c;
             animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+        }
+        .matching-msg {
+            font-size: 20px; color: #fff; margin-top: 20px;
+            animation: blink 1.5s infinite;
         }
         @keyframes popIn {
             0% { transform: scale(0); opacity: 0; }
             60% { transform: scale(1.2); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
         }
+        @keyframes blink { 50% { opacity: 0.5; } }
 
-        /* 勝利・敗北モーダル */
+        /* 結果画面 */
         .battle-modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 100;
@@ -167,7 +167,7 @@
         <div class="battle-ui-layer">
             <div class="battle-header">
                 <div class="opponent-info">
-                    <div class="opponent-name" id="enemyName">CPU (Lv.1)</div>
+                    <div class="opponent-name" id="enemyName">WAITING...</div>
                     <div class="life-container enemy-life" id="enemyLifeBar">
                         <span class="life-heart active">♥</span>
                         <span class="life-heart active">♥</span>
@@ -181,7 +181,7 @@
 
             <div class="battle-footer">
                 <div class="my-info">
-                    <div class="my-name">YOU</div>
+                    <div class="my-name" id="myName">YOU</div>
                     <div class="life-container my-life" id="myLifeBar">
                         <span class="life-heart active">♥</span>
                         <span class="life-heart active">♥</span>
@@ -227,6 +227,7 @@
 
         <div id="countdownOverlay" class="countdown-layer hidden">
             <div id="countdownText">3</div>
+            <div id="matchMsg" class="matching-msg hidden">対戦相手を探しています...</div>
         </div>
 
         <div id="resultModal" class="battle-modal hidden">
@@ -235,19 +236,24 @@
         </div>
     </div>
 
-    <script src="battle_script.js"></script>
+    <script type="module" src="battle_script.js"></script>
     <script>
-        // BGM自動再生
         document.body.addEventListener('click', function() {
             var bgm = document.getElementById('bgm');
             if(bgm.paused) bgm.play();
         }, { once: true });
 
-        function surrender() {
+        window.surrender = function() {
             if(confirm("降参しますか？（負けになります）")) {
                 location.href = 'battle_select.html';
             }
-        }
+        };
+        document.addEventListener('DOMContentLoaded', () => {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.3;
+            bgm.play().catch(() => {});
+            document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
+        });
     </script>
 </body>
 </html>

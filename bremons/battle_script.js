@@ -1,14 +1,30 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue, push, update, remove, onDisconnect, get, child, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// --- Firebase Config ---
+const firebaseConfig = {
+    apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+    authDomain: "bremons.firebaseapp.com",
+    databaseURL: "https://bremons-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "bremons",
+    storageBucket: "bremons.firebasestorage.app",
+    messagingSenderId: "30413071482",
+    appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+    measurementId: "G-4D4FCXGDBG"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 // --- パラメータ設定 ---
 const MAX_LIFE = 5;
-const CHARGE_THRESHOLD_MIN = 1.0;    // ★変更: 1秒未満は不発（はっ/ぱっ誤爆防止）
-const CHARGE_THRESHOLD_STRONG = 2.0; // 2秒以上で青星
-const BULLET_TRAVEL_TIME = 5000;     // 5秒で着弾
-const COOLDOWN_ATTACK = 1000;        // 攻撃クールタイム 1秒
-const COOLDOWN_DEFENSE = 1000;       // 防御クールタイム 1秒
-
-// 音声認識用定数
+const CHARGE_THRESHOLD_MIN = 1.0;
+const CHARGE_THRESHOLD_STRONG = 2.0;
+const BULLET_TRAVEL_TIME = 5000;
+const COOLDOWN_ATTACK = 1000;
+const COOLDOWN_DEFENSE = 1000;
 const THOUSAND = 24;
-// デフォルト設定
+
 let micConfig = {
     noiseThreshold: 0.05,
     haProfile: [0.096, 0.101, 0.044, 0.005, 0.005, 0.019, 0.030, 0.036, 0.038, 0.010, 0.001, 0.004, 0.018, 0.055, 0.069, 0.040, 0.023, 0.012, 0.027, 0.040, 0.029, 0.022, 0.009, 0.038],
@@ -24,13 +40,17 @@ let cpuLevel = 1;
 let myLife = MAX_LIFE;
 let enemyLife = MAX_LIFE;
 
-let chargeTimer = 0; // ふ～の継続時間
+let chargeTimer = 0;
 let isBlowing = false;
-
 let lastAttackTime = 0;
 let lastDefenseTime = 0;
+let bullets = []; 
 
-let bullets = []; // 飛んでいる弾の管理配列
+// オンライン用変数
+let roomId = null;
+let myRole = null; // 'host' or 'guest'
+let enemyName = "Opponent";
+let myName = localStorage.getItem('user_name') || "Me";
 
 // DOM要素
 const els = {
@@ -43,14 +63,13 @@ const els = {
     enemyLifeBar: document.getElementById('enemyLifeBar'),
     resultModal: document.getElementById('resultModal'),
     resultTitle: document.getElementById('resultTitle'),
-    // スキルアイコン
     skillStar: document.getElementById('skillStar'),
     skillBlue: document.getElementById('skillBlue'),
     skillHa: document.getElementById('skillHa'),
     skillPa: document.getElementById('skillPa'),
-    // カウントダウン用
     countdownOverlay: document.getElementById('countdownOverlay'),
-    countdownText: document.getElementById('countdownText')
+    countdownText: document.getElementById('countdownText'),
+    matchMsg: document.getElementById('matchMsg')
 };
 
 // --- 初期化 ---
@@ -63,15 +82,10 @@ window.onload = () => {
     const params = new URLSearchParams(window.location.search);
     gameMode = params.get('mode') || 'cpu';
     cpuLevel = parseInt(params.get('level')) || 1;
+    document.getElementById('myName').innerText = myName;
 
-    if (gameMode === 'cpu') {
-        document.getElementById('enemyName').innerText = `CPU (Lv.${cpuLevel})`;
-        initAudio();
-    } else {
-        alert("オンライン対戦は準備中です。CPU戦を開始します。");
-        gameMode = 'cpu';
-        initAudio();
-    }
+    // 先にマイク初期化 -> 成功したらマッチング開始
+    initAudio();
 };
 
 async function initAudio() {
@@ -84,8 +98,15 @@ async function initAudio() {
         analyser.fftSize = 1024;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-        startCountdown();
-        gameLoop();
+        if (gameMode === 'cpu') {
+            document.getElementById('enemyName').innerText = `CPU (Lv.${cpuLevel})`;
+            startCountdown();
+        } else {
+            // オンライン: マッチング開始
+            startMatching();
+        }
+        
+        gameLoop(); // ループ開始
 
     } catch (e) {
         alert("マイクが使用できません");
@@ -93,6 +114,126 @@ async function initAudio() {
     }
 }
 
+// --- オンライン マッチング処理 ---
+async function startMatching() {
+    els.countdownOverlay.classList.remove('hidden');
+    els.countdownText.innerText = "";
+    els.matchMsg.classList.remove('hidden');
+
+    const roomsRef = ref(db, 'rooms');
+    const snapshot = await get(roomsRef);
+    let foundRoomId = null;
+
+    // 空き部屋('waiting')を探す
+    if (snapshot.exists()) {
+        snapshot.forEach(childSnap => {
+            const val = childSnap.val();
+            if (val.status === 'waiting') {
+                foundRoomId = childSnap.key;
+            }
+        });
+    }
+
+    if (foundRoomId) {
+        // 部屋に参加 (Guest)
+        roomId = foundRoomId;
+        myRole = 'guest';
+        await update(ref(db, `rooms/${roomId}`), {
+            guest: { name: myName, life: MAX_LIFE },
+            status: 'playing'
+        });
+        setupRoomListener();
+    } else {
+        // 部屋を作成 (Host)
+        const newRoomRef = push(roomsRef);
+        roomId = newRoomRef.key;
+        myRole = 'host';
+        await set(newRoomRef, {
+            host: { name: myName, life: MAX_LIFE },
+            status: 'waiting',
+            createdAt: Date.now()
+        });
+        
+        // 切断時に部屋を削除
+        onDisconnect(newRoomRef).remove();
+        setupRoomListener();
+    }
+}
+
+function setupRoomListener() {
+    const roomRef = ref(db, `rooms/${roomId}`);
+    
+    onValue(roomRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return; // 部屋が消えた
+
+        // 相手の名前表示
+        if (myRole === 'host' && data.guest) {
+            enemyName = data.guest.name;
+            document.getElementById('enemyName').innerText = enemyName;
+        } else if (myRole === 'guest' && data.host) {
+            enemyName = data.host.name;
+            document.getElementById('enemyName').innerText = enemyName;
+        }
+
+        // ゲーム開始判定
+        if (data.status === 'playing' && !isGameRunning && els.countdownText.innerText !== "START!") {
+            els.matchMsg.classList.add('hidden');
+            startCountdown();
+        }
+
+        // イベント処理 (攻撃など)
+        if (data.events) {
+            const events = Object.values(data.events);
+            // まだ処理していないイベントを実行
+            // ※簡易実装: 本来はID管理するが、今回は最後のイベントだけチェックする形か、全クリアで対応
+            // ここでは「相手からのアクション」をリアルタイム監視するより、child_addedを使うのがベター
+        }
+    });
+
+    // 攻撃・防御イベントの監視
+    const eventsRef = ref(db, `rooms/${roomId}/events`);
+    onValue(eventsRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+        const events = snapshot.val();
+        // オブジェクトを配列にして、タイムスタンプ順に処理（簡易）
+        // 実際には「処理済みID」を保持して重複を防ぐ必要があるが、
+        // onChildAddedの方が適している。今回は簡易化のため onValue で差分検知は省略し、
+        // 自分のアクション以外を描画する。
+    });
+    
+    // ★重要: アクション受信は onChildAdded で行う
+    // これにより、追加されたイベントを1回だけ処理できる
+    const eventsChildRef = ref(db, `rooms/${roomId}/events`);
+    onChildAdded(eventsChildRef, (data) => {
+        const event = data.val();
+        // 自分が送ったイベントは無視（ローカルで即時反映済み）
+        if (event.sender === myRole) return;
+
+        if (event.type === 'attack') {
+            fireBullet(event.bulletType, false); // 敵の攻撃として描画
+        } else if (event.type === 'damage') {
+            // 敵がダメージを受けた（同期）
+            enemyLife = event.currentLife;
+            updateLifeDisplay('enemy', enemyLife);
+            els.enemyShip.classList.add('shake');
+            setTimeout(() => els.enemyShip.classList.remove('shake'), 400);
+            if (enemyLife <= 0) finishGame(true);
+        } else if (event.type === 'win') {
+            // 相手が勝った = 自分は負け (念のため)
+            finishGame(false);
+        }
+    });
+}
+
+// サーバーにアクション送信
+function sendAction(data) {
+    if (gameMode !== 'online' || !roomId) return;
+    const eventsRef = ref(db, `rooms/${roomId}/events`);
+    push(eventsRef, { ...data, sender: myRole, timestamp: Date.now() });
+}
+
+// --- カウントダウン ---
 function startCountdown() {
     els.countdownOverlay.classList.remove('hidden');
     let count = 3;
@@ -133,71 +274,47 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// マイク入力処理
+// --- マイク処理 ---
 function updateMicInput() {
     analyser.getByteFrequencyData(dataArray);
-
     let maxAmp = 0;
     for (let i = 0; i < THOUSAND; i++) {
-        const val = dataArray[i] / 255.0;
-        if (val > maxAmp) maxAmp = val;
+        if (dataArray[i]/255.0 > maxAmp) maxAmp = dataArray[i]/255.0;
     }
 
     if (maxAmp < micConfig.noiseThreshold) {
-        if (isBlowing) {
-            finishCharge(); // 息を止めたら発射判定へ
-        }
+        if (isBlowing) finishCharge();
         isBlowing = false;
         return;
     }
 
     const now = Date.now();
-    
-    // 1. 防御判定 ("はっ", "ぱっ")
-    // クールタイム中でなければ判定
     if (now - lastDefenseTime > COOLDOWN_DEFENSE) {
         const type = analyzeVowel();
-        if (type === 'ha') {
-            triggerDefense('ha');
-            isBlowing = false; // 防御したらチャージキャンセル
-            resetChargeUI();
-            return; 
-        } else if (type === 'pa') {
-            triggerDefense('pa');
-            isBlowing = false;
+        if (type === 'ha' || type === 'pa') {
+            triggerDefense(type);
+            isBlowing = false; 
             resetChargeUI();
             return;
         }
     }
 
-    // 2. 攻撃チャージ判定 ("ふ〜")
     let highFreqSum = 0;
     for (let i = 30; i < 100; i++) highFreqSum += dataArray[i];
-    const highFreqAvg = highFreqSum / 70;
+    const avg = highFreqSum / 70;
 
     if (now - lastAttackTime > COOLDOWN_ATTACK) {
-        if (highFreqAvg > 10) { 
+        if (avg > 10) { 
             isBlowing = true;
             chargeTimer += 1 / 60; 
-            
-            // UI更新
             els.chargeText.innerText = chargeTimer.toFixed(1) + "s";
             let percent = (chargeTimer / CHARGE_THRESHOLD_STRONG) * 100;
-            if (percent > 100) percent = 100;
+            if(percent > 100) percent = 100;
             els.chargeBar.style.width = percent + "%";
             
-            // ★色変化ロジックの変更
-            if (chargeTimer < CHARGE_THRESHOLD_MIN) {
-                // 1秒未満: まだ撃てない (グレー)
-                els.chargeBar.style.backgroundColor = '#95a5a6';
-            } else if (chargeTimer < CHARGE_THRESHOLD_STRONG) {
-                // 1~2秒: Star発射可能 (黄色)
-                els.chargeBar.style.backgroundColor = '#f1c40f';
-            } else {
-                // 2秒以上: BlueStar発射可能 (赤色)
-                els.chargeBar.style.backgroundColor = '#e74c3c';
-            }
-
+            if (chargeTimer < CHARGE_THRESHOLD_MIN) els.chargeBar.style.backgroundColor = '#95a5a6';
+            else if (chargeTimer < CHARGE_THRESHOLD_STRONG) els.chargeBar.style.backgroundColor = '#f1c40f';
+            else els.chargeBar.style.backgroundColor = '#e74c3c';
         } else {
             if (isBlowing) finishCharge();
             isBlowing = false;
@@ -212,25 +329,22 @@ function analyzeVowel() {
         haDist += Math.pow(micConfig.haProfile[i] - val, 2);
         paDist += Math.pow(micConfig.paProfile[i] - val, 2);
     }
-    const haScore = 1 / (1 + Math.sqrt(haDist));
-    const paScore = 1 / (1 + Math.sqrt(paDist));
-
-    if (haScore > 0.65 && haScore > paScore) return 'ha';
-    if (paScore > 0.65 && paScore > haScore) return 'pa';
+    const ha = 1/(1+Math.sqrt(haDist));
+    const pa = 1/(1+Math.sqrt(paDist));
+    if (ha > 0.65 && ha > pa) return 'ha';
+    if (pa > 0.65 && pa > ha) return 'pa';
     return null;
 }
 
-// チャージ終了 -> 攻撃実行
 function finishCharge() {
-    // ★変更: 1秒未満は無視する（防御ボイスなどの誤爆防止）
     if (chargeTimer < CHARGE_THRESHOLD_MIN) { 
-        chargeTimer = 0;
-        resetChargeUI();
-        return;
+        chargeTimer = 0; resetChargeUI(); return;
     }
-
     const type = (chargeTimer >= CHARGE_THRESHOLD_STRONG) ? 'bluestar' : 'star';
-    fireBullet(type, true); // プレイヤーの攻撃
+    
+    // 攻撃実行 (ローカル + オンライン送信)
+    fireBullet(type, true); 
+    sendAction({ type: 'attack', bulletType: type }); // ★送信
 
     chargeTimer = 0;
     resetChargeUI();
@@ -240,15 +354,13 @@ function finishCharge() {
 function resetChargeUI() {
     els.chargeBar.style.width = "0%";
     els.chargeText.innerText = "0.0s";
-    els.chargeBar.style.backgroundColor = '#95a5a6'; // 初期色はグレー
+    els.chargeBar.style.backgroundColor = '#95a5a6';
 }
 
-// 防御実行
 function triggerDefense(type) {
     lastDefenseTime = Date.now();
-    playSe(type === 'ha' ? 600 : 800, 'sine'); 
+    playSe(type === 'ha' ? 600 : 800, 'sine');
     
-    // UIエフェクト
     const skillBox = (type === 'ha') ? els.skillHa : els.skillPa;
     skillBox.style.borderColor = '#fff';
     setTimeout(() => skillBox.style.borderColor = '#555', 200);
@@ -258,64 +370,44 @@ function triggerDefense(type) {
     threats.sort((a, b) => b.progress - a.progress); 
 
     if (threats.length > 0) {
-        const target = threats[0];
-        destroyBullet(target);
+        destroyBullet(threats[0]);
         showTextEffect("BLOCK!", "#2ecc71", 50, 70); 
     }
 }
 
-// --- 弾の処理 ---
+// --- 弾 ---
 function fireBullet(type, isPlayerBullet) {
     const bullet = document.createElement('img');
     bullet.src = type === 'bluestar' ? './nightgame/bluestar.png' : './nightgame/star.png';
     bullet.className = 'bullet';
     
     if (isPlayerBullet) {
-        bullet.style.bottom = '180px'; 
-        bullet.style.left = '50%';
+        bullet.style.bottom = '180px'; bullet.style.left = '50%';
     } else {
-        bullet.style.top = '80px';
-        bullet.style.left = '50%';
+        bullet.style.top = '80px'; bullet.style.left = '50%';
         bullet.style.transform = 'rotate(180deg)';
     }
     
     els.field.appendChild(bullet);
-
-    bullets.push({
-        el: bullet,
-        type: type,
-        isPlayerBullet: isPlayerBullet,
-        progress: 0, 
-        active: true
-    });
-
+    bullets.push({ el: bullet, type: type, isPlayerBullet: isPlayerBullet, progress: 0, active: true });
     playSe(isPlayerBullet ? 400 : 300, 'square');
 }
 
 function updateBullets() {
-    // 弾の移動速度 (100% / 5秒 / 60fps)
     const speed = 100 / (BULLET_TRAVEL_TIME / 1000 * 60);
-
     bullets.forEach(b => {
         if (!b.active) return;
-
         b.progress += speed;
 
         if (b.isPlayerBullet) {
-            const startY = 20; 
-            const endY = 85;   
-            const currentY = startY + (endY - startY) * (b.progress / 100);
-            b.el.style.bottom = currentY + '%';
+            const y = 20 + (65 * (b.progress / 100)); // 20->85
+            b.el.style.bottom = y + '%';
         } else {
-            const startY = 15; 
-            const endY = 80;   
-            const currentY = startY + (endY - startY) * (b.progress / 100);
-            b.el.style.top = currentY + '%';
+            const y = 15 + (65 * (b.progress / 100)); // 15->80
+            b.el.style.top = y + '%';
         }
 
-        if (b.progress >= 100) {
-            hitTarget(b);
-        }
+        if (b.progress >= 100) hitTarget(b);
     });
 }
 
@@ -327,30 +419,35 @@ function hitTarget(bullet) {
     const damage = (bullet.type === 'bluestar') ? 2 : 1;
 
     if (bullet.isPlayerBullet) {
-        // 敵に命中
-        enemyLife = Math.max(0, enemyLife - damage);
-        updateLifeDisplay('enemy', enemyLife);
-        els.enemyShip.classList.add('shake');
-        setTimeout(() => els.enemyShip.classList.remove('shake'), 400);
-        
-        if (enemyLife <= 0) finishGame(true);
-
+        // 自分が撃った弾が敵に当たった -> オンラインでは相手が判定して送ってくるのでここでは減らさない
+        // ただしCPU戦はここで減らす
+        if (gameMode === 'cpu') {
+            enemyLife = Math.max(0, enemyLife - damage);
+            updateLifeDisplay('enemy', enemyLife);
+            els.enemyShip.classList.add('shake');
+            setTimeout(() => els.enemyShip.classList.remove('shake'), 400);
+            if (enemyLife <= 0) finishGame(true);
+        }
     } else {
-        // 自分に命中
+        // 敵の弾が自分に当たった -> ダメージ確定 & 送信
         myLife = Math.max(0, myLife - damage);
         updateLifeDisplay('my', myLife);
         els.myShip.classList.add('shake');
         setTimeout(() => els.myShip.classList.remove('shake'), 400);
-        
-        if (navigator.vibrate) navigator.vibrate(200); 
+        if (navigator.vibrate) navigator.vibrate(200);
 
-        if (myLife <= 0) finishGame(false);
+        // ★送信: 自分の新しいライフを相手に通知
+        sendAction({ type: 'damage', currentLife: myLife });
+
+        if (myLife <= 0) {
+            finishGame(false);
+            sendAction({ type: 'win' }); // 相手の勝ちを通知
+        }
     }
 }
 
 function destroyBullet(bullet) {
     bullet.active = false;
-    bullet.el.style.transition = "transform 0.2s, opacity 0.2s";
     bullet.el.style.transform = "scale(2)";
     bullet.el.style.opacity = "0";
     setTimeout(() => bullet.el.remove(), 200);
@@ -360,88 +457,63 @@ function updateLifeDisplay(who, val) {
     const bar = (who === 'enemy') ? els.enemyLifeBar : els.myLifeBar;
     const hearts = bar.children;
     for (let i = 0; i < hearts.length; i++) {
-        if (i < val) {
-            hearts[i].classList.add('active');
-        } else {
-            hearts[i].classList.remove('active');
-        }
+        if (i < val) hearts[i].classList.add('active');
+        else hearts[i].classList.remove('active');
     }
 }
 
 function updateCooldownUI() {
     const now = Date.now();
-    const atkReady = now - lastAttackTime > COOLDOWN_ATTACK;
-    const defReady = now - lastDefenseTime > COOLDOWN_DEFENSE;
-
-    if(atkReady) {
-        els.skillStar.classList.remove('on-cooldown');
-        els.skillBlue.classList.remove('on-cooldown');
-    } else {
-        els.skillStar.classList.add('on-cooldown');
-        els.skillBlue.classList.add('on-cooldown');
-    }
-
-    if(defReady) {
-        els.skillHa.classList.remove('on-cooldown');
-        els.skillPa.classList.remove('on-cooldown');
-    } else {
-        els.skillHa.classList.add('on-cooldown');
-        els.skillPa.classList.add('on-cooldown');
-    }
+    const atk = now - lastAttackTime > COOLDOWN_ATTACK;
+    const def = now - lastDefenseTime > COOLDOWN_DEFENSE;
+    const s = els;
+    
+    atk ? (s.skillStar.classList.remove('on-cooldown'), s.skillBlue.classList.remove('on-cooldown'))
+        : (s.skillStar.classList.add('on-cooldown'), s.skillBlue.classList.add('on-cooldown'));
+        
+    def ? (s.skillHa.classList.remove('on-cooldown'), s.skillPa.classList.remove('on-cooldown'))
+        : (s.skillHa.classList.add('on-cooldown'), s.skillPa.classList.add('on-cooldown'));
 }
 
-function showTextEffect(text, color, xPerc, yPerc) {
+function showTextEffect(text, color, x, y) {
     const div = document.createElement('div');
     div.innerText = text;
     div.style.position = 'absolute';
-    div.style.left = xPerc + '%';
-    div.style.top = yPerc + '%';
+    div.style.left = x+'%'; div.style.top = y+'%';
     div.style.color = color;
-    div.style.fontSize = '30px';
-    div.style.fontWeight = 'bold';
-    div.style.textShadow = '2px 2px 0 #000';
-    div.style.zIndex = 20;
-    div.style.transition = 'top 1s, opacity 1s';
+    div.style.fontSize = '30px'; div.style.fontWeight = 'bold';
+    div.style.zIndex = 20; div.style.transition = 'top 1s, opacity 1s';
     els.field.appendChild(div);
-
-    setTimeout(() => {
-        div.style.top = (yPerc - 10) + '%';
-        div.style.opacity = 0;
-    }, 50);
+    setTimeout(() => { div.style.top = (y-10)+'%'; div.style.opacity = 0; }, 50);
     setTimeout(() => div.remove(), 1000);
 }
 
-// --- CPUロジック ---
+// --- CPU ---
 function startCpuLogic() {
-    let attackProb, defenseProb, actionInterval;
+    let atkProb, defProb, interval;
     switch(cpuLevel) {
-        case 1: attackProb=0.3; defenseProb=0.2; actionInterval=2000; break; 
-        case 2: attackProb=0.5; defenseProb=0.5; actionInterval=1500; break; 
-        case 3: attackProb=0.7; defenseProb=0.8; actionInterval=1000; break; 
+        case 1: atkProb=0.3; defProb=0.2; interval=2000; break;
+        case 2: atkProb=0.5; defProb=0.5; interval=1500; break;
+        case 3: atkProb=0.7; defProb=0.8; interval=1000; break;
     }
-
     setInterval(() => {
         if(!isGameRunning) return;
-        if(Math.random() < attackProb) {
+        if(Math.random() < atkProb) {
             const type = Math.random() < 0.3 ? 'bluestar' : 'star';
-            fireBullet(type, false); 
+            fireBullet(type, false);
         }
-    }, actionInterval);
-
+    }, interval);
     setInterval(() => {
         if(!isGameRunning) return;
-        const threat = bullets.find(b => b.isPlayerBullet && b.active && b.progress > 70); 
-        if (threat && Math.random() < defenseProb) {
-            destroyBullet(threat);
-        }
-    }, 500); 
+        const threat = bullets.find(b => b.isPlayerBullet && b.active && b.progress > 70);
+        if (threat && Math.random() < defProb) destroyBullet(threat);
+    }, 500);
 }
 
-// --- ゲーム終了 ---
+// --- 終了 ---
 function finishGame(isWin) {
     isGameRunning = false;
     els.resultModal.classList.remove('hidden');
-    
     if (isWin) {
         els.resultTitle.innerText = "YOU WIN!";
         els.resultTitle.className = "result-title win";
@@ -451,9 +523,15 @@ function finishGame(isWin) {
         els.resultTitle.className = "result-title lose";
         playSe(200, 'sawtooth');
     }
+    
+    // 部屋の後始末（Hostなら）
+    if (roomId && myRole === 'host') {
+        setTimeout(() => {
+            // remove(ref(db, `rooms/${roomId}`)); // 必要なら消す
+        }, 5000);
+    }
 }
 
-// 簡易SE
 function playSe(freq, type) {
     if (!audioContext) return;
     const osc = audioContext.createOscillator();

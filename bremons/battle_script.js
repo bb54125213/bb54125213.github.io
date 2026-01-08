@@ -231,8 +231,8 @@ function setupRoomListener() {
             setTimeout(() => els.enemyShip.classList.remove('shake'), 400);
             if (enemyLife <= 0) finishGame(true);
         } else if (event.type === 'win') {
-            // 相手が勝った = 自分は負け (念のため)
-            finishGame(false);
+            // ★修正: 相手が死んだ通知が来たら、自分は「勝ち」
+            finishGame(true);
         }
     });
 }
@@ -452,7 +452,7 @@ function hitTarget(bullet) {
 
         if (myLife <= 0) {
             finishGame(false);
-            sendAction({ type: 'win' }); // 相手の勝ちを通知
+            sendAction({ type: 'dead' }); // ★修正: 「私が死んだ」と通知
         }
     }
 }

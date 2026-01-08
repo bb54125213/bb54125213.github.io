@@ -28,8 +28,12 @@ let fuelSeconds = 0;
 let chargedFuelSeconds = 0; 
 let flightDistance = 0;    
 let totalDistance = 0;     
+// 1秒の燃料で何キロ進むか
 const FLIGHT_SPEED = 500000;
+// 燃料タンクの表示できる最大値
 const MAX_FUEL_SEC = 20;
+// 1秒の燃料で飛ぶアニメーション時間の倍率
+const FLIGHT_ANIMATION_TIME_MULTIPLIER = 2;
 
 let hasStartedBlowing = false; 
 let fuelingDone = false;       
@@ -324,12 +328,11 @@ function launchRocket() {
 
 function processFlying() {
     const timeDelta = 1 / 60;
-    const distDelta = FLIGHT_SPEED * timeDelta;
+    const distDelta = (FLIGHT_SPEED / FLIGHT_ANIMATION_TIME_MULTIPLIER) * timeDelta;
     flightDistance += distDelta;   
     totalDistance += distDelta;
     
-    // 飛行時間を2倍（0.5倍消費）に
-    fuelSeconds -= (timeDelta * 0.5); 
+    fuelSeconds -= (timeDelta / FLIGHT_ANIMATION_TIME_MULTIPLIER);
 
     if (fuelSeconds <= 0) {
         fuelSeconds = 0;

@@ -78,7 +78,8 @@ const els = {
     gameHeader: document.getElementById('gameHeader'),
     stageNameDisplay: document.getElementById('stageNameDisplay'),
     pauseModal: document.getElementById('pauseModal'),
-    retryBtn: document.getElementById('retryBtn')
+    retryBtn: document.getElementById('retryBtn'),
+    celOverlay: document.getElementById('celebrationOverlay')
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -384,13 +385,24 @@ async function finishFlight() {
     els.bg.classList.add('speed-stop');
     els.gameHeader.style.display = 'none';
     els.bgm.pause();
-    playEngineStallSound();
+
+    // ★修正: ゴール判定
+    const isGoal = totalDistance >= goalDistance;
+
+    if (isGoal) {
+        // --- ゴール時 ---
+        playWinSound(); // ファンファーレ
+    } else {
+        // --- 燃料切れ時 ---
+        playEngineStallSound(); // エンジン停止音
+    }
 
     try {
         await saveGameData(); 
     } catch (e) { console.error(e); }
 
-    if (window.DB && window.DB.getInventoryCount && currentCostId) {
+    // インベントリ確認などは通常時のみ必要（ゴールしたら再挑戦ボタンは出さないため）
+    if (!isGoal && window.DB && window.DB.getInventoryCount && currentCostId) {
         const count = await window.DB.getInventoryCount(currentCostId);
         const stockEl = document.getElementById('currentStock');
         if(stockEl) stockEl.innerText = count;
@@ -402,13 +414,14 @@ async function finishFlight() {
         }
     }
 
-    // 結果表示の飛距離を再計算して整合性を保証する（念のため）
-    // 理論値: 吹いた時間 * 500,000
-    // 実測値: flightDistance
-    // ほぼ同じになるはずですが、表示は見やすく整数化
-    els.resDist.innerText = Math.floor(flightDistance).toLocaleString(); 
-    els.totalDistDisplay.innerText = Math.floor(totalDistance).toLocaleString(); 
-    els.modal.classList.remove('hidden');
+    // ★分岐: ゴールならお祝い、ダメなら通常リザルト
+    if (isGoal) {
+        els.celOverlay.classList.remove('hidden');
+    } else {
+        els.resDist.innerText = Math.floor(flightDistance).toLocaleString(); 
+        els.totalDistDisplay.innerText = Math.floor(totalDistance).toLocaleString(); 
+        els.modal.classList.remove('hidden');
+    }
 }
 
 async function saveGameData() {
@@ -453,4 +466,50 @@ function playEngineStallSound() {
     gain.connect(audioContext.destination);
     osc.start();
     osc.stop(audioContext.currentTime + 0.8);
+}
+
+function playWinSound() {
+    if (!audioContext) return;
+    
+    const now = audioContext.currentTime;
+    // ド・ミ・ソ・高いド のアルペジオ
+    const notes = [261.63, 329.63, 392.00, 523.25]; 
+    
+    notes.forEach((freq, i) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        
+        osc.type = 'triangle'; // 明るい音色
+        osc.frequency.value = freq;
+        
+        // タイミングをずらして再生 (0.1秒ごと)
+        const startTime = now + (i * 0.1);
+        
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6);
+        
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + 0.6);
+    });
+
+    // 最後のジャーン！
+    setTimeout(() => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = 'square'; // 力強い音
+        osc.frequency.value = 523.25; // 高いド
+        
+        const finalTime = audioContext.currentTime;
+        gain.gain.setValueAtTime(0.2, finalTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, finalTime + 1.5);
+        
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start(finalTime);
+        osc.stop(finalTime + 1.5);
+    }, 400);
 }

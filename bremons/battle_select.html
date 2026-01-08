@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
+        /* ... (CSSも変更なし) ... */
         /* カードのデザイン */
         .mode-card {
             background: rgba(0, 0, 0, 0.7);
@@ -38,7 +39,7 @@
 
     <div class="game-container menu-screen">
         <div class="scrolling-bg"></div>
-        <div class="floating-layer"></div>
+        <div class="floating-layer" id="floatingLayer"></div>
 
         <div class="ui-layer">
             
@@ -73,10 +74,12 @@
             </div>
 
             <footer class="footer-area" style="margin-bottom: 20px;">
-                <div class="version">Ver 6.1.1</div>
+                <div class="version">Ver ---</div>
             </footer>
         </div>
     </div>
+
+    <script src="script.js"></script>
 
     <script>
         function startBattle(mode, level = 1) {
@@ -87,13 +90,6 @@
                 window.location.href = `battle_main.html?mode=cpu&level=${level}`;
             }
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const bgm = document.getElementById('bgm');
-            bgm.volume = 0.3;
-            bgm.play().catch(() => {});
-            document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
-        });
     </script>
 </body>
 </html>

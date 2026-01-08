@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Battle Select - BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* カードのデザイン */
+        .mode-card {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: transform 0.2s;
+            width: 100%;
+            box-sizing: border-box; /* パディングを含める */
+        }
+        .mode-card:hover { transform: scale(1.02); border-color: #f1c40f; }
+        .mode-title { font-size: 20px; color: #f1c40f; margin-bottom: 10px; display: block; }
+        .mode-desc { font-size: 12px; color: #ccc; margin-bottom: 15px; display: block; }
+        
+        /* 難易度選択ボタン */
+        .cpu-levels { display: flex; gap: 5px; justify-content: center; margin-top: 10px; }
+        .lvl-btn {
+            background: #555; border: 1px solid #fff; color: #fff;
+            font-family: inherit; cursor: pointer; padding: 5px 10px; font-size: 12px;
+            flex: 1; /* 幅を均等に */
+        }
+        .lvl-btn:hover { background: #777; }
+    </style>
+</head>
+<body>
+    <audio id="bgm" src="./bgm/GuideToAdventure.mp3" loop></audio>
+
+    <div class="game-container menu-screen">
+        <div class="scrolling-bg"></div>
+        <div class="floating-layer"></div>
+
+        <div class="ui-layer">
+            
+            <div class="title-area" style="margin-top: 30px; margin-bottom: 10px;">
+                <h1 class="game-title" style="font-size: 42px;">BREMONS</h1>
+                <span class="subtitle">- ブレモンズ -</span>
+            </div>
+
+            <header class="stage-select-header">
+                <button onclick="location.href='index.html'" class="pixel-btn back-btn">←戻る</button>
+                <h2 class="screen-title">対戦モード選択</h2>
+            </header>
+
+            <div style="width: 90%; max-width: 400px; flex-grow: 1; overflow-y: auto; padding-top: 10px;">
+                
+                <div class="mode-card">
+                    <span class="mode-title">🌐 オンライン対戦</span>
+                    <span class="mode-desc">世界中のパイロットとリアルタイム対戦！<br>（マッチング機能）</span>
+                    <button onclick="startBattle('online')" class="pixel-btn start-btn" style="font-size:16px; background:#e67e22; color:#fff;">対戦相手を探す</button>
+                </div>
+
+                <div class="mode-card">
+                    <span class="mode-title">🤖 CPU対戦</span>
+                    <span class="mode-desc">コンピュータと模擬戦を行う</span>
+                    <div class="cpu-levels">
+                        <button onclick="startBattle('cpu', 1)" class="lvl-btn">弱い</button>
+                        <button onclick="startBattle('cpu', 2)" class="lvl-btn">普通</button>
+                        <button onclick="startBattle('cpu', 3)" class="lvl-btn">強い</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <footer class="footer-area" style="margin-bottom: 20px;">
+                <div class="version">Ver 3.1.0</div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        function startBattle(mode, level = 1) {
+            // モードとレベルをURLパラメータで渡す
+            if(mode === 'online') {
+                window.location.href = "battle_main.html?mode=online";
+            } else {
+                window.location.href = `battle_main.html?mode=cpu&level=${level}`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.3;
+            bgm.play().catch(() => {});
+            document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
+        });
+    </script>
+</body>
+</html>

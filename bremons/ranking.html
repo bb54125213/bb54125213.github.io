@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <audio id="bgm" src="./bgm/GuideToAdventure.mp3" loop autoplay></audio>
     <div class="game-container">
         <div class="scrolling-bg"></div>
         <div class="floating-layer" id="floatingLayer"></div>
@@ -181,6 +182,14 @@
             const container = document.getElementById('floatingLayer');
             // ... (index.htmlと同様のロジックがあればここに追加)
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.3;
+            bgm.play().catch(() => {});
+            document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
+        });
+
     </script>
 </body>
 </html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BATTLE - BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* --- バトル画面専用スタイル --- */
+        .battle-ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        /* ヘッダー（相手情報） */
+        .battle-header {
+            background: rgba(20, 0, 0, 0.8);
+            border-bottom: 2px solid #e74c3c;
+            padding: 10px;
+            color: #fff;
+            display: flex; justify-content: space-between; align-items: center;
+            pointer-events: auto;
+        }
+        .opponent-info { text-align: left; }
+        .opponent-name { font-size: 18px; color: #e74c3c; font-weight: bold; }
+        
+        /* ライフゲージ共通 */
+        .life-container { display: flex; gap: 5px; margin-top: 5px; }
+        .life-heart { font-size: 20px; color: #555; transition: color 0.2s; }
+        .life-heart.active { color: #e74c3c; text-shadow: 0 0 5px #e74c3c; } /* 敵は赤 */
+        .my-life .life-heart.active { color: #2ecc71; text-shadow: 0 0 5px #2ecc71; } /* 自分は緑 */
+
+        /* フッター（自分情報・操作パネル） */
+        .battle-footer {
+            background: rgba(0, 20, 0, 0.8);
+            border-top: 2px solid #2ecc71;
+            padding: 10px;
+            color: #fff;
+            pointer-events: auto;
+        }
+        .my-info { display: flex; justify-content: space-between; align-items: end; margin-bottom: 10px; }
+        .my-name { font-size: 18px; color: #2ecc71; font-weight: bold; }
+
+        /* チャージメーター */
+        .charge-meter-box {
+            width: 100%; height: 12px; background: #333; border: 1px solid #fff;
+            margin-bottom: 10px; position: relative;
+        }
+        .charge-fill { height: 100%; width: 0%; background: #f1c40f; transition: width 0.1s linear; }
+        .charge-label { 
+            position: absolute; top: -18px; right: 0; font-size: 12px; color: #f1c40f; 
+        }
+
+        /* 技アイコン・クールタイム表示 */
+        .skill-panel { display: flex; justify-content: center; gap: 20px; }
+        .skill-box {
+            width: 60px; height: 60px; border: 2px solid #555; border-radius: 8px;
+            background: rgba(0,0,0,0.5); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
+        }
+        .skill-icon { width: 32px; height: 32px; image-rendering: pixelated; }
+        .skill-name { font-size: 10px; margin-top: 2px; }
+        .skill-key { 
+            position: absolute; top: -8px; left: -8px; background: #fff; color: #000;
+            font-size: 10px; padding: 2px 4px; border-radius: 4px; font-weight: bold;
+        }
+        
+        /* クールタイムオーバーレイ */
+        .cooldown-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff; font-weight: bold;
+            opacity: 0; transition: opacity 0.1s;
+        }
+        .on-cooldown .cooldown-overlay { opacity: 1; }
+
+        /* バトルフィールド（宇宙空間） */
+        .battle-field {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; overflow: hidden;
+        }
+        
+        /* 宇宙船（サイズ拡大版） */
+        .ship {
+            position: absolute; width: 100px; height: 130px; 
+            left: 50%; transform: translateX(-50%);
+            transition: filter 0.1s;
+        }
+        .ship img { width: 100%; height: 100%; }
+        
+        /* 敵船（赤色フィルター） */
+        .enemy-ship { 
+            top: 60px; 
+            transform: translateX(-50%) rotate(180deg); 
+        }
+        .enemy-ship img {
+            filter: hue-rotate(150deg) brightness(0.9);
+        }
+
+        .my-ship { bottom: 160px; } 
+
+        /* 被弾エフェクト */
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0% { transform: translateX(-50%) translate(0, 0); }
+            25% { transform: translateX(-50%) translate(5px, 5px); }
+            50% { transform: translateX(-50%) translate(-5px, -5px); }
+            75% { transform: translateX(-50%) translate(5px, -5px); }
+            100% { transform: translateX(-50%) translate(0, 0); }
+        }
+
+        /* 弾（スター・サイズ拡大版） */
+        .bullet {
+            position: absolute; width: 60px; height: 60px;
+            image-rendering: pixelated; z-index: 6;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
+        }
+        
+        /* カウントダウン演出 */
+        .countdown-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 50;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #countdownText {
+            font-size: 120px; color: #f1c40f; font-weight: bold;
+            text-shadow: 4px 4px 0 #e74c3c;
+            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            60% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 勝利・敗北モーダル */
+        .battle-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .result-title { font-size: 48px; margin-bottom: 20px; font-weight: bold; }
+        .win { color: #f1c40f; text-shadow: 0 0 10px #f1c40f; }
+        .lose { color: #34495e; text-shadow: 0 0 10px #fff; }
+        
+    </style>
+</head>
+<body>
+    <audio id="bgm" src="./bgm/GuideToAdventure.mp3" loop></audio>
+
+    <div class="game-container">
+        <div class="scrolling-bg"></div>
+        <div class="floating-layer"></div>
+
+        <div class="battle-field" id="battleField">
+            <div class="ship enemy-ship" id="enemyShip">
+                <img src="./nightgame/rocket.png">
+            </div>
+            <div class="ship my-ship" id="myShip">
+                <img src="./nightgame/rocket.png">
+            </div>
+        </div>
+
+        <div class="battle-ui-layer">
+            <div class="battle-header">
+                <div class="opponent-info">
+                    <div class="opponent-name" id="enemyName">CPU (Lv.1)</div>
+                    <div class="life-container enemy-life" id="enemyLifeBar">
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                    </div>
+                </div>
+                <button onclick="surrender()" class="pixel-btn" style="padding:5px 10px; font-size:12px;">降参</button>
+            </div>
+
+            <div class="battle-footer">
+                <div class="my-info">
+                    <div class="my-name">YOU</div>
+                    <div class="life-container my-life" id="myLifeBar">
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                        <span class="life-heart active">♥</span>
+                    </div>
+                </div>
+
+                <div class="charge-meter-box">
+                    <div class="charge-fill" id="chargeBar"></div>
+                    <span class="charge-label" id="chargeText">0.0s</span>
+                </div>
+
+                <div class="skill-panel">
+                    <div class="skill-box" id="skillStar">
+                        <span class="skill-key">ふ〜</span>
+                        <img src="./nightgame/star.png" class="skill-icon">
+                        <span class="skill-name">ショット</span>
+                        <div class="cooldown-overlay"></div>
+                    </div>
+                    <div class="skill-box" id="skillBlue">
+                        <span class="skill-key">2秒</span>
+                        <img src="./nightgame/bluestar.png" class="skill-icon">
+                        <span class="skill-name">パワー</span>
+                        <div class="cooldown-overlay"></div>
+                    </div>
+                    <div class="skill-box" id="skillHa">
+                        <span class="skill-key">はっ</span>
+                        <span style="font-size:20px;">🛡️</span>
+                        <span class="skill-name">ガード</span>
+                        <div class="cooldown-overlay"></div>
+                    </div>
+                    <div class="skill-box" id="skillPa">
+                        <span class="skill-key">ぱっ</span>
+                        <span style="font-size:20px;">🛡️</span>
+                        <span class="skill-name">バリア</span>
+                        <div class="cooldown-overlay"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="countdownOverlay" class="countdown-layer hidden">
+            <div id="countdownText">3</div>
+        </div>
+
+        <div id="resultModal" class="battle-modal hidden">
+            <div class="result-title" id="resultTitle">WIN!</div>
+            <button onclick="location.href='battle_select.html'" class="pixel-btn start-btn">戻る</button>
+        </div>
+    </div>
+
+    <script src="battle_script.js"></script>
+    <script>
+        // BGM自動再生
+        document.body.addEventListener('click', function() {
+            var bgm = document.getElementById('bgm');
+            if(bgm.paused) bgm.play();
+        }, { once: true });
+
+        function surrender() {
+            if(confirm("降参しますか？（負けになります）")) {
+                location.href = 'battle_select.html';
+            }
+        }
+    </script>
+</body>
+</html>

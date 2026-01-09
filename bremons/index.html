@@ -25,6 +25,7 @@
             <div id="loginArea" class="menu-list">
                 <p>パイロット認証が必要です</p>
                 <button id="loginBtn" class="pixel-btn start-btn">Googleでログイン</button>
+                <button id="guestLoginBtn" class="pixel-btn" style="margin-top:10px; background:#e67e22;">ゲストで始める</button>
             </div>
 
             <nav id="menuArea" class="menu-list hidden">
@@ -54,7 +55,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, signInAnonymously, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, writeBatch, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -75,11 +76,20 @@
         const loginArea = document.getElementById('loginArea');
         const menuArea = document.getElementById('menuArea');
         const loginBtn = document.getElementById('loginBtn');
+        const guestLoginBtn = document.getElementById('guestLoginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         const userNameSpan = document.getElementById('userName');
 
         loginBtn.addEventListener('click', () => {
             signInWithPopup(auth, provider).catch((error) => alert("ログイン失敗: " + error.message));
+        });
+
+        guestLoginBtn.addEventListener('click', () => {
+            signInAnonymously(auth)
+                .catch((error) => {
+                    console.error("ゲストログイン失敗:", error);
+                    alert("ゲストログインに失敗しました");
+                });
         });
 
         logoutBtn.addEventListener('click', () => { signOut(auth); });

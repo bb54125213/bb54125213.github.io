@@ -10,6 +10,7 @@
         body { 
             overflow: hidden; background: #000; touch-action: none;
             height: 100dvh; margin: 0; user-select: none;
+            font-family: 'DotGothic16', sans-serif;
         }
         
         .game-container { width: 100%; height: 100%; position: relative; overflow: hidden; }
@@ -34,11 +35,36 @@
         .player-damage { animation: damageFlash 0.5s infinite; }
         @keyframes damageFlash { 0% { opacity: 1; } 50% { opacity: 0.2; filter: hue-rotate(90deg); } 100% { opacity: 1; } }
 
+        /* プレイヤー頭上のUIコンテナ */
+        .player-hud {
+            position: absolute; bottom: 260px; left: 15%; width: 120px; height: 100px;
+            z-index: 100; pointer-events: none; display: flex; flex-direction: column; 
+            align-items: center; justify-content: flex-end;
+            transform: translateX(10px); /* 少し右に補正 */
+        }
+        
+        /* 頭上の呼吸ゲージ */
+        .breath-gauge-container {
+            width: 80px; height: 8px; background: #333; border: 1px solid #fff; border-radius: 4px; overflow: hidden; margin-bottom: 5px;
+        }
+        .breath-gauge-bar {
+            height: 100%; width: 0%; background: #2ecc71; transition: width 0.1s;
+        }
+
+        /* 頭上の「はっ！」「ぱっ！」 */
+        .voice-feedback {
+            font-size: 32px; color: #f1c40f; text-shadow: 2px 2px 0 #000; 
+            opacity: 0; transition: opacity 0.2s; margin-bottom: 5px; white-space: nowrap;
+        }
+
         .game-obj { position: absolute; z-index: 15; will-change: transform; image-rendering: pixelated; }
         .monster-obj { bottom: 135px; }
         .monster-anim { animation: monsterWalk 0.6s infinite alternate ease-in-out; }
         @keyframes monsterWalk { 0% { transform: translateY(0) scaleY(1); } 100% { transform: translateY(-10px) scaleY(0.95); } }
         .meteo-obj { width: 90px; top: -100px; }
+        
+        /* ゴールフラッグ */
+        .goal-obj { bottom: 130px; z-index: 18; image-rendering: pixelated; }
 
         .effect-text {
             position: absolute; font-size: 32px; font-weight: bold; 
@@ -57,12 +83,38 @@
         }
         .status-box {
             background: rgba(0,0,0,0.8); border: 2px solid #fff; padding: 8px 15px;
-            border-radius: 8px; color: #fff; font-size: 14px; min-width: 120px;
+            border-radius: 8px; color: #fff; font-size: 14px; min-width: 140px; text-align: right;
         }
-        .finish-btn {
+        
+        .pause-btn {
             background: #e74c3c; color: #fff; border: 2px solid #fff;
             padding: 8px 15px; font-size: 14px; cursor: pointer; border-radius: 5px;
             font-family: 'DotGothic16', sans-serif; white-space: nowrap;
+        }
+        .pause-btn:active { transform: translateY(2px); }
+
+        .difficulty-stars {
+            margin-bottom: 2px; display: flex; justify-content: flex-end; gap: 2px;
+        }
+        .difficulty-stars img { width: 16px; height: 16px; filter: drop-shadow(0 0 2px #fff); }
+
+        .life-container {
+            font-size: 16px; letter-spacing: 2px; color: #e74c3c; margin-bottom: 2px;
+        }
+
+        /* 距離ゲージを下に移動 */
+        .distance-panel {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            width: 90%; height: 16px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 10px;
+            overflow: hidden; pointer-events: none;
+        }
+        .distance-bar {
+            height: 100%; width: 0%; background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.1s linear;
+        }
+        .distance-label {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            color: #fff; text-shadow: 1px 1px 0 #000; font-size: 12px;
         }
 
         .map-panel {
@@ -88,22 +140,12 @@
         .dot-monster { background: #f1c40f; box-shadow: 0 0 5px #f1c40f; width: 8px; height: 8px; border-radius: 2px; }
         .dot-meteor { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; border: 1px solid #fff; }
 
-        .mic-indicator {
-            position: absolute; bottom: 20px; left: 10px; width: 200px; height: 10px; background: #333; border: 1px solid #fff;
-        }
-        .mic-bar { height: 100%; background: #2ecc71; width: 0%; }
-        .voice-feedback {
-            position: absolute; bottom: 40px; left: 10px; font-size: 24px; color: #f1c40f;
-            text-shadow: 2px 2px 0 #000; opacity: 0; transition: opacity 0.2s;
-        }
-
-        .start-overlay {
+        .overlay-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #fff; text-align: center;
         }
 
-        /* --- ★追加: ナビゲーション吹き出し --- */
         .navi-bubble {
             position: absolute; top: 140px; left: 20px; width: 220px;
             background: rgba(0, 0, 0, 0.85); border: 2px solid #3498db; border-radius: 8px;
@@ -124,6 +166,29 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
         }
+
+        .pixel-btn {
+            background: #3498db; color: #fff; border: 2px solid #fff;
+            padding: 12px 24px; font-size: 18px; cursor: pointer; border-radius: 5px;
+            font-family: 'DotGothic16', sans-serif; margin-top: 15px;
+            box-shadow: 0 4px 0 #2980b9;
+        }
+        .pixel-btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-retry { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; }
+        
+        .level-select-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;
+        }
+        .level-btn {
+            background: #222; border: 2px solid #fff; color: #fff;
+            padding: 10px; border-radius: 8px; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 120px; height: 80px; transition: background 0.2s;
+        }
+        .level-btn:hover { background: #444; }
+        .level-stars { margin-top: 5px; }
+        .level-stars img { width: 16px; height: 16px; margin: 0 1px; }
+
     </style>
 </head>
 <body>
@@ -134,10 +199,23 @@
             <div class="ground-layer" id="groundLayer"></div>
             <div id="decorLayer"></div>
             <img src="./nightgame/chara.png" class="player-char player-walking" id="player">
+            
+            <div class="player-hud">
+                <div class="voice-feedback" id="voiceFeedback"></div>
+                <div class="breath-gauge-container">
+                    <div class="breath-gauge-bar" id="micBar"></div>
+                </div>
+            </div>
+
             <div id="objContainer"></div>
         </div>
 
         <div class="hud-layer">
+            <div class="distance-label">GOALまで</div>
+            <div class="distance-panel">
+                <div class="distance-bar" id="distBar"></div>
+            </div>
+            
             <div class="map-panel" id="mapPanel">
                 <div class="map-grid"></div>
                 <div class="map-ground-line"></div>
@@ -151,27 +229,82 @@
 
             <div class="header-panel">
                 <div class="status-box">
-                    <div id="planetName">惑星 ???</div>
-                    <div style="margin-top:5px;">
-                        捕獲数: <span id="currentCount" style="color:#2ecc71; font-size:20px;">0</span> 匹
+                    <div class="difficulty-stars" id="diffStars">
+                        </div>
+                    <div class="life-container" id="lifeDisplay">❤❤❤</div>
+                    <div id="planetName" style="font-size:12px; opacity:0.8;">惑星 ???</div>
+                    <div style="margin-top:2px;">
+                        今回捕獲: <span id="sessionCount" style="color:#2ecc71; font-size:18px;">0</span> 匹
+                    </div>
+                    <div style="font-size:10px; color:#aaa;">(最大出現: <span id="maxSpawnCount">0</span>)</div>
+                </div>
+                <button class="pause-btn" onclick="togglePause()">一時中断</button>
+            </div>
+        </div>
+
+        <div class="overlay-screen" id="startOverlay">
+            <h2>探索ミッション準備</h2>
+            <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">
+                <span style="color:#f1c40f">「はっ！」</span>で捕獲 / <span style="color:#3c86e7">「ぱっ！」</span>で迎撃<br>
+                難易度を選んでください
+            </p>
+            
+            <div class="level-select-container">
+                <div class="level-btn" onclick="gameStart(1)">
+                    <div>LEVEL 1</div>
+                    <div class="level-stars">
+                        <img src="./nightgame/star.png">
                     </div>
                 </div>
-                <button class="finish-btn" onclick="finishExploration()">探索を終える</button>
+                <div class="level-btn" onclick="gameStart(2)">
+                    <div>LEVEL 2</div>
+                    <div class="level-stars">
+                        <img src="./nightgame/star.png"><img src="./nightgame/star.png">
+                    </div>
+                </div>
+                <div class="level-btn" onclick="gameStart(3)">
+                    <div>LEVEL 3</div>
+                    <div class="level-stars">
+                        <img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png">
+                    </div>
+                </div>
+                <div class="level-btn" onclick="gameStart(4)">
+                    <div>LEVEL 4</div>
+                    <div class="level-stars">
+                        <img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png">
+                    </div>
+                </div>
             </div>
-
-            <div class="voice-feedback" id="voiceFeedback">認識中...</div>
-            <div class="mic-indicator"><div class="mic-bar" id="micBar"></div></div>
         </div>
 
-        <div class="start-overlay" id="startOverlay">
-            <h2>探索ミッション開始</h2>
-            <p style="margin: 20px 0; line-height: 1.8;">
-                <span style="color:#f1c40f">「はっ！」</span>でモンスターを捕獲<br>
-                <span style="color:#3c86e7">「ぱっ！」</span>で隕石を迎撃<br>
-                隕石にぶつかるとモンスターが<span style="color:#e2796d">5体</span>逃げ出します...<br>
+        <div class="overlay-screen" id="pauseOverlay" style="display: none; background: rgba(0,0,0,0.6);">
+            <h2>一時中断中</h2>
+            <button class="pixel-btn" onclick="togglePause()">再開する</button>
+            <button class="pixel-btn" style="background:#555; font-size:14px;" onclick="location.href='stage_select.html'">探索を中止</button>
+        </div>
+
+        <div class="overlay-screen" id="gameOverOverlay" style="display: none;">
+            <h2 style="color:#e74c3c; font-size:40px;">GAME OVER</h2>
+            <p>
+                探索失敗...<br>
+                隕石に衝突してしまった。
             </p>
-            <button class="pixel-btn start-btn" onclick="gameStart()">START</button>
+            <button class="pixel-btn btn-retry" onclick="location.reload()">もう一度挑戦</button>
+            <br>
+            <button class="pixel-btn" style="font-size:14px; background:#555;" onclick="location.href='stage_select.html'">戻る</button>
         </div>
+
+        <div class="overlay-screen" id="gameClearOverlay" style="display: none;">
+            <h2 style="color:#2ecc71; font-size:40px;">MISSION CLEAR!</h2>
+            <p>
+                無事にゴール地点へ到達！<br>
+                <br>
+                今回の成果: <span id="resultSessionCount" style="font-size:24px; color:#f1c40f;">0</span> 匹<br>
+                総所持数: <span id="resultTotalCount" style="font-size:24px;">0</span> 匹
+            </p>
+            <button class="pixel-btn" id="saveBtn" onclick="finishExploration()">保存して戻る</button>
+        </div>
+
     </div>
 
     <script type="module">
@@ -199,13 +332,34 @@
             3: { name: "惑星プネウマ", monster: "Him", img: "./nightgame/yellow.png", id: "him", groundColor: "#DAA520" }
         };
 
+        const DIFFICULTY_RULES = {
+            1: { maxMonsters: 3,  totalMeteors: 2, spawnRate: 150 },
+            2: { maxMonsters: 5,  totalMeteors: 3, spawnRate: 120 },
+            3: { maxMonsters: 8,  totalMeteors: 5, spawnRate: 90 },
+            4: { maxMonsters: 10, totalMeteors: 8, spawnRate: 60 }
+        };
+
         const urlParams = new URLSearchParams(window.location.search);
         const pId = urlParams.get('planet') || 1;
+        
+        let currentLevel = 1;
         const currentData = PLANET_DATA[pId];
+        let currentRule = DIFFICULTY_RULES[currentLevel];
 
-        // 状態変数
-        let inventoryCount = 0;
+        document.getElementById('planetName').innerText = currentData.name;
+        
+        let inventoryOwned = 0;   
+        let sessionCaught = 0;    
+        
+        let monstersSpawnedTotal = 0; 
+        let meteorsSpawnedTotal = 0;  
+        let goalSpawned = false; // ゴールが出たかどうか
+        
+        let maxLives = 3;
+        let currentLives = 3;
+
         let isGameRunning = false;
+        let isPaused = false;
         let gameSpeed = 1.5; 
         let groundOffset = 0;
         let shakeTrauma = 0; 
@@ -214,36 +368,45 @@
         let decorObjects = [];
         let spawnTimer = 0;
         let decorTimer = 0;
-        let voiceTimer = 0;
-
-        let audioContext, analyser, dataArray;
-        const THOUSAND_INDEX = 24;
         
         let micConfig = {
             noiseThreshold: 0.05,
             haProfile: [0.096, 0.101, 0.044, 0.005, 0.005, 0.019, 0.030, 0.036, 0.038, 0.010, 0.001, 0.004, 0.018, 0.055, 0.069, 0.040, 0.023, 0.012, 0.027, 0.040, 0.029, 0.022, 0.009, 0.038],
             paProfile: [0.032, 0.041, 0.014, 0.022, 0.009, 0.017, 0.005, 0.022, 0.011, 0.010, 0.029, 0.092, 0.135, 0.139, 0.051, 0.013, 0.009, 0.012, 0.014, 0.014, 0.008, 0.009, 0.017, 0.007]
         };
+        let audioContext, analyser, dataArray;
+        const THOUSAND_INDEX = 24;
         let voiceCooldown = 0; 
 
-        // 初期化時にロード
         const savedConfig = localStorage.getItem('mic_config_v2');
         if(savedConfig) {
             try { micConfig = JSON.parse(savedConfig); } catch(e) {}
         }
-
-        document.getElementById('planetName').innerText = currentData.name;
         createGroundTexture(currentData.groundColor);
         
         const userRef = doc(db, "users", uid);
         getDoc(userRef).then(snap => {
             if(snap.exists() && snap.data().inventory) {
-                inventoryCount = snap.data().inventory[currentData.id] || 0;
+                inventoryOwned = snap.data().inventory[currentData.id] || 0;
                 updateCountDisplay();
             }
         });
 
-        window.gameStart = async function() {
+        window.gameStart = async function(selectedLevel) {
+            if(selectedLevel) {
+                currentLevel = selectedLevel;
+                currentRule = DIFFICULTY_RULES[currentLevel];
+            }
+            
+            document.getElementById('maxSpawnCount').innerText = currentRule.maxMonsters;
+            const starContainer = document.getElementById('diffStars');
+            starContainer.innerHTML = '';
+            for(let i=0; i<currentLevel; i++) {
+                const img = document.createElement('img');
+                img.src = './nightgame/star.png';
+                starContainer.appendChild(img);
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -258,29 +421,52 @@
             
             document.getElementById('startOverlay').style.display = 'none';
             isGameRunning = true;
-            
-            // ★ナビゲーション: 開始時
-            showNavi("まずはモンスターを探そう！<br>左上のレーダーに注目だ。");
-            
+            isPaused = false;
+            showNavi("ミッション開始！<br>ゴールを目指して進め！");
             requestAnimationFrame(gameLoop);
         };
 
-        function gameLoop() {
+        window.togglePause = function() {
             if(!isGameRunning) return;
+            isPaused = !isPaused;
+            if(isPaused) {
+                document.getElementById('pauseOverlay').style.display = 'flex';
+            } else {
+                document.getElementById('pauseOverlay').style.display = 'none';
+                requestAnimationFrame(gameLoop);
+            }
+        };
+
+        function gameLoop() {
+            if(!isGameRunning || isPaused) return;
 
             groundOffset -= gameSpeed;
             if(groundOffset <= -128) groundOffset = 0; 
             document.getElementById('groundLayer').style.backgroundPosition = `${groundOffset}px bottom`;
 
-            if(analyser) {
-                processVoice();
-            }
+            // 進捗バーの更新（出現数ベース）
+            updateProgressUI();
+
+            if(analyser) processVoice();
+
+            // ゴール出現チェック
+            checkGoalSpawn();
 
             spawnTimer++;
-            if(spawnTimer > 180) { 
-                if(Math.random() < 0.8) spawnMonster();
-                else spawnMeteor();
-                spawnTimer = Math.floor(Math.random() * 60); 
+            if(spawnTimer > currentRule.spawnRate && !goalSpawned) { 
+                const canSpawnMonster = monstersSpawnedTotal < currentRule.maxMonsters;
+                const canSpawnMeteor = meteorsSpawnedTotal < currentRule.totalMeteors;
+                
+                if (canSpawnMonster && canSpawnMeteor) {
+                    if (Math.random() < 0.5) spawnMonster();
+                    else spawnMeteor();
+                } else if (canSpawnMonster) {
+                    spawnMonster();
+                } else if (canSpawnMeteor) {
+                    spawnMeteor();
+                }
+                
+                spawnTimer = 0; 
             }
 
             decorTimer++;
@@ -293,61 +479,90 @@
             updateDecor();
             updateMapUI(); 
             updateShakeEffect(); 
-
-            // ★ナビゲーション: 状況に応じた更新
             updateNavi();
 
             requestAnimationFrame(gameLoop);
         }
 
-        // --- ナビゲーション管理 ---
+        function updateProgressUI() {
+            const totalTarget = currentRule.maxMonsters + currentRule.totalMeteors;
+            const currentTotal = monstersSpawnedTotal + meteorsSpawnedTotal;
+            const progress = Math.min(100, (currentTotal / totalTarget) * 100);
+            document.getElementById('distBar').style.width = `${progress}%`;
+        }
+
+        // ゴール出現ロジック
+        function checkGoalSpawn() {
+            if (goalSpawned) return;
+            
+            // 全て出し切ったか？
+            const allSpawned = (monstersSpawnedTotal >= currentRule.maxMonsters) && 
+                               (meteorsSpawnedTotal >= currentRule.totalMeteors);
+            
+            if (allSpawned) {
+                // 少し待ってからゴール旗を出す（即座だと重なる可能性があるため）
+                if (spawnTimer > 100) {
+                    spawnGoalFlag();
+                    goalSpawned = true;
+                    showNavi("前方にゴールを発見！<br>タッチしてクリアせよ！");
+                }
+            }
+        }
+
+        // ゴール旗の生成
+        function spawnGoalFlag() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // 旗のポール
+            ctx.fillStyle = '#aaa';
+            ctx.fillRect(5, 10, 5, 118);
+            // 旗部分（チェッカー）
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(10, 10, 50, 40);
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(10, 10, 25, 20);
+            ctx.fillRect(35, 30, 25, 20);
+
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL();
+            img.className = 'game-obj goal-obj';
+            img.style.width = '60px';
+            document.getElementById('objContainer').appendChild(img);
+            
+            gameObjects.push({ el: img, type: 'goal', x: window.innerWidth + 50, y: 0, alive: true });
+        }
+
         let naviTimer = 0;
         let lastNaviType = null;
-
         function showNavi(html) {
             const bubble = document.getElementById('naviBubble');
             const text = document.getElementById('naviText');
             text.innerHTML = html;
             bubble.classList.add('show');
-            naviTimer = 300; // 5秒くらい表示
+            naviTimer = 300; 
         }
 
         function updateNavi() {
             if(naviTimer > 0) {
                 naviTimer--;
-                if(naviTimer <= 0) {
-                    document.getElementById('naviBubble').classList.remove('show');
-                }
+                if(naviTimer <= 0) document.getElementById('naviBubble').classList.remove('show');
             }
-
-            // イベント発生時の割り込みナビ
             const playerX = window.innerWidth * 0.15;
-            
-            // 近くにモンスターがいる
             const nearMonster = gameObjects.find(o => o.type === 'monster' && o.alive && o.x > playerX && o.x < playerX + 300);
             if (nearMonster && lastNaviType !== 'monster') {
                 showNavi("チャンス！<br><strong>「はっ！」</strong>と言って捕獲しよう！");
                 lastNaviType = 'monster';
                 return;
             }
-
-            // 近くに隕石がいる
             const nearMeteor = gameObjects.find(o => o.type === 'meteor' && o.alive && o.x > playerX - 100 && o.x < playerX + 500);
             if (nearMeteor && lastNaviType !== 'meteor') {
                 showNavi("危険！<br><strong>「ぱっ！」</strong>と言って迎撃しよう！");
                 lastNaviType = 'meteor';
                 return;
             }
-
-            // 何もないときはリセット
             if (!nearMonster && !nearMeteor) lastNaviType = null;
-            
-            // 一定数たまったら帰還を促す (例: 10匹増えるたびに)
-            if (inventoryCount > 0 && inventoryCount % 5 === 0 && naviTimer <= 0) {
-                if (Math.random() < 0.01) { // 頻度調整
-                    showNavi(`現在 ${inventoryCount}匹 確保中。<br>そろそろ帰還してもいい頃かも。`);
-                }
-            }
         }
 
         function processVoice() {
@@ -356,7 +571,6 @@
                 return;
             }
             analyser.getByteFrequencyData(dataArray);
-            
             let sum = 0;
             for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
             let average = sum / dataArray.length;
@@ -367,18 +581,15 @@
                 const val = dataArray[i] / 255.0;
                 if(val > max_amplitude) max_amplitude = val;
             }
-
             if(max_amplitude < micConfig.noiseThreshold) return;
 
             let haDist = 0;
             let paDist = 0;
-
             for(let i=0; i<THOUSAND_INDEX; i++) {
                 const val = dataArray[i] / 255.0;
                 haDist += Math.pow(micConfig.haProfile[i] - val, 2);
                 paDist += Math.pow(micConfig.paProfile[i] - val, 2);
             }
-
             const haScore = 1 / (1 + Math.sqrt(haDist));
             const paScore = 1 / (1 + Math.sqrt(paDist));
 
@@ -394,13 +605,14 @@
         }
 
         function triggerAction(type) {
+            if(isPaused) return;
+
             const feedback = document.getElementById('voiceFeedback');
             feedback.innerText = type + "！";
             feedback.style.opacity = 1;
             setTimeout(() => feedback.style.opacity = 0, 500);
 
             const playerX = window.innerWidth * 0.15; 
-            
             if(type === "はっ") {
                 const targets = gameObjects.filter(o => o.type === 'monster' && o.alive && o.x > playerX && o.x < playerX + 400);
                 if(targets.length > 0) captureMonster(targets[0]);
@@ -414,7 +626,6 @@
             const canvas = document.createElement('canvas');
             canvas.width = 32; canvas.height = 32;
             const ctx = canvas.getContext('2d');
-            
             if(Math.random() < 0.5) {
                 ctx.fillStyle = '#2ecc71';
                 ctx.fillRect(12, 10, 8, 22); ctx.fillRect(4, 14, 8, 4);   
@@ -433,6 +644,7 @@
         }
 
         function spawnMonster() {
+            monstersSpawnedTotal++; 
             const el = document.createElement('img');
             el.src = currentData.img;
             el.className = 'game-obj monster-obj monster-anim';
@@ -445,6 +657,7 @@
         }
 
         function spawnMeteor() {
+            meteorsSpawnedTotal++; 
             const el = document.createElement('img');
             el.src = './nightgame/meteo.png';
             el.className = 'game-obj meteo-obj';
@@ -504,6 +717,13 @@
                         playerHit(obj);
                     }
                     if(obj.y > window.innerHeight) removeObject(obj);
+                } else if(obj.type === 'goal') {
+                    // ゴールの動きと判定
+                    obj.x -= gameSpeed;
+                    obj.el.style.left = obj.x + 'px';
+                    if(obj.x < playerX + 80 && obj.x > playerX - 50) {
+                        gameClear();
+                    }
                 }
             });
         }
@@ -520,6 +740,9 @@
 
             gameObjects.forEach(obj => {
                 if(!obj.alive) return;
+                // ゴールはマップには出さない
+                if(obj.type === 'goal') return;
+
                 const dx = obj.x - playerX;
                 if(dx > -100 && dx < range) {
                     const dot = document.createElement('div');
@@ -558,7 +781,7 @@
             ], { duration: 400, easing: 'ease-in', fill: 'forwards' });
 
             setTimeout(() => removeObject(obj), 400);
-            inventoryCount++;
+            sessionCaught++;
             updateCountDisplay();
             showEffect("GET!", "#f1c40f", pRect.left, pRect.top - 50);
         }
@@ -587,12 +810,26 @@
             obj.alive = false;
             removeObject(obj);
             shakeTrauma = 1.0; 
-            inventoryCount = Math.max(0, inventoryCount - 5);
-            updateCountDisplay();
+            currentLives--;
+            updateLifeDisplay();
+
             const p = document.getElementById('player');
             p.classList.add('player-damage');
             setTimeout(() => p.classList.remove('player-damage'), 1000);
-            showEffect("-5...", "#ff0000", window.innerWidth * 0.15, window.innerHeight - 200);
+            showEffect("OUCH!", "#ff0000", window.innerWidth * 0.15, window.innerHeight - 200);
+
+            if(currentLives <= 0) {
+                gameOver();
+            }
+        }
+
+        function updateLifeDisplay() {
+            let hearts = "";
+            for(let i=0; i<3; i++) {
+                if(i < currentLives) hearts += "❤";
+                else hearts += "<span style='color:#555'>❤</span>";
+            }
+            document.getElementById('lifeDisplay').innerHTML = hearts;
         }
 
         function removeObject(obj) {
@@ -601,7 +838,7 @@
         }
 
         function updateCountDisplay() {
-            document.getElementById('currentCount').innerText = inventoryCount;
+            document.getElementById('sessionCount').innerText = sessionCaught;
         }
 
         function showEffect(text, color, x, y) {
@@ -667,14 +904,26 @@
             }
         }
 
-        window.finishExploration = async function() {
+        function gameOver() {
             isGameRunning = false;
+            document.getElementById('gameOverOverlay').style.display = 'flex';
+        }
+
+        function gameClear() {
+            isGameRunning = false;
+            document.getElementById('resultSessionCount').innerText = sessionCaught;
+            document.getElementById('resultTotalCount').innerText = inventoryOwned + sessionCaught;
+            document.getElementById('gameClearOverlay').style.display = 'flex';
+        }
+
+        window.finishExploration = async function() {
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = "保存中...";
+            btn.disabled = true;
+
             const saveObj = { inventory: {} };
-            saveObj.inventory[currentData.id] = inventoryCount;
+            saveObj.inventory[currentData.id] = inventoryOwned + sessionCaught;
             try {
-                const btn = document.querySelector('.finish-btn');
-                btn.innerText = "保存中...";
-                btn.disabled = true;
                 await setDoc(userRef, saveObj, { merge: true });
                 window.location.href = "stage_select.html";
             } catch(e) {

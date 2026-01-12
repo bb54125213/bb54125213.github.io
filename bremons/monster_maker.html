@@ -178,7 +178,7 @@
         </div>
     </div>
 
-    <script>
+<script>
         // パステルカラーパレット
         const SCALE_COLORS = [
             { name: "C",  hex: "#FF9AA2", eye: "#C85A62" }, { name: "C#", hex: "#FFB7B2", eye: "#D67C77" },
@@ -458,12 +458,18 @@
         function loadFromInput() {
             const val = seedInput.value.trim().toUpperCase();
             if(/^BM-[0-9A-F]{4}-[0-9A-F]{4}$/.test(val)) {
-                const raw = val.replace(/[^0-9A-F]/g, '');
+                // 【修正】以前のRegex置換では "BM" の "B" (Hex:11) が残ってしまい、桁ズレを起こしていた
+                // ここで確実にハイフンで区切り、数値部分だけを抽出する
+                const parts = val.split('-'); // ["BM", "XXXX", "XXXX"]
+                const raw = parts[1] + parts[2];
+
                 const p1 = parseInt(raw.substring(0,2), 16);
                 const p2 = parseInt(raw.substring(2,4), 16);
                 const p3 = parseInt(raw.substring(4,6), 16);
                 const p4 = parseInt(raw.substring(6,8), 16);
+                
                 drawMonster(p1, p2, p3, p4);
+                
                 percentDisplay.innerText = "復元完了";
                 statusMsg.innerText = "データ整合性確認OK";
                 saveBtn.style.display = 'block';

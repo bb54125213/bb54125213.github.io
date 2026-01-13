@@ -24,19 +24,16 @@
             display: flex; flex-direction: column;
         }
 
-        /* 背景: JSでアニメーション設定を直接書き換えます */
+        /* 背景 */
         .scrolling-bg {
             position: absolute; top: -50%; left: 0; width: 100%; height: 200%;
             background-image: url('./nightgame/background2.png');
             background-size: cover; background-repeat: repeat-y;
             z-index: 0;
-            /* 初期状態 */
             animation: scrollSpace 60s linear infinite;
             filter: contrast(1.1) brightness(0.8);
-            /* 色の変化を瞬時に行うためtransitionは設定しない */
         }
         @keyframes scrollSpace { from { transform: translateY(0); } to { transform: translateY(50%); } }
-        @keyframes scrollSpaceRev { from { transform: translateY(50%); } to { transform: translateY(0); } }
 
         /* UIレイヤー */
         .ui-layer {
@@ -47,7 +44,6 @@
             background: rgba(0, 0, 0, 0.4);
         }
 
-        /* ヘッダー */
         .back-link {
             position: absolute; top: 15px; left: 15px;
             font-size: 14px; text-decoration: none; color: #fff;
@@ -63,16 +59,12 @@
             filter: drop-shadow(4px 4px 0px rgba(255, 255, 255, 0.2));
             animation: title-glitch 5s infinite;
         }
-        /* ロゴのグリッチは維持 */
         @keyframes title-glitch {
             0%, 95% { transform: skew(0deg); }
-            96% { transform: skew(10deg); filter: drop-shadow(-4px 0px 0px rgba(255, 0, 0, 0.8)); }
-            97% { transform: skew(-10deg); filter: drop-shadow(4px 0px 0px rgba(0, 255, 255, 0.8)); }
-            98% { transform: skew(0deg); }
+            96% { transform: skew(10deg); } 97% { transform: skew(-10deg); } 98% { transform: skew(0deg); }
         }
         .subtitle { font-size: 14px; color: #fff; margin-top: 5px; letter-spacing: 5px; opacity: 0.8; }
 
-        /* コード入力エリア */
         .seed-box {
             background: rgba(20, 20, 20, 0.9);
             border: 2px solid #8e44ad; border-radius: 8px;
@@ -82,63 +74,79 @@
         }
         .seed-input {
             flex: 1; background: #000; border: 1px solid #555;
-            color: #fff; font-family: inherit; font-size: 16px;
-            padding: 4px; text-align: center; outline: none;
+            color: #0f0; font-family: inherit; font-size: 16px;
+            padding: 4px; text-align: center; outline: none; letter-spacing: 1px;
         }
-        .icon-btn {
+        .icon-btn, .restore-btn {
             background: #333; color: #fff; border: 1px solid #fff; cursor: pointer;
             padding: 5px 10px; font-size: 14px; border-radius: 4px;
         }
-        .restore-btn {
-            background: #8e44ad; color: #fff; border: 1px solid #fff;
-            cursor: pointer; padding: 0 10px; font-weight: bold; border-radius: 4px;
-        }
+        .restore-btn { background: #8e44ad; }
 
-        /* ボタンエリア (中央上部) */
         .menu-area { width: 85%; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         
         .pixel-btn {
             font-family: 'DotGothic16', sans-serif; font-size: 18px;
             padding: 15px; width: 100%;
-            background-color: #8e44ad; /* 紫 */
-            color: #fff;
+            background-color: #8e44ad; color: #fff;
             border: 2px solid #fff; border-radius: 4px;
             cursor: pointer; text-align: center;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
             position: relative;
             clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
         }
-        .pixel-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.5); }
-        
-        /* 壊れたアニメーション (保存ボタンにも適用) */
         .broken-anim { animation: glitch-clip 2.5s infinite steps(1); }
         @keyframes glitch-clip {
             0%, 89% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translate(0,0); }
-            90% { clip-path: polygon(0 0, 80% 0, 80% 100%, 0 100%); transform: translate(-2px, 1px); } /* 右欠け */
-            92% { clip-path: polygon(5% 0, 100% 0, 100% 100%, 5% 100%); transform: translate(2px, -1px); } /* 左欠け */
-            94% { clip-path: polygon(0 10%, 100% 0, 95% 100%, 0% 90%); transform: skewX(5deg); } /* 歪み */
-            96% { clip-path: polygon(0 0, 100% 0, 100% 40%, 0 40%, 0 60%, 100% 60%, 100% 100%, 0 100%); } /* 分割 */
+            90% { clip-path: polygon(0 0, 80% 0, 80% 100%, 0 100%); transform: translate(-2px, 1px); }
+            92% { clip-path: polygon(5% 0, 100% 0, 100% 100%, 5% 100%); transform: translate(2px, -1px); }
             98% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translate(0,0); }
         }
+        .save-btn { background-color: #3498db; display: none; }
 
-        .save-btn { background-color: #3498db; border-color: #fff; display: none; }
-
-        /* モンスターカプセル */
-        .monster-capsule {
-            width: 200px; height: 200px;
-            border: 4px solid #fff; border-radius: 16px;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: inset 0 0 20px rgba(255,255,255,0.2);
-            position: relative;
-            margin-bottom: 5px;
+        /* --- スロットマシンエリア (回転アニメーション削除) --- */
+        .slot-machine-area {
+            width: 90%;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            padding: 5px;
+            box-shadow: inset 0 0 10px rgba(142, 68, 173, 0.5);
         }
-        canvas { image-rendering: pixelated; width: 100%; height: 100%; z-index: 5; }
+        .slot-drum {
+            width: 30%;
+            text-align: center;
+            border: 1px solid #555;
+            background: #222;
+            padding: 5px 0;
+            display: flex; flex-direction: column;
+        }
+        .slot-label { font-size: 12px; color: #aaa; margin-bottom: 2px; }
+        .slot-value { 
+            font-size: 16px; color: #fff; font-weight: bold; 
+            height: 20px; overflow: hidden; white-space: nowrap;
+        }
 
+        /* モンスターカプセルエリア */
+        .monster-capsule {
+            width: 220px; height: 220px;
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.1);
+            position: relative;
+            margin-bottom: 5px; overflow: hidden;
+        }
+        #waveCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0.6; }
+        #monCanvas { image-rendering: pixelated; width: 200px; height: 200px; z-index: 5; position: relative; }
+
+        /* ステータス表示 */
         .status-text { font-size: 32px; color: #f1c40f; text-shadow: 2px 2px 0 #000; margin-top: 10px; }
-        .sub-text { font-size: 14px; color: #ccc; }
+        .sub-text { font-size: 12px; color: #0f0; text-shadow: 0 0 5px rgba(0,255,0,0.5); letter-spacing: 1px; }
         
-        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -155,88 +163,101 @@
             </div>
 
             <div class="seed-box">
-                <input type="text" id="seedInput" class="seed-input" placeholder="BM-XXXX-XXXX">
+                <input type="text" id="seedInput" class="seed-input" placeholder="コード入力待機中...">
                 <button class="icon-btn" onclick="copySeed()">コピー</button>
                 <button class="restore-btn" onclick="loadFromInput()">復元</button>
             </div>
 
             <div class="menu-area">
                 <button id="recordBtn" class="pixel-btn broken-anim" onclick="startSequence()">
-                    音で生成する (5秒)
+                    音声データ解析 (5秒)
                 </button>
                 <button id="saveBtn" class="pixel-btn save-btn broken-anim" onclick="saveImage()">
                     画像を保存する
                 </button>
             </div>
 
+            <div class="slot-machine-area" id="slotMachine">
+                <div class="slot-drum">
+                    <span class="slot-label">色彩</span>
+                    <div class="slot-value" id="slotColor">---</div>
+                </div>
+                <div class="slot-drum">
+                    <span class="slot-label">形状</span>
+                    <div class="slot-value" id="slotForm">---</div>
+                </div>
+                <div class="slot-drum">
+                    <span class="slot-label">構成</span>
+                    <div class="slot-value" id="slotParts">---</div>
+                </div>
+            </div>
+
             <div class="monster-capsule">
+                <canvas id="waveCanvas" width="220" height="220"></canvas>
                 <canvas id="monCanvas" width="20" height="20"></canvas>
             </div>
 
-            <div class="status-text" id="percentDisplay">0%</div>
-            <div class="sub-text" id="statusMsg">音声入力待機中...</div>
+            <div class="status-text" id="percentDisplay">準備完了</div>
+            <div class="sub-text" id="statusMsg">システムオンライン</div>
         </div>
     </div>
 
-<script>
+    <script>
         // パステルカラーパレット
         const SCALE_COLORS = [
-            { name: "C",  hex: "#FF9AA2", eye: "#C85A62" }, { name: "C#", hex: "#FFB7B2", eye: "#D67C77" },
-            { name: "D",  hex: "#FFDAC1", eye: "#D4A88F" }, { name: "D#", hex: "#FFE6A7", eye: "#C9B475" },
-            { name: "E",  hex: "#FFF5BA", eye: "#C4BD87" }, { name: "F",  hex: "#C1E1C1", eye: "#8FAB8F" },
-            { name: "F#", hex: "#B2E0E6", eye: "#81ADB3" }, { name: "G",  hex: "#AEEEEE", eye: "#7FBDBD" },
-            { name: "G#", hex: "#ADD8E6", eye: "#7FA8B6" }, { name: "A",  hex: "#B4C6E7", eye: "#8396B7" },
-            { name: "A#", hex: "#C3B1E1", eye: "#917FB1" }, { name: "B",  hex: "#E6B0AA", eye: "#B37D77" }
+            { name: "C", jpn:"赤系", hex: "#FF9AA2", eye: "#C85A62" }, { name: "C#", jpn:"朱系", hex: "#FFB7B2", eye: "#D67C77" },
+            { name: "D", jpn:"橙系", hex: "#FFDAC1", eye: "#D4A88F" }, { name: "D#", jpn:"黄系", hex: "#FFE6A7", eye: "#C9B475" },
+            { name: "E", jpn:"淡黄系", hex: "#FFF5BA", eye: "#C4BD87" }, { name: "F", jpn:"緑系", hex: "#C1E1C1", eye: "#8FAB8F" },
+            { name: "F#", jpn:"青緑系", hex: "#B2E0E6", eye: "#81ADB3" }, { name: "G", jpn:"水系", hex: "#AEEEEE", eye: "#7FBDBD" },
+            { name: "G#", jpn:"空系", hex: "#ADD8E6", eye: "#7FA8B6" }, { name: "A", jpn:"青系", hex: "#B4C6E7", eye: "#8396B7" },
+            { name: "A#", jpn:"紫系", hex: "#C3B1E1", eye: "#917FB1" }, { name: "B", jpn:"桃系", hex: "#E6B0AA", eye: "#B37D77" }
         ];
+        
+        // ★修正: 不快感のないSF的名称に変更
+        const FORM_NAMES = ["バランス型", "高機動型", "重装甲型", "超小型", "ギガント型"];
+        const PARTS_NAMES = ["タイプα", "タイプβ", "タイプγ", "タイプδ"];
 
-        let audioContext, analyser, dataArray;
+
+        let audioContext, analyser, dataArray, waveDataArray;
         let isProcessing = false;
         let glitchAudioCtx = null, glitchGain = null;
 
         const canvas = document.getElementById('monCanvas');
         const ctx = canvas.getContext('2d');
+        const waveCanvas = document.getElementById('waveCanvas');
+        const waveCtx = waveCanvas.getContext('2d');
+
         const percentDisplay = document.getElementById('percentDisplay');
         const statusMsg = document.getElementById('statusMsg');
         const recordBtn = document.getElementById('recordBtn');
         const saveBtn = document.getElementById('saveBtn');
         const seedInput = document.getElementById('seedInput');
         const bgLayer = document.getElementById('bgLayer');
+        
+        // スロット要素
+        const slotMachine = document.getElementById('slotMachine');
+        const slotColor = document.getElementById('slotColor');
+        const slotForm = document.getElementById('slotForm');
+        const slotParts = document.getElementById('slotParts');
 
-        // --- 背景制御: 動きと色の急変 ---
+        // --- 背景グリッチ制御 ---
         function glitchBackground() {
-            const nextTime = Math.random() * 2000 + 1000; // 1~3秒ごとに変化
-            
-            // 1. 動きの急変 (通常 / 逆走 / 爆速 / 停止)
+            const nextTime = Math.random() * 2000 + 1000;
             const rMove = Math.random();
             if(rMove < 0.1) {
-                bgLayer.style.animationDirection = 'reverse';
-                bgLayer.style.animationDuration = '2s'; // 爆速逆走
+                bgLayer.style.animationDirection = 'reverse'; bgLayer.style.animationDuration = '2s';
             } else if(rMove < 0.2) {
-                bgLayer.style.animationPlayState = 'paused'; // 急停止
+                bgLayer.style.animationPlayState = 'paused';
             } else if(rMove < 0.3) {
-                bgLayer.style.animationDuration = '0.5s'; // 超高速
+                bgLayer.style.animationDuration = '0.5s';
             } else {
-                bgLayer.style.animationDirection = 'normal';
-                bgLayer.style.animationPlayState = 'running';
-                bgLayer.style.animationDuration = '60s'; // 通常
+                bgLayer.style.animationDirection = 'normal'; bgLayer.style.animationPlayState = 'running'; bgLayer.style.animationDuration = '60s';
             }
-
-            // 2. 色の急変 (パッと切り替わる)
-            const rColor = Math.random();
-            if(rColor > 0.8) {
-                // 異常色 (色相回転 + コントラスト強)
-                const hue = Math.floor(Math.random() * 360);
-                bgLayer.style.filter = `hue-rotate(${hue}deg) contrast(1.5) saturate(1.5)`;
-            } else {
-                // 通常色 (少し暗め)
-                bgLayer.style.filter = `hue-rotate(0deg) contrast(1.1) brightness(0.8)`;
-            }
-
             setTimeout(glitchBackground, nextTime);
         }
         glitchBackground();
 
-        // --- BGM制御 (録音中は停止) ---
+        // --- BGM制御 ---
         function initGlitchSound() {
             if(glitchAudioCtx) return;
             glitchAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -252,11 +273,12 @@
             filter.type = 'lowpass'; filter.frequency.value = 600;
             
             glitchGain = glitchAudioCtx.createGain();
-            glitchGain.gain.value = 0.03;
+            // 音量: 0.15 (5倍)
+            glitchGain.gain.value = 0.15;
 
             setInterval(() => {
                  if(glitchGain.gain.value > 0) {
-                     glitchGain.gain.setTargetAtTime(Math.random() * 0.04 + 0.01, glitchAudioCtx.currentTime, 0.5);
+                     glitchGain.gain.setTargetAtTime(Math.random() * 0.1 + 0.05, glitchAudioCtx.currentTime, 0.5);
                  }
             }, 500);
 
@@ -265,20 +287,50 @@
         }
         document.body.addEventListener('click', initGlitchSound, { once: true });
 
-        // マイク使用中は完全にミュート
         function stopBGM() { if(glitchGain) glitchGain.gain.value = 0; }
-        function startBGM() { if(glitchGain) glitchGain.gain.value = 0.03; }
+        function startBGM() { if(glitchGain) glitchGain.gain.value = 0.15; }
+
+        // --- 待機中のグリッド表示 ---
+        function drawGrid() {
+            if(isProcessing) return;
+            waveCtx.clearRect(0, 0, 220, 220);
+            waveCtx.strokeStyle = "rgba(0, 255, 0, 0.2)";
+            waveCtx.lineWidth = 1;
+            waveCtx.beginPath();
+            for(let i=0; i<=220; i+=20) {
+                waveCtx.moveTo(i, 0); waveCtx.lineTo(i, 220);
+                waveCtx.moveTo(0, i); waveCtx.lineTo(220, i);
+            }
+            waveCtx.stroke();
+            requestAnimationFrame(drawGrid);
+        }
+        drawGrid();
+
+        // --- スロット更新処理 ---
+        function updateSlot(note, pitch, partsRnd) {
+            const colorData = SCALE_COLORS[note % 12];
+            // ピッチから形状名を選択
+            const formIndex = Math.floor((pitch / 256) * FORM_NAMES.length) % FORM_NAMES.length;
+            // パーツ乱数からパーツ名を選択
+            const partsIndex = partsRnd % PARTS_NAMES.length;
+
+            slotColor.innerText = colorData.jpn;
+            slotColor.style.color = colorData.hex;
+            slotForm.innerText = FORM_NAMES[formIndex];
+            slotParts.innerText = PARTS_NAMES[partsIndex];
+        }
+
 
         // --- 生成シーケンス ---
         async function startSequence() {
             if(isProcessing) return;
             isProcessing = true;
-            stopBGM(); // ★BGM停止
+            stopBGM();
             
-            recordBtn.innerText = "解析中..."; 
+            recordBtn.innerText = "音声信号受信中..."; 
             saveBtn.style.display = 'none';
             percentDisplay.innerText = "0%"; 
-            statusMsg.innerText = "音声を入力してください...";
+            statusMsg.innerText = "センサー初期化中...";
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -287,7 +339,9 @@
                 const source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
                 analyser.fftSize = 2048;
+                
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
+                waveDataArray = new Uint8Array(analyser.fftSize);
                 
                 let startTime = Date.now();
                 let noteVotes = new Array(12).fill(0);
@@ -299,51 +353,92 @@
                     percentDisplay.innerText = progress + "%";
 
                     analyser.getByteFrequencyData(dataArray);
+                    analyser.getByteTimeDomainData(waveDataArray);
+
+                    // 波形描画
+                    waveCtx.clearRect(0, 0, 220, 220);
+                    waveCtx.fillStyle = 'rgba(0, 20, 0, 0.5)';
+                    waveCtx.fillRect(0,0,220,220);
+                    waveCtx.lineWidth = 2; waveCtx.strokeStyle = '#0f0'; waveCtx.beginPath();
+                    const sliceWidth = 220 * 1.0 / analyser.fftSize; let x = 0;
+                    for(let i = 0; i < analyser.fftSize; i++) {
+                        const v = waveDataArray[i] / 128.0; const y = v * 110;
+                        if(i === 0) waveCtx.moveTo(x, y); else waveCtx.lineTo(x, y); x += sliceWidth;
+                    }
+                    waveCtx.stroke();
+
+                    // 音声解析
                     let maxVal = 0; let maxIndex = 0;
                     for(let i=10; i<200; i++) { if(dataArray[i] > maxVal) { maxVal = dataArray[i]; maxIndex = i; } }
                     const vol = maxVal;
                     
-                    if(vol > 35) {
-                        const freq = maxIndex * (audioContext.sampleRate / analyser.fftSize);
-                        const n = 12 * Math.log2(freq / 440) + 69;
-                        const currentNote = (Math.round(n) % 12 + 12) % 12;
-                        const currentPitch = Math.min(255, Math.max(0, (maxIndex - 10) * 1.5));
-                        noteVotes[currentNote] += vol;
-                        pitchSum += currentPitch; pitchCount++;
-                    }
+                    if(elapsed < 5000) {
+                        if(vol > 30) {
+                            const freq = maxIndex * (audioContext.sampleRate / analyser.fftSize);
+                            const n = 12 * Math.log2(freq / 440) + 69;
+                            const currentNote = (Math.round(n) % 12 + 12) % 12; 
+                            const currentPitch = Math.min(255, Math.max(0, (maxIndex - 10) * 1.5)); 
 
-                    if(elapsed < 4500) {
-                        drawMonster(Math.floor(Math.random()*12), Math.floor(Math.random()*255), Math.floor(Math.random()*255), Math.floor(Math.random()*255));
-                    }
-                    else {
+                            noteVotes[currentNote] += vol;
+                            pitchSum += currentPitch; pitchCount++;
+
+                            // リアルタイム描画 & スロット更新
+                            const flickerRnd = Math.floor(Math.random() * 255);
+                            drawMonster(currentNote, currentPitch, currentPitch, flickerRnd);
+                            updateSlot(currentNote, currentPitch, flickerRnd); // ここで今の音を即表示
+                            
+                            statusMsg.innerText = `解析中: ${SCALE_COLORS[currentNote].name} / ${freq.toFixed(0)}Hz`;
+                            statusMsg.style.color = SCALE_COLORS[currentNote].hex;
+                            seedInput.value = `受信中 >> ${toHex(currentNote)} ${toHex(currentPitch)} .. 解析`;
+                        } else {
+                            drawNoise();
+                            // 無音時も適当に回して「スキャン中」感だけ出す
+                            updateSlot(Math.floor(Math.random()*12), Math.floor(Math.random()*255), Math.floor(Math.random()*255));
+                            statusMsg.innerText = "信号途絶...";
+                            statusMsg.style.color = "#0f0";
+                        }
+                    } else {
                         clearInterval(loop);
                         let maxV = -1; let finalNote = 0;
                         for(let i=0; i<12; i++) if(noteVotes[i] > maxV) { maxV = noteVotes[i]; finalNote = i; }
                         if(maxV < 100) finalNote = Math.floor(Math.random()*12);
                         const finalPitch = (pitchCount > 0) ? Math.floor(pitchSum / pitchCount) : 128;
-                        
                         finishSequence(stream, finalNote, finalPitch);
                     }
                 }, 50);
 
             } catch(e) {
-                alert("マイクエラー: " + e);
+                alert("センサーエラー: " + e);
                 isProcessing = false;
                 startBGM();
                 recordBtn.innerText = "再試行"; 
-                statusMsg.innerText = "デバイスエラー";
+                statusMsg.innerText = "致命的エラー";
+            }
+        }
+
+        function drawNoise() {
+            ctx.clearRect(0, 0, 20, 20);
+            for(let y=0; y<20; y++) {
+                for(let x=0; x<20; x++) {
+                    if(Math.random() > 0.9) {
+                        ctx.fillStyle = `rgba(0, 255, 0, ${Math.random()})`;
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
             }
         }
 
         function finishSequence(stream, note, pitch) {
             stream.getTracks().forEach(t => t.stop());
             isProcessing = false;
-            startBGM(); // ★BGM再開
+            startBGM();
+            drawGrid();
             
-            recordBtn.innerText = "再生成 (5秒)"; 
+            recordBtn.innerText = "再生成する"; 
             saveBtn.style.display = 'block';
-            percentDisplay.innerText = "完了"; 
-            statusMsg.innerText = "生成体データ確定";
+            percentDisplay.innerText = "生成完了"; 
+            statusMsg.innerText = "生成体が確定しました";
+            statusMsg.style.color = "#fff";
 
             let finalType = Math.floor(Math.random() * 255);
             let finalRnd = Math.floor(Math.random() * 255);
@@ -353,6 +448,8 @@
             seedInput.value = `BM-${p1}${p2}-${p3}${p4}`;
             
             drawMonster(note, pitch, finalType, finalRnd);
+            // スロットを最終結果で停止
+            updateSlot(note, pitch, finalRnd);
         }
 
         function saveImage() {
@@ -362,7 +459,7 @@
             link.click();
         }
 
-        // --- ★完全同期復元ロジック (Xorshift32) ---
+        // --- RNG ---
         class Xorshift32 {
             constructor(seed) {
                 this.state = seed | 0; 
@@ -385,7 +482,7 @@
 
             ctx.clearRect(0, 0, 20, 20); 
 
-            // ★シード生成: 4つの値を結合
+            // Seed
             const masterSeed = (noteIdx << 24) ^ (pitchVal << 16) ^ (typeVal << 8) ^ rndVal;
             const rng = new Xorshift32(masterSeed);
 
@@ -403,7 +500,6 @@
                 }
             }
 
-            // パーツ (RNGで決定) - ★P4(rndVal)を使ってパーツを決める
             const partsType = Math.floor(rng.next() * 4); 
             
             let bodyTopY = 0;
@@ -415,7 +511,6 @@
                 else if (partsType === 2) { grid[earBaseY][earX-1]=2; grid[earBaseY-1][earX-1]=2; grid[earBaseY-1][earX-2]=2; grid[earBaseY][earX-1]=4; }
             }
             
-            // 足 (RNGで決定)
             let bodyBottomY = gridSize-1;
             for(let y=gridSize-1; y>gridSize/2; y--) { if(grid[y][9] === 2) { bodyBottomY = y; break; } }
             const legX = Math.floor(centerX - 3);
@@ -452,26 +547,23 @@
 
         function copySeed() {
             seedInput.select(); document.execCommand("copy");
-            statusMsg.innerText = "コピーしました";
+            statusMsg.innerText = "クリップボードにコピーしました";
         }
 
         function loadFromInput() {
             const val = seedInput.value.trim().toUpperCase();
             if(/^BM-[0-9A-F]{4}-[0-9A-F]{4}$/.test(val)) {
-                // 【修正】以前のRegex置換では "BM" の "B" (Hex:11) が残ってしまい、桁ズレを起こしていた
-                // ここで確実にハイフンで区切り、数値部分だけを抽出する
-                const parts = val.split('-'); // ["BM", "XXXX", "XXXX"]
+                const parts = val.split('-');
                 const raw = parts[1] + parts[2];
-
                 const p1 = parseInt(raw.substring(0,2), 16);
                 const p2 = parseInt(raw.substring(2,4), 16);
                 const p3 = parseInt(raw.substring(4,6), 16);
                 const p4 = parseInt(raw.substring(6,8), 16);
-                
                 drawMonster(p1, p2, p3, p4);
-                
+                // 復元時もスロットを確定表示
+                updateSlot(p1, p2, p4);
                 percentDisplay.innerText = "復元完了";
-                statusMsg.innerText = "データ整合性確認OK";
+                statusMsg.innerText = "生成データをロードしました";
                 saveBtn.style.display = 'block';
             } else {
                 alert("コードが無効です (BM-XXXX-XXXX)");

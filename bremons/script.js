@@ -1,5 +1,5 @@
 // ★ バージョン一括管理
-const GAME_VERSION = "6.3.14";
+const GAME_VERSION = "6.4.0";
 
 document.addEventListener('DOMContentLoaded', () => {
     // 画面内の .version クラスを持つ要素をすべて書き換える

@@ -104,7 +104,6 @@
         }
         .save-btn { background-color: #3498db; display: none; }
 
-        /* --- スロットマシンエリア (回転アニメーション削除) --- */
         .slot-machine-area {
             width: 90%;
             display: flex;
@@ -130,7 +129,6 @@
             height: 20px; overflow: hidden; white-space: nowrap;
         }
 
-        /* モンスターカプセルエリア */
         .monster-capsule {
             width: 220px; height: 220px;
             border: 2px solid rgba(255,255,255,0.5); border-radius: 16px;
@@ -143,9 +141,30 @@
         #waveCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0.6; }
         #monCanvas { image-rendering: pixelated; width: 200px; height: 200px; z-index: 5; position: relative; }
 
-        /* ステータス表示 */
         .status-text { font-size: 32px; color: #f1c40f; text-shadow: 2px 2px 0 #000; margin-top: 10px; }
         .sub-text { font-size: 12px; color: #0f0; text-shadow: 0 0 5px rgba(0,255,0,0.5); letter-spacing: 1px; }
+
+        .custom-dialog-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 200;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .custom-dialog-box {
+            background: #1a0b2e; color: #fff; padding: 20px; 
+            border-radius: 10px; border: 4px solid #8e44ad;
+            width: 85%; max-width: 350px; text-align: center;
+            box-shadow: 0 0 20px rgba(142, 68, 173, 0.4);
+        }
+        .cost-btn {
+            background: rgba(0,0,0,0.5); border: 2px solid #fff; color: #fff;
+            padding: 10px; width: 100%; margin-bottom: 10px; cursor: pointer;
+            font-family: inherit; font-size: 14px; text-align: left;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: all 0.2s;
+        }
+        .cost-btn:hover:not(:disabled) { background: #8e44ad; }
+        .cost-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #555; color: #aaa; }
+        .hidden { display: none !important; }
         
     </style>
 </head>
@@ -155,7 +174,7 @@
         <div class="scrolling-bg" id="bgLayer"></div>
 
         <div class="ui-layer">
-            <a href="index.html" class="back-link">←戻る</a>
+            <a href="genesis_hub.html" class="back-link">←HUBへ戻る</a>
 
             <div class="title-area">
                 <h1 class="game-title">BREMONS</h1>
@@ -170,7 +189,7 @@
 
             <div class="menu-area">
                 <button id="recordBtn" class="pixel-btn broken-anim" onclick="startSequence()">
-                    音声データ解析 (5秒)
+                    音声データ解析 (生成開始)
                 </button>
                 <button id="saveBtn" class="pixel-btn save-btn broken-anim" onclick="saveImage()">
                     画像を保存する
@@ -199,11 +218,51 @@
 
             <div class="status-text" id="percentDisplay">準備完了</div>
             <div class="sub-text" id="statusMsg">システムオンライン</div>
+
+            <div id="costModal" class="custom-dialog-overlay hidden">
+                <div class="custom-dialog-box">
+                    <h3 style="color:#f093fb; margin-top:0; border-bottom:1px solid #555; padding-bottom:10px;">生体エネルギー選択</h3>
+                    <p style="font-size:12px; margin-bottom:15px; color:#ccc;">生成に使用する素材を選択してください</p>
+                    
+                    <button onclick="selectCost('usa', 5)" id="btnUsa" class="cost-btn">
+                        <span>🔴 Usa (必要: 5)</span> <span style="font-weight:bold;">所持: <span id="ownUsa">0</span></span>
+                    </button>
+                    <button onclick="selectCost('inv', 3)" id="btnInv" class="cost-btn">
+                        <span>🔵 Inv (必要: 3)</span> <span style="font-weight:bold;">所持: <span id="ownInv">0</span></span>
+                    </button>
+                    <button onclick="selectCost('him', 1)" id="btnHim" class="cost-btn">
+                        <span>🟡 Him (必要: 1)</span> <span style="font-weight:bold;">所持: <span id="ownHim">0</span></span>
+                    </button>
+
+                    <button onclick="closeCostModal()" class="pixel-btn" style="background:#555; border-color:#aaa; font-size:14px; margin-top:10px; padding:10px;">
+                        キャンセル
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <script>
-        // パステルカラーパレット
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ★修正: addDoc, collection を追加インポート
+        import { getFirestore, doc, getDoc, updateDoc, arrayUnion, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
+            authDomain: "bremons.firebaseapp.com",
+            projectId: "bremons",
+            storageBucket: "bremons.firebasestorage.app",
+            messagingSenderId: "30413071482",
+            appId: "1:30413071482:web:f62c34349b13e6c6ce47c3",
+            measurementId: "G-4D4FCXGDBG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const uid = localStorage.getItem('user_uid');
+        const userName = localStorage.getItem('user_name') || "Unknown Pilot";
+
         const SCALE_COLORS = [
             { name: "C", jpn:"赤系", hex: "#FF9AA2", eye: "#C85A62" }, { name: "C#", jpn:"朱系", hex: "#FFB7B2", eye: "#D67C77" },
             { name: "D", jpn:"橙系", hex: "#FFDAC1", eye: "#D4A88F" }, { name: "D#", jpn:"黄系", hex: "#FFE6A7", eye: "#C9B475" },
@@ -213,14 +272,16 @@
             { name: "A#", jpn:"紫系", hex: "#C3B1E1", eye: "#917FB1" }, { name: "B", jpn:"桃系", hex: "#E6B0AA", eye: "#B37D77" }
         ];
         
-        // ★修正: 不快感のないSF的名称に変更
         const FORM_NAMES = ["バランス型", "高機動型", "重装甲型", "超小型", "ギガント型"];
         const PARTS_NAMES = ["タイプα", "タイプβ", "タイプγ", "タイプδ"];
-
 
         let audioContext, analyser, dataArray, waveDataArray;
         let isProcessing = false;
         let glitchAudioCtx = null, glitchGain = null;
+
+        let inventory = { usa: 0, inv: 0, him: 0 };
+        let selectedCostType = null;
+        let selectedCostAmount = 0;
 
         const canvas = document.getElementById('monCanvas');
         const ctx = canvas.getContext('2d');
@@ -234,99 +295,58 @@
         const seedInput = document.getElementById('seedInput');
         const bgLayer = document.getElementById('bgLayer');
         
-        // スロット要素
         const slotMachine = document.getElementById('slotMachine');
         const slotColor = document.getElementById('slotColor');
         const slotForm = document.getElementById('slotForm');
         const slotParts = document.getElementById('slotParts');
 
-        // --- 背景グリッチ制御 ---
-        function glitchBackground() {
-            const nextTime = Math.random() * 2000 + 1000;
-            const rMove = Math.random();
-            if(rMove < 0.1) {
-                bgLayer.style.animationDirection = 'reverse'; bgLayer.style.animationDuration = '2s';
-            } else if(rMove < 0.2) {
-                bgLayer.style.animationPlayState = 'paused';
-            } else if(rMove < 0.3) {
-                bgLayer.style.animationDuration = '0.5s';
-            } else {
-                bgLayer.style.animationDirection = 'normal'; bgLayer.style.animationPlayState = 'running'; bgLayer.style.animationDuration = '60s';
-            }
-            setTimeout(glitchBackground, nextTime);
+        async function fetchInventory() {
+            if(!uid) return;
+            try {
+                const ref = doc(db, "users", uid);
+                const snap = await getDoc(ref);
+                if(snap.exists()) {
+                    inventory = snap.data().inventory || { usa: 0, inv: 0, him: 0 };
+                    updateCostButtons();
+                }
+            } catch(e) { console.error("Inventory Load Error:", e); }
         }
-        glitchBackground();
 
-        // --- BGM制御 ---
-        function initGlitchSound() {
-            if(glitchAudioCtx) return;
-            glitchAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const bufferSize = glitchAudioCtx.sampleRate; 
-            const buffer = glitchAudioCtx.createBuffer(1, bufferSize, glitchAudioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
+        function updateCostButtons() {
+            document.getElementById('ownUsa').innerText = inventory.usa;
+            document.getElementById('ownInv').innerText = inventory.inv;
+            document.getElementById('ownHim').innerText = inventory.him;
 
-            const noise = glitchAudioCtx.createBufferSource();
-            noise.buffer = buffer; noise.loop = true;
-            
-            const filter = glitchAudioCtx.createBiquadFilter();
-            filter.type = 'lowpass'; filter.frequency.value = 600;
-            
-            glitchGain = glitchAudioCtx.createGain();
-            // 音量: 0.15 (5倍)
-            glitchGain.gain.value = 0.15;
-
-            setInterval(() => {
-                 if(glitchGain.gain.value > 0) {
-                     glitchGain.gain.setTargetAtTime(Math.random() * 0.1 + 0.05, glitchAudioCtx.currentTime, 0.5);
-                 }
-            }, 500);
-
-            noise.connect(filter).connect(glitchGain).connect(glitchAudioCtx.destination);
-            noise.start();
+            document.getElementById('btnUsa').disabled = (inventory.usa < 5);
+            document.getElementById('btnInv').disabled = (inventory.inv < 3);
+            document.getElementById('btnHim').disabled = (inventory.him < 1);
         }
-        document.body.addEventListener('click', initGlitchSound, { once: true });
 
-        function stopBGM() { if(glitchGain) glitchGain.gain.value = 0; }
-        function startBGM() { if(glitchGain) glitchGain.gain.value = 0.15; }
+        fetchInventory();
 
-        // --- 待機中のグリッド表示 ---
-        function drawGrid() {
+        window.startSequence = function() {
             if(isProcessing) return;
-            waveCtx.clearRect(0, 0, 220, 220);
-            waveCtx.strokeStyle = "rgba(0, 255, 0, 0.2)";
-            waveCtx.lineWidth = 1;
-            waveCtx.beginPath();
-            for(let i=0; i<=220; i+=20) {
-                waveCtx.moveTo(i, 0); waveCtx.lineTo(i, 220);
-                waveCtx.moveTo(0, i); waveCtx.lineTo(220, i);
+            document.getElementById('costModal').classList.remove('hidden');
+        };
+
+        window.selectCost = function(type, amount) {
+            if(inventory[type] < amount) {
+                alert("生体エネルギー(在庫)が不足しています！");
+                return;
             }
-            waveCtx.stroke();
-            requestAnimationFrame(drawGrid);
-        }
-        drawGrid();
+            selectedCostType = type;
+            selectedCostAmount = amount;
+            document.getElementById('costModal').classList.add('hidden');
+            realStartSequence();
+        };
 
-        // --- スロット更新処理 ---
-        function updateSlot(note, pitch, partsRnd) {
-            const colorData = SCALE_COLORS[note % 12];
-            // ピッチから形状名を選択
-            const formIndex = Math.floor((pitch / 256) * FORM_NAMES.length) % FORM_NAMES.length;
-            // パーツ乱数からパーツ名を選択
-            const partsIndex = partsRnd % PARTS_NAMES.length;
+        window.closeCostModal = function() {
+            document.getElementById('costModal').classList.add('hidden');
+        };
 
-            slotColor.innerText = colorData.jpn;
-            slotColor.style.color = colorData.hex;
-            slotForm.innerText = FORM_NAMES[formIndex];
-            slotParts.innerText = PARTS_NAMES[partsIndex];
-        }
-
-
-        // --- 生成シーケンス ---
-        async function startSequence() {
-            if(isProcessing) return;
+        async function realStartSequence() {
             isProcessing = true;
             stopBGM();
-            
             recordBtn.innerText = "音声信号受信中..."; 
             saveBtn.style.display = 'none';
             percentDisplay.innerText = "0%"; 
@@ -355,7 +375,6 @@
                     analyser.getByteFrequencyData(dataArray);
                     analyser.getByteTimeDomainData(waveDataArray);
 
-                    // 波形描画
                     waveCtx.clearRect(0, 0, 220, 220);
                     waveCtx.fillStyle = 'rgba(0, 20, 0, 0.5)';
                     waveCtx.fillRect(0,0,220,220);
@@ -367,7 +386,6 @@
                     }
                     waveCtx.stroke();
 
-                    // 音声解析
                     let maxVal = 0; let maxIndex = 0;
                     for(let i=10; i<200; i++) { if(dataArray[i] > maxVal) { maxVal = dataArray[i]; maxIndex = i; } }
                     const vol = maxVal;
@@ -378,21 +396,17 @@
                             const n = 12 * Math.log2(freq / 440) + 69;
                             const currentNote = (Math.round(n) % 12 + 12) % 12; 
                             const currentPitch = Math.min(255, Math.max(0, (maxIndex - 10) * 1.5)); 
-
                             noteVotes[currentNote] += vol;
                             pitchSum += currentPitch; pitchCount++;
 
-                            // リアルタイム描画 & スロット更新
                             const flickerRnd = Math.floor(Math.random() * 255);
                             drawMonster(currentNote, currentPitch, currentPitch, flickerRnd);
-                            updateSlot(currentNote, currentPitch, flickerRnd); // ここで今の音を即表示
-                            
+                            updateSlot(currentNote, currentPitch, flickerRnd);
                             statusMsg.innerText = `解析中: ${SCALE_COLORS[currentNote].name} / ${freq.toFixed(0)}Hz`;
                             statusMsg.style.color = SCALE_COLORS[currentNote].hex;
                             seedInput.value = `受信中 >> ${toHex(currentNote)} ${toHex(currentPitch)} .. 解析`;
                         } else {
                             drawNoise();
-                            // 無音時も適当に回して「スキャン中」感だけ出す
                             updateSlot(Math.floor(Math.random()*12), Math.floor(Math.random()*255), Math.floor(Math.random()*255));
                             statusMsg.innerText = "信号途絶...";
                             statusMsg.style.color = "#0f0";
@@ -416,6 +430,67 @@
             }
         }
 
+        async function finishSequence(stream, note, pitch) {
+            stream.getTracks().forEach(t => t.stop());
+            isProcessing = false;
+            startBGM();
+            drawGrid();
+
+            let finalType = Math.floor(Math.random() * 255);
+            let finalRnd = Math.floor(Math.random() * 255);
+
+            let p1 = toHex(note); let p2 = toHex(pitch); 
+            let p3 = toHex(finalType); let p4 = toHex(finalRnd);
+            const monsterCode = `BM-${p1}${p2}-${p3}${p4}`;
+
+            seedInput.value = monsterCode;
+            drawMonster(note, pitch, finalType, finalRnd);
+            updateSlot(note, pitch, finalRnd);
+
+            percentDisplay.innerText = "保存中..."; 
+            statusMsg.innerText = "DNAデータを記録しています...";
+            
+            try {
+                if(!uid) throw new Error("ログインしていません");
+                
+                const userRef = doc(db, "users", uid);
+                
+                // 1. 個人の図鑑に保存
+                const updateData = {
+                    genesisMonsters: arrayUnion({
+                        code: monsterCode,
+                        createdAt: new Date().toISOString(),
+                        costType: selectedCostType
+                    })
+                };
+                updateData[`inventory.${selectedCostType}`] = increment(-selectedCostAmount);
+                await updateDoc(userRef, updateData);
+
+                // 2. ★公開データベースに保存 (探索で出現するようにする)
+                await addDoc(collection(db, "public_genesis_monsters"), {
+                    code: monsterCode,
+                    creatorName: userName,
+                    createdAt: new Date().toISOString()
+                });
+
+                inventory[selectedCostType] -= selectedCostAmount;
+                updateCostButtons();
+
+                percentDisplay.innerText = "生成完了";
+                statusMsg.innerText = "図鑑登録 & 宇宙空間へ放流しました";
+                statusMsg.style.color = "#fff";
+                
+                recordBtn.innerText = "再生成する"; 
+                saveBtn.style.display = 'block';
+
+            } catch(e) {
+                console.error(e);
+                statusMsg.innerText = "保存失敗";
+                alert("データの保存に失敗しました(オフライン等)。素材は消費されていません。");
+                recordBtn.innerText = "再試行";
+            }
+        }
+
         function drawNoise() {
             ctx.clearRect(0, 0, 20, 20);
             for(let y=0; y<20; y++) {
@@ -428,38 +503,37 @@
             }
         }
 
-        function finishSequence(stream, note, pitch) {
-            stream.getTracks().forEach(t => t.stop());
-            isProcessing = false;
-            startBGM();
-            drawGrid();
-            
-            recordBtn.innerText = "再生成する"; 
-            saveBtn.style.display = 'block';
-            percentDisplay.innerText = "生成完了"; 
-            statusMsg.innerText = "生成体が確定しました";
-            statusMsg.style.color = "#fff";
-
-            let finalType = Math.floor(Math.random() * 255);
-            let finalRnd = Math.floor(Math.random() * 255);
-
-            let p1 = toHex(note); let p2 = toHex(pitch); 
-            let p3 = toHex(finalType); let p4 = toHex(finalRnd);
-            seedInput.value = `BM-${p1}${p2}-${p3}${p4}`;
-            
-            drawMonster(note, pitch, finalType, finalRnd);
-            // スロットを最終結果で停止
-            updateSlot(note, pitch, finalRnd);
-        }
-
-        function saveImage() {
+        window.saveImage = function() {
             const link = document.createElement('a');
             link.download = 'bremons.png';
             link.href = canvas.toDataURL();
             link.click();
         }
 
-        // --- RNG ---
+        window.copySeed = function() {
+            seedInput.select(); document.execCommand("copy");
+            statusMsg.innerText = "クリップボードにコピーしました";
+        }
+
+        window.loadFromInput = function() {
+            const val = seedInput.value.trim().toUpperCase();
+            if(/^BM-[0-9A-F]{4}-[0-9A-F]{4}$/.test(val)) {
+                const parts = val.split('-');
+                const raw = parts[1] + parts[2];
+                const p1 = parseInt(raw.substring(0,2), 16);
+                const p2 = parseInt(raw.substring(2,4), 16);
+                const p3 = parseInt(raw.substring(4,6), 16);
+                const p4 = parseInt(raw.substring(6,8), 16);
+                drawMonster(p1, p2, p3, p4);
+                updateSlot(p1, p2, p4);
+                percentDisplay.innerText = "復元完了";
+                statusMsg.innerText = "生成データをロードしました";
+                saveBtn.style.display = 'block';
+            } else {
+                alert("コードが無効です (BM-XXXX-XXXX)");
+            }
+        }
+
         class Xorshift32 {
             constructor(seed) {
                 this.state = seed | 0; 
@@ -482,7 +556,6 @@
 
             ctx.clearRect(0, 0, 20, 20); 
 
-            // Seed
             const masterSeed = (noteIdx << 24) ^ (pitchVal << 16) ^ (typeVal << 8) ^ rndVal;
             const rng = new Xorshift32(masterSeed);
 
@@ -545,30 +618,79 @@
             return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
         }
 
-        function copySeed() {
-            seedInput.select(); document.execCommand("copy");
-            statusMsg.innerText = "クリップボードにコピーしました";
+        function initGlitchSound() {
+            if(glitchAudioCtx) return;
+            glitchAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const bufferSize = glitchAudioCtx.sampleRate; 
+            const buffer = glitchAudioCtx.createBuffer(1, bufferSize, glitchAudioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
+
+            const noise = glitchAudioCtx.createBufferSource();
+            noise.buffer = buffer; noise.loop = true;
+            
+            const filter = glitchAudioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.value = 600;
+            
+            glitchGain = glitchAudioCtx.createGain();
+            glitchGain.gain.value = 0.15;
+
+            setInterval(() => {
+                 if(glitchGain.gain.value > 0) {
+                     glitchGain.gain.setTargetAtTime(Math.random() * 0.1 + 0.05, glitchAudioCtx.currentTime, 0.5);
+                 }
+            }, 500);
+
+            noise.connect(filter).connect(glitchGain).connect(glitchAudioCtx.destination);
+            noise.start();
+        }
+        document.body.addEventListener('click', initGlitchSound, { once: true });
+
+        function stopBGM() { if(glitchGain) glitchGain.gain.value = 0; }
+        function startBGM() { if(glitchGain) glitchGain.gain.value = 0.15; }
+
+        function glitchBackground() {
+            const nextTime = Math.random() * 2000 + 1000;
+            const rMove = Math.random();
+            if(rMove < 0.1) {
+                bgLayer.style.animationDirection = 'reverse'; bgLayer.style.animationDuration = '2s';
+            } else if(rMove < 0.2) {
+                bgLayer.style.animationPlayState = 'paused';
+            } else if(rMove < 0.3) {
+                bgLayer.style.animationDuration = '0.5s';
+            } else {
+                bgLayer.style.animationDirection = 'normal'; bgLayer.style.animationPlayState = 'running'; bgLayer.style.animationDuration = '60s';
+            }
+            setTimeout(glitchBackground, nextTime);
+        }
+        glitchBackground();
+
+        function drawGrid() {
+            if(isProcessing) return;
+            waveCtx.clearRect(0, 0, 220, 220);
+            waveCtx.strokeStyle = "rgba(0, 255, 0, 0.2)";
+            waveCtx.lineWidth = 1;
+            waveCtx.beginPath();
+            for(let i=0; i<=220; i+=20) {
+                waveCtx.moveTo(i, 0); waveCtx.lineTo(i, 220);
+                waveCtx.moveTo(0, i); waveCtx.lineTo(220, i);
+            }
+            waveCtx.stroke();
+            requestAnimationFrame(drawGrid);
+        }
+        drawGrid();
+
+        function updateSlot(note, pitch, partsRnd) {
+            const colorData = SCALE_COLORS[note % 12];
+            const formIndex = Math.floor((pitch / 256) * FORM_NAMES.length) % FORM_NAMES.length;
+            const partsIndex = partsRnd % PARTS_NAMES.length;
+
+            slotColor.innerText = colorData.jpn;
+            slotColor.style.color = colorData.hex;
+            slotForm.innerText = FORM_NAMES[formIndex];
+            slotParts.innerText = PARTS_NAMES[partsIndex];
         }
 
-        function loadFromInput() {
-            const val = seedInput.value.trim().toUpperCase();
-            if(/^BM-[0-9A-F]{4}-[0-9A-F]{4}$/.test(val)) {
-                const parts = val.split('-');
-                const raw = parts[1] + parts[2];
-                const p1 = parseInt(raw.substring(0,2), 16);
-                const p2 = parseInt(raw.substring(2,4), 16);
-                const p3 = parseInt(raw.substring(4,6), 16);
-                const p4 = parseInt(raw.substring(6,8), 16);
-                drawMonster(p1, p2, p3, p4);
-                // 復元時もスロットを確定表示
-                updateSlot(p1, p2, p4);
-                percentDisplay.innerText = "復元完了";
-                statusMsg.innerText = "生成データをロードしました";
-                saveBtn.style.display = 'block';
-            } else {
-                alert("コードが無効です (BM-XXXX-XXXX)");
-            }
-        }
     </script>
 </body>
 </html>

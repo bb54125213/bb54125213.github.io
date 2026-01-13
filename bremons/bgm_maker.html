@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GENESIS - BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        /* === BREMONS GENESIS STYLE === */
+        body {
+            margin: 0; padding: 0;
+            font-family: 'DotGothic16', sans-serif;
+            background-color: #050505; color: #fff;
+            display: flex; justify-content: center;
+            height: 100dvh; overflow: hidden;
+            user-select: none;
+        }
+
+        .game-container {
+            width: 100%; max-width: 480px; height: 100%;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 30px rgba(142, 68, 173, 0.2);
+            display: flex; flex-direction: column;
+            background: #000;
+        }
+
+        .scrolling-bg {
+            position: absolute; top: -50%; left: 0; width: 100%; height: 200%;
+            background-image: url('./nightgame/background2.png');
+            background-size: cover; background-repeat: repeat-y;
+            z-index: 0;
+            animation: scrollSpace 60s linear infinite;
+            filter: contrast(1.1) brightness(0.8);
+        }
+        @keyframes scrollSpace { from { transform: translateY(0); } to { transform: translateY(50%); } }
+
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 10px; box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .back-link {
+            position: absolute; top: 15px; left: 15px;
+            font-size: 14px; text-decoration: none; color: #fff;
+            background: rgba(0,0,0,0.8); padding: 8px 15px;
+            border: 1px solid #fff; border-radius: 4px;
+        }
+
+        .title-area { margin-top: 50px; text-align: center; margin-bottom: 30px; }
+        .game-title {
+            font-size: 52px; margin: 0; letter-spacing: 2px;
+            background: linear-gradient(to right, #ff9a9e, #4facfe, #f093fb);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(4px 4px 0px rgba(255, 255, 255, 0.2));
+            animation: title-glitch 5s infinite;
+        }
+        @keyframes title-glitch {
+            0%, 95% { transform: skew(0deg); } 96% { transform: skew(10deg); } 97% { transform: skew(-10deg); } 98% { transform: skew(0deg); }
+        }
+        .subtitle { font-size: 16px; color: #fff; margin-top: 5px; letter-spacing: 5px; opacity: 0.8; }
+
+        /* ランプ */
+        .lamp-container { display: flex; gap: 15px; margin-bottom: 20px; }
+        .lamp {
+            width: 15px; height: 15px; border-radius: 50%;
+            background: #333; border: 2px solid #555; transition: 0.3s;
+        }
+        .lamp.active { background: #f093fb; box-shadow: 0 0 15px #f093fb; border-color: #fff; }
+        .lamp.done { background: #8e44ad; border-color: #8e44ad; }
+
+        /* モニター */
+        .monitor-frame {
+            width: 90%; height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #8e44ad; border-radius: 8px;
+            box-shadow: 0 0 20px rgba(142, 68, 173, 0.3);
+            margin-bottom: 10px; display: flex; justify-content: center; align-items: center;
+        }
+        canvas { width: 100%; height: 100%; }
+
+        /* ステータス */
+        .info-box { text-align: center; height: 60px; margin-bottom: 10px; display:flex; flex-direction:column; justify-content:center; }
+        .info-main { font-size: 24px; color: #f1c40f; text-shadow: 2px 2px 0 #000; margin-bottom: 5px; }
+        .info-sub { font-size: 16px; color: #fff; font-weight: bold; }
+
+        /* コントロール */
+        .controls { width: 90%; display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-bottom: 30px; }
+        
+        .pixel-btn {
+            font-family: 'DotGothic16', sans-serif; font-size: 24px;
+            padding: 20px; width: 100%;
+            background-color: rgba(20, 0, 30, 0.85); color: #fff;
+            border: 2px solid #8e44ad; border-radius: 8px;
+            cursor: pointer; text-align: center;
+            box-shadow: 0 0 10px rgba(142, 68, 173, 0.3);
+            transition: all 0.2s;
+        }
+        .pixel-btn:hover { background-color: #8e44ad; box-shadow: 0 0 20px rgba(142, 68, 173, 0.8); transform: scale(1.02); }
+        .pixel-btn:active { transform: scale(0.98); }
+
+        /* ボタンバリエーション */
+        .btn-playpause { border-color: #2ecc71; color: #2ecc71; display: none; }
+        .btn-playpause.paused { border-color: #f1c40f; color: #f1c40f; }
+        
+        .btn-save { border-color: #3498db; color: #3498db; display: none; opacity: 0.5; font-size: 18px; padding: 15px;}
+        .btn-save.ready { opacity: 1; cursor: pointer; }
+        
+        .btn-regen { border-color: #e67e22; color: #e67e22; display: none; font-size: 18px; padding: 15px; }
+        .btn-reset { border-color: #e74c3c; color: #e74c3c; display: none; font-size: 18px; padding: 15px; }
+
+        /* オーバーレイ */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            pointer-events: none; z-index: 100;
+            background: rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.2s;
+        }
+        .overlay.show { opacity: 1; }
+        
+        .overlay-text {
+            font-size: 80px; color: #fff; text-shadow: 0 0 30px #f093fb, 4px 4px 0 #8e44ad;
+            text-align: center; transform: scale(0.5); opacity: 0;
+        }
+        .recording-now {
+            color: #e74c3c !important; text-shadow: 0 0 30px #e74c3c, 4px 4px 0 #c0392b !important;
+            transform: scale(1.2) !important; opacity: 1 !important;
+            animation: pulseText 0.5s infinite alternate;
+        }
+        @keyframes pulseText { from { transform: scale(1.2); } to { transform: scale(1.3); } }
+        .anim-pop { animation: popIn 0.8s forwards; }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        /* 進行バー */
+        .time-bar-bg { width: 90%; height: 8px; background: #333; margin-bottom: 10px; border-radius: 4px; display: none; overflow: hidden;}
+        .time-bar-fill { height: 100%; width: 0%; background: #2ecc71; transition: width 0.1s linear; }
+
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="scrolling-bg"></div>
+
+        <div class="ui-layer">
+            <a href="genesis_hub.html" class="back-link">←HUBへ戻る</a>
+
+            <div class="title-area">
+                <h1 class="game-title">BREMONS</h1>
+                <span class="subtitle">- GENESIS -</span>
+            </div>
+
+            <div class="lamp-container">
+                <div id="l1" class="lamp"></div>
+                <div id="l2" class="lamp"></div>
+                <div id="l3" class="lamp"></div>
+                <div id="l4" class="lamp"></div>
+            </div>
+
+            <div class="monitor-frame">
+                <canvas id="vizCanvas"></canvas>
+            </div>
+
+            <div id="timeBar" class="time-bar-bg"><div id="timeFill" class="time-bar-fill"></div></div>
+
+            <div class="info-box">
+                <div id="infoMain" class="info-main">システム待機中</div>
+                <div id="infoSub" class="info-sub">「開始」で録音プロセスへ移行</div>
+            </div>
+
+            <div class="controls">
+                <button id="btnStart" class="pixel-btn" onclick="startSequence()">
+                    音源採取プロセス開始
+                </button>
+
+                <button id="btnPlayPause" class="pixel-btn btn-playpause" onclick="togglePlayback()">
+                    || 一時停止
+                </button>
+
+                <div id="menuPanel" style="display:none; width:100%; flex-direction:column; gap:10px;">
+                    <button id="btnRegen" class="pixel-btn btn-regen" onclick="regenerateSong()">
+                        ↻ 再生成 (Remix)
+                    </button>
+                    <button id="btnSave" class="pixel-btn btn-save" onclick="downloadWav()" disabled>
+                        ↓ 保存 (録音中...)
+                    </button>
+                    <button id="btnReset" class="pixel-btn btn-reset" onclick="resetAll()">
+                        ← 最初からやり直す
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="overlay" class="overlay">
+            <div id="overlayText" class="overlay-text">3</div>
+        </div>
+    </div>
+
+    <script>
+        // === Audio Engine (Symphonic Composition) ===
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ctx = null;
+        let masterBus, reverbNode, delayNode, compressor;
+        let analyser, dataArray, canvas, cCtx;
+        
+        let buffers = { fu: null, ha: null, pa: null, free: null };
+        let destStream, mediaRecorder, recordedChunks = [];
+        
+        // Sequencer
+        let isPlaying = false;
+        let isPaused = false;
+        let schedulerId = null;
+        let nextNoteTime = 0;
+        let currentTick = 0; // 16th note counter
+        
+        // 曲データ (長尺)
+        let generatedSong = {
+            bpm: 120,
+            scale: [],
+            progression: [], // 全小節分のコード進行
+            melodyA: [], // Aメロ
+            melodyB: [], // Bメロ
+            melodyC: [], // サビ
+            leadInst: 'string',
+            totalBars: 64 // 2分強
+        };
+
+        // 王道コード進行データベース (I=0)
+        const PROGRESSION_BANK = [
+            [3, 4, 2, 5], // 王道 (IV V iii vi)
+            [0, 4, 5, 3], // カノン (I V vi iii)
+            [5, 3, 0, 4], // 小室 (vi IV I V)
+            [3, 2, 5, 0], // Just the Two of Us (IV III vi I)
+            [0, 2, 3, 4], // 上昇 (I iii IV V)
+            [5, 0, 3, 4], // マイナー王道 (vi I IV V)
+        ];
+
+        // === 1. Init ===
+        async function initAudio() {
+            if (ctx) return;
+            ctx = new AudioContext();
+
+            masterBus = ctx.createGain();
+            masterBus.gain.value = 0.9; // Loud
+
+            compressor = ctx.createDynamicsCompressor();
+            compressor.threshold.value = -20;
+            compressor.ratio.value = 10;
+            compressor.attack.value = 0.005;
+            compressor.release.value = 0.25;
+
+            // Deep Reverb
+            reverbNode = ctx.createConvolver();
+            reverbNode.buffer = await createImpulseResponse(3.0, 2.0);
+            const revGain = ctx.createGain();
+            revGain.gain.value = 0.35;
+
+            // Stereo Delay
+            delayNode = ctx.createDelay();
+            delayNode.delayTime.value = 0.3;
+            const delGain = ctx.createGain();
+            delGain.gain.value = 0.25;
+            const delFeed = ctx.createGain();
+            delFeed.gain.value = 0.4;
+            delayNode.connect(delFeed).connect(delayNode);
+
+            window.sendReverb = ctx.createGain();
+            window.sendReverb.connect(reverbNode);
+            reverbNode.connect(revGain).connect(masterBus);
+
+            window.sendDelay = ctx.createGain();
+            window.sendDelay.connect(delayNode);
+            delayNode.connect(delGain).connect(masterBus);
+
+            masterBus.connect(compressor);
+            compressor.connect(ctx.destination);
+
+            destStream = ctx.createMediaStreamDestination();
+            compressor.connect(destStream);
+
+            analyser = ctx.createAnalyser();
+            analyser.fftSize = 512;
+            compressor.connect(analyser);
+            
+            canvas = document.getElementById('vizCanvas');
+            cCtx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            drawLoop();
+        }
+
+        async function createImpulseResponse(duration, decay) {
+            const len = ctx.sampleRate * duration;
+            const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+            for(let i=0; i<len; i++){
+                const n = i/len;
+                const env = Math.pow(1-n, decay);
+                buf.getChannelData(0)[i] = (Math.random()*2-1)*env;
+                buf.getChannelData(1)[i] = (Math.random()*2-1)*env;
+            }
+            return buf;
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        // === 2. 録音 ===
+        async function startSequence() {
+            await initAudio();
+            if(ctx.state==='suspended') await ctx.resume();
+            document.getElementById('btnStart').style.display = 'none';
+            
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const src = ctx.createMediaStreamSource(stream);
+                const monAna = ctx.createAnalyser();
+                src.connect(monAna);
+                window.currAnalyser = monAna; 
+            } catch(e) { alert("マイクエラー"); return; }
+
+            const runStep = async (step, key, text, dur) => {
+                updateLamp(step, 'active');
+                setInfo(`ステップ ${step}/4`, `${text} の声を採取します`);
+                await showCountdown();
+                await recordWithText(stream, key, dur, text);
+                updateLamp(step, 'done');
+            };
+
+            await runStep(1, 'fu', "ふ～！！", 3000);
+            await runStep(2, 'ha', "はっ！！", 1500);
+            await runStep(3, 'pa', "ぱっ！！", 1500);
+            await runStep(4, 'free', "自由に！！", 5000);
+
+            stream.getTracks().forEach(t=>t.stop());
+            window.currAnalyser = analyser; 
+            analyzeAndGenerate();
+        }
+
+        async function showCountdown() {
+            const ov = document.getElementById('overlay');
+            const txt = document.getElementById('overlayText');
+            ov.classList.add('show');
+            for(let i=3; i>0; i--){
+                txt.innerText = i;
+                txt.classList.remove('anim-pop'); void txt.offsetWidth; txt.classList.add('anim-pop');
+                await new Promise(r=>setTimeout(r, 800));
+            }
+        }
+
+        function recordWithText(stream, key, dur, text) {
+            return new Promise(resolve => {
+                const txt = document.getElementById('overlayText');
+                txt.innerText = text;
+                txt.className = 'overlay-text recording-now';
+                const rec = new MediaRecorder(stream);
+                const chunks = [];
+                rec.ondataavailable = e => chunks.push(e.data);
+                rec.onstop = async () => {
+                    const blob = new Blob(chunks, {type:'audio/webm'});
+                    buffers[key] = await ctx.decodeAudioData(await blob.arrayBuffer());
+                    resolve();
+                };
+                rec.start();
+                setTimeout(()=>{
+                    rec.stop();
+                    const ov = document.getElementById('overlay');
+                    ov.classList.remove('show');
+                    txt.className = 'overlay-text'; 
+                }, dur);
+            });
+        }
+
+        function setInfo(m, s) {
+            document.getElementById('infoMain').innerText = m;
+            document.getElementById('infoSub').innerText = s;
+        }
+        function updateLamp(n, c){ document.getElementById('l'+n).className='lamp '+c; }
+
+        // === 3. 作曲 (Deterministic Generation) ===
+        function analyzeAndGenerate() {
+            setInfo("解析完了", "全64小節の楽曲を構築しています...");
+            
+            const raw = buffers.free.getChannelData(0);
+            let seed = 0; for(let i=0; i<raw.length; i+=100) seed += Math.abs(raw[i])*10000;
+            seed = Math.floor(seed);
+            const random = () => { let x = Math.sin(seed++)*10000; return x-Math.floor(x); };
+
+            // BPM
+            let energy = 0; for(let i=0; i<raw.length; i+=100) energy+=Math.abs(raw[i]);
+            const avg = energy / (raw.length/100);
+            generatedSong.bpm = Math.max(95, Math.min(160, 100 + Math.floor(avg*800)));
+
+            // Key
+            let zc=0; for(let i=1; i<raw.length; i+=20) if(raw[i]>0 && raw[i-1]<0) zc++;
+            const freq = (zc / buffers.free.duration) / 2;
+            const noteNum = 12 * Math.log2((freq||261)/440) + 69;
+            const rootIdx = Math.round(noteNum) % 12;
+            generatedSong.rootFreq = 440 * Math.pow(2, (rootIdx-9 + (4-4)*12)/12);
+
+            // Scale (明るいメジャー系固定)
+            generatedSong.scale = [0, 2, 4, 5, 7, 9, 11];
+
+            // コード進行の構築 (Intro, A, B, Chorus, Outro)
+            // それぞれ別の進行を選ぶ
+            const progA = PROGRESSION_BANK[Math.floor(random()*PROGRESSION_BANK.length)];
+            const progB = PROGRESSION_BANK[Math.floor(random()*PROGRESSION_BANK.length)];
+            const progC = PROGRESSION_BANK[Math.floor(random()*PROGRESSION_BANK.length)]; // サビ
+
+            // 全64小節の進行配列を作る (1要素=1小節のDegree)
+            let fullProg = [];
+            
+            // Intro (8 bars)
+            for(let i=0; i<2; i++) fullProg.push(...progA);
+            // Verse A (16 bars)
+            for(let i=0; i<4; i++) fullProg.push(...progA);
+            // Bridge B (8 bars)
+            for(let i=0; i<2; i++) fullProg.push(...progB);
+            // Chorus (16 bars) - 高揚感
+            for(let i=0; i<4; i++) fullProg.push(...progC);
+            // Outro (16 bars) - 余韻
+            for(let i=0; i<4; i++) fullProg.push(...progA);
+
+            generatedSong.progression = fullProg;
+            generatedSong.totalBars = fullProg.length;
+
+            // メロディ生成 (A, B, C それぞれ作る)
+            generatedSong.melodyA = generateMelody(random, 16, 0.4); // 落ち着いた
+            generatedSong.melodyB = generateMelody(random, 16, 0.6); // 動き出す
+            generatedSong.melodyC = generateMelody(random, 16, 0.8, true); // 派手
+
+            // 楽器
+            if(freq > 400) generatedSong.leadInst = 'flute';
+            else if(freq > 200) generatedSong.leadInst = 'trumpet';
+            else generatedSong.leadInst = 'synth';
+
+            setInfo("生成完了", `BPM:${generatedSong.bpm} / INST:${generatedSong.leadInst}`);
+            startPlayback();
+        }
+
+        function generateMelody(rng, length, density, isHigh=false) {
+            let mel = [];
+            for(let i=0; i<length; i++) {
+                if(rng() < density) {
+                    // スケール度数 (0-7 + Octave)
+                    let n = Math.floor(rng()*8);
+                    if(isHigh) n += 2; // 音高く
+                    mel.push(n);
+                } else {
+                    mel.push(null);
+                }
+            }
+            return mel;
+        }
+
+        function regenerateSong() {
+            // シードを少しずらすためバッファを反転させて再解析
+            const d = buffers.free.getChannelData(0);
+            Array.prototype.reverse.call(d);
+            analyzeAndGenerate();
+        }
+
+        // === 4. 再生エンジン (Pause対応) ===
+        function togglePlayback() {
+            if (isPlaying && !isPaused) {
+                isPaused = true;
+                clearTimeout(schedulerId);
+                if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
+                
+                const btn = document.getElementById('btnPlayPause');
+                btn.innerText = "▶ 再開";
+                btn.classList.add('paused');
+                setInfo("一時停止中", "再開ボタンで続きから再生");
+            } else if (isPlaying && isPaused) {
+                isPaused = false;
+                nextNoteTime = ctx.currentTime + 0.1;
+                scheduler();
+                if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
+
+                const btn = document.getElementById('btnPlayPause');
+                btn.innerText = "|| 一時停止";
+                btn.classList.remove('paused');
+                setInfo("再生中", "BGMを再生しています");
+            }
+        }
+
+        function startPlayback() {
+            isPlaying = true;
+            isPaused = false;
+            currentTick = 0;
+            nextNoteTime = ctx.currentTime + 0.1;
+
+            document.getElementById('btnPlayPause').style.display = 'block';
+            document.getElementById('btnPlayPause').innerText = "|| 一時停止";
+            document.getElementById('menuPanel').style.display = 'flex';
+            document.getElementById('timeBar').style.display = 'block';
+            
+            // 保存用録音 (約2分)
+            recordedChunks = [];
+            try {
+                mediaRecorder = new MediaRecorder(destStream.stream);
+                mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
+                mediaRecorder.start();
+                // 曲の長さ分録音したら停止（再生は続く）
+                const songDur = (60/generatedSong.bpm) * 4 * generatedSong.totalBars;
+                setTimeout(() => {
+                    if(mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                        document.getElementById('btnSave').disabled = false;
+                        document.getElementById('btnSave').innerText = "↓ WAV保存 (完了)";
+                    }
+                }, songDur * 1000); 
+            } catch(e){}
+
+            scheduler();
+        }
+
+        function resetAll() {
+            if(confirm("録音データは破棄されます。最初からやり直しますか？")) location.reload();
+        }
+
+        function scheduler() {
+            if(!isPlaying || isPaused) return;
+            const secPerBeat = 60.0 / generatedSong.bpm;
+            const sixteenth = secPerBeat / 4;
+
+            while(nextNoteTime < ctx.currentTime + 0.1) {
+                playTick(currentTick, nextNoteTime);
+                nextNoteTime += sixteenth;
+                currentTick++;
+            }
+            
+            // ループ処理 (無限)
+            const totalTicks = generatedSong.totalBars * 16;
+            if (currentTick >= totalTicks) {
+                currentTick = 0; // ループ
+            }
+
+            // バー更新
+            const pct = (currentTick / totalTicks) * 100;
+            document.getElementById('timeFill').style.width = pct + '%';
+            
+            schedulerId = setTimeout(scheduler, 25);
+        }
+
+        function playTick(tick, time) {
+            const step = tick % 16;
+            const bar = Math.floor(tick / 16);
+            const degree = generatedSong.progression[bar];
+
+            // セクション判定
+            let section = 'INTRO';
+            let intensity = 1;
+            let melodyArr = null;
+
+            if(bar < 8) { section='INTRO'; intensity=1; }
+            else if(bar < 24) { section='VERSE'; intensity=2; melodyArr=generatedSong.melodyA; }
+            else if(bar < 32) { section='BRIDGE'; intensity=3; melodyArr=generatedSong.melodyB; }
+            else if(bar < 48) { section='CHORUS'; intensity=4; melodyArr=generatedSong.melodyC; }
+            else { section='OUTRO'; intensity=2; melodyArr=generatedSong.melodyA; }
+
+            setInfo(`再生中: ${section}`, `BPM:${generatedSong.bpm}`);
+
+            // 1. Kick (Pa) - Heavy
+            if(intensity >= 2) {
+                if(step % 4 === 0) {
+                    playVoice(buffers.pa, time, 0.6, 1.5, 'kick'); // Loud!
+                    playSubKick(time);
+                }
+            } else if (section==='INTRO' && step===0) {
+                playVoice(buffers.pa, time, 0.6, 1.0, 'kick');
+            }
+
+            // 2. Snare (Ha)
+            if(intensity >= 2) {
+                if(step===4 || step===12) {
+                    playVoice(buffers.ha, time, 1.0, 1.2, 'snare'); // Loud!
+                    playNoiseSnare(time);
+                }
+            }
+
+            // 3. Hat
+            if(intensity >= 3 && step%2!==0) {
+                playVoice(buffers.ha, time, 1.8, 0.5, 'hat');
+            }
+
+            // 4. Bass
+            if(intensity >= 2 && step%2===0) {
+                playBass(degree, time);
+            }
+
+            // 5. Pad (Fu) - 全体で
+            if(step === 0) {
+                playVoice(buffers.fu, time, 1.0, 0.9, 'pad'); // Loud Voice Pad
+                playOrchestraPad(degree, time);
+            }
+
+            // 6. Melody
+            if(melodyArr && intensity >= 2) {
+                const note = melodyArr[step]; // 16ステップのループパターン
+                if(note !== null) {
+                    const pitch = degree + note;
+                    if(generatedSong.leadInst==='trumpet') playTrumpet(pitch, time);
+                    else if(generatedSong.leadInst==='flute') playFlute(pitch, time);
+                    else playSynthLead(pitch, time);
+                }
+            }
+
+            // 7. Free FX - セクションの変わり目
+            if(step===0 && (bar===8 || bar===24 || bar===32 || bar===48)) {
+                playVoice(buffers.free, time, 1.0, 1.0, 'fx');
+            }
+        }
+
+        // --- Instruments ---
+        function getFreq(deg, octOffset) {
+            const sc = generatedSong.scale;
+            const len = sc.length;
+            const idx = deg % len;
+            const oct = Math.floor(deg / len) + octOffset;
+            const semi = sc[idx];
+            return generatedSong.rootFreq * Math.pow(2, (semi + (oct-4)*12)/12);
+        }
+
+        // Voice: Make it LOUD
+        function playVoice(buf, time, rate, vol, type) {
+            if(!buf) return;
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.playbackRate.value = rate;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(vol * 2.0, time); // Boost!
+            
+            const f = ctx.createBiquadFilter();
+            if(type==='kick') { f.type='lowpass'; f.frequency.value=1000; g.gain.exponentialRampToValueAtTime(0.01, time+0.3); }
+            else if(type==='snare') { f.type='highpass'; f.frequency.value=300; g.gain.exponentialRampToValueAtTime(0.01, time+0.3); }
+            else if(type==='hat') { f.type='highpass'; f.frequency.value=4000; g.gain.exponentialRampToValueAtTime(0.01, time+0.05); }
+            else if(type==='pad') { 
+                f.type='lowpass'; f.frequency.value=2000; 
+                g.gain.setValueAtTime(0, time);
+                g.gain.linearRampToValueAtTime(vol*1.5, time+0.5);
+                g.gain.linearRampToValueAtTime(0, time+2.5);
+                src.connect(f).connect(g).connect(window.sendReverb); 
+                src.start(time); return; 
+            }
+            else if(type==='fx') { f.type='bandpass'; f.frequency.value=1000; src.connect(f).connect(g).connect(window.sendDelay); src.start(time); return; }
+            
+            src.connect(f).connect(g).connect(masterBus);
+            src.start(time);
+        }
+
+        // Synths
+        function playSubKick(time) {
+            const o=ctx.createOscillator(); o.frequency.setValueAtTime(80, time); o.frequency.exponentialRampToValueAtTime(30, time+0.1);
+            const g=ctx.createGain(); g.gain.setValueAtTime(0.6, time); g.gain.exponentialRampToValueAtTime(0.01, time+0.2);
+            o.connect(g).connect(masterBus); o.start(time); o.stop(time+0.2);
+        }
+        function playNoiseSnare(time) {
+            const len=ctx.sampleRate*0.1; const b=ctx.createBuffer(1,len,ctx.sampleRate);
+            const d=b.getChannelData(0); for(let i=0; i<len; i++) d[i]=Math.random()*2-1;
+            const s=ctx.createBufferSource(); s.buffer=b;
+            const f=ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=1000;
+            const g=ctx.createGain(); g.gain.setValueAtTime(0.3, time); g.gain.exponentialRampToValueAtTime(0.01, time+0.1);
+            s.connect(f).connect(g).connect(masterBus); s.start(time);
+        }
+        function playBass(deg, time) {
+            const f=getFreq(deg, 2); const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f;
+            const g=ctx.createGain(); g.gain.setValueAtTime(0.4, time); g.gain.exponentialRampToValueAtTime(0.01, time+0.4);
+            const flt=ctx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.setValueAtTime(600, time); flt.frequency.exponentialRampToValueAtTime(100, time+0.2);
+            o.connect(flt).connect(g).connect(masterBus); o.start(time); o.stop(time+0.4);
+        }
+        function playOrchestraPad(deg, time) {
+            [0,4,7].forEach(t=>{
+                const f=getFreq(deg+t, 4);
+                [0.99,1.01].forEach(d=>{
+                    const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f*d;
+                    const g=ctx.createGain(); g.gain.setValueAtTime(0, time); g.gain.linearRampToValueAtTime(0.06, time+0.5); g.gain.linearRampToValueAtTime(0, time+2.0);
+                    const flt=ctx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value=1500;
+                    o.connect(flt).connect(g).connect(masterBus); g.connect(window.sendReverb);
+                    o.start(time); o.stop(time+2.5);
+                });
+            });
+        }
+        function playTrumpet(deg, time) {
+            const f=getFreq(deg, 4); const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f;
+            const g=ctx.createGain(); g.gain.setValueAtTime(0, time); g.gain.linearRampToValueAtTime(0.2, time+0.05); g.gain.exponentialRampToValueAtTime(0.01, time+0.4);
+            const flt=ctx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.setValueAtTime(800, time); flt.frequency.linearRampToValueAtTime(2500, time+0.1);
+            o.connect(flt).connect(g).connect(masterBus); o.start(time); o.stop(time+0.4);
+        }
+        function playFlute(deg, time) {
+            const f=getFreq(deg, 5); const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=f;
+            const g=ctx.createGain(); g.gain.setValueAtTime(0, time); g.gain.linearRampToValueAtTime(0.2, time+0.1); g.gain.linearRampToValueAtTime(0, time+0.5);
+            o.connect(g).connect(window.sendDelay).connect(masterBus); o.start(time); o.stop(time+0.5);
+        }
+        function playSynthLead(deg, time) {
+            const f=getFreq(deg, 4); const o=ctx.createOscillator(); o.type='square'; o.frequency.value=f;
+            const g=ctx.createGain(); g.gain.setValueAtTime(0.1, time); g.gain.exponentialRampToValueAtTime(0.01, time+0.3);
+            o.connect(g).connect(window.sendDelay).connect(masterBus); o.start(time); o.stop(time+0.3);
+        }
+
+        function downloadWav() {
+            if(recordedChunks.length===0) return;
+            const blob = new Blob(recordedChunks, {type:'audio/webm'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.style.display='none'; a.href=url; a.download='BREMONS_GENESIS_BGM.wav';
+            document.body.appendChild(a); a.click();
+            setTimeout(()=>URL.revokeObjectURL(url), 100);
+        }
+
+        function drawLoop() {
+            requestAnimationFrame(drawLoop);
+            const ana = window.currAnalyser || analyser;
+            if(!ana) return;
+            dataArray = new Uint8Array(ana.frequencyBinCount); ana.getByteFrequencyData(dataArray);
+            cCtx.fillStyle = 'rgba(0,0,0,0.5)'; cCtx.fillRect(0,0,canvas.width, canvas.height);
+            const w = canvas.width; const h = canvas.height; const barW = w/dataArray.length * 2.5;
+            let x=0;
+            for(let i=0; i<dataArray.length; i++){
+                const v = dataArray[i]; const barH = (v/255)*h;
+                cCtx.fillStyle = `hsl(${260 + (v/2)}, 80%, 60%)`;
+                cCtx.fillRect(x, h-barH, barW, barH); x+=barW+1;
+            }
+        }
+    </script>
+</body>
+</html>

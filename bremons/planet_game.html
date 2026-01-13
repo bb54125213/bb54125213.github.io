@@ -40,7 +40,7 @@
             position: absolute; bottom: 260px; left: 15%; width: 120px; height: 100px;
             z-index: 100; pointer-events: none; display: flex; flex-direction: column; 
             align-items: center; justify-content: flex-end;
-            transform: translateX(10px); /* 少し右に補正 */
+            transform: translateX(10px); 
         }
         
         /* 頭上の呼吸ゲージ */
@@ -102,7 +102,6 @@
             font-size: 16px; letter-spacing: 2px; color: #e74c3c; margin-bottom: 2px;
         }
 
-        /* 距離ゲージを下に移動 */
         .distance-panel {
             position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
             width: 90%; height: 16px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 10px;
@@ -229,8 +228,7 @@
 
             <div class="header-panel">
                 <div class="status-box">
-                    <div class="difficulty-stars" id="diffStars">
-                        </div>
+                    <div class="difficulty-stars" id="diffStars"></div>
                     <div class="life-container" id="lifeDisplay">❤❤❤</div>
                     <div id="planetName" style="font-size:12px; opacity:0.8;">惑星 ???</div>
                     <div style="margin-top:2px;">
@@ -252,27 +250,19 @@
             <div class="level-select-container">
                 <div class="level-btn" onclick="gameStart(1)">
                     <div>LEVEL 1</div>
-                    <div class="level-stars">
-                        <img src="./nightgame/star.png">
-                    </div>
+                    <div class="level-stars"><img src="./nightgame/star.png"></div>
                 </div>
                 <div class="level-btn" onclick="gameStart(2)">
                     <div>LEVEL 2</div>
-                    <div class="level-stars">
-                        <img src="./nightgame/star.png"><img src="./nightgame/star.png">
-                    </div>
+                    <div class="level-stars"><img src="./nightgame/star.png"><img src="./nightgame/star.png"></div>
                 </div>
                 <div class="level-btn" onclick="gameStart(3)">
                     <div>LEVEL 3</div>
-                    <div class="level-stars">
-                        <img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png">
-                    </div>
+                    <div class="level-stars"><img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png"></div>
                 </div>
                 <div class="level-btn" onclick="gameStart(4)">
                     <div>LEVEL 4</div>
-                    <div class="level-stars">
-                        <img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png">
-                    </div>
+                    <div class="level-stars"><img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png"><img src="./nightgame/star.png"></div>
                 </div>
             </div>
         </div>
@@ -285,10 +275,7 @@
 
         <div class="overlay-screen" id="gameOverOverlay" style="display: none;">
             <h2 style="color:#e74c3c; font-size:40px;">GAME OVER</h2>
-            <p>
-                探索失敗...<br>
-                隕石に衝突してしまった。
-            </p>
+            <p>探索失敗...<br>隕石に衝突してしまった。</p>
             <button class="pixel-btn btn-retry" onclick="location.reload()">もう一度挑戦</button>
             <br>
             <button class="pixel-btn" style="font-size:14px; background:#555;" onclick="location.href='stage_select.html'">戻る</button>
@@ -297,8 +284,7 @@
         <div class="overlay-screen" id="gameClearOverlay" style="display: none;">
             <h2 style="color:#2ecc71; font-size:40px;">MISSION CLEAR!</h2>
             <p>
-                無事にゴール地点へ到達！<br>
-                <br>
+                無事にゴール地点へ到達！<br><br>
                 今回の成果: <span id="resultSessionCount" style="font-size:24px; color:#f1c40f;">0</span> 匹<br>
                 総所持数: <span id="resultTotalCount" style="font-size:24px;">0</span> 匹
             </p>
@@ -310,6 +296,23 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ==========================================
+        // ★★★ ゲームバランス調整エリア ★★★
+        // ここで難易度ごとの「数」や「頻度」を変更してください
+        // ==========================================
+        // maxMonsters:  このステージで出現するモンスターの最大数
+        // totalMeteors: このステージで出現する隕石の最大数
+        // spawnRate:    出現間隔のフレーム数 (数字が大きいほど間隔が長くなり、ゆっくり出現します)
+        //               ※60で約1秒間隔です。200なら約3秒間隔。
+        // ==========================================
+        const DIFFICULTY_RULES = {
+            1: { maxMonsters: 3,  totalMeteors: 2, spawnRate: 200 }, // ゆっくり
+            2: { maxMonsters: 5,  totalMeteors: 3, spawnRate: 180 }, 
+            3: { maxMonsters: 8,  totalMeteors: 5, spawnRate: 150 },
+            4: { maxMonsters: 10, totalMeteors: 8, spawnRate: 120 }  // 速い
+        };
+        // ==========================================
 
         const firebaseConfig = {
             apiKey: "AIzaSyCUWMn07YntLyB8m4q5-zHmiwjYOz1c_nk",
@@ -332,13 +335,6 @@
             3: { name: "惑星プネウマ", monster: "Him", img: "./nightgame/yellow.png", id: "him", groundColor: "#DAA520" }
         };
 
-        const DIFFICULTY_RULES = {
-            1: { maxMonsters: 3,  totalMeteors: 2, spawnRate: 150 },
-            2: { maxMonsters: 5,  totalMeteors: 3, spawnRate: 120 },
-            3: { maxMonsters: 8,  totalMeteors: 5, spawnRate: 90 },
-            4: { maxMonsters: 10, totalMeteors: 8, spawnRate: 60 }
-        };
-
         const urlParams = new URLSearchParams(window.location.search);
         const pId = urlParams.get('planet') || 1;
         
@@ -353,7 +349,8 @@
         
         let monstersSpawnedTotal = 0; 
         let meteorsSpawnedTotal = 0;  
-        let goalSpawned = false; // ゴールが出たかどうか
+        let goalSpawned = false;
+        let goalDelayTimer = 0; // ゴール出現までの待機時間用
         
         let maxLives = 3;
         let currentLives = 3;
@@ -444,28 +441,44 @@
             if(groundOffset <= -128) groundOffset = 0; 
             document.getElementById('groundLayer').style.backgroundPosition = `${groundOffset}px bottom`;
 
-            // 進捗バーの更新（出現数ベース）
             updateProgressUI();
 
             if(analyser) processVoice();
 
-            // ゴール出現チェック
-            checkGoalSpawn();
+            // ゴール出現チェック（すべて出し切ったら少し待ってゴールを出す）
+            const allSpawned = (monstersSpawnedTotal >= currentRule.maxMonsters) && 
+                               (meteorsSpawnedTotal >= currentRule.totalMeteors);
+            
+            if(allSpawned && !goalSpawned) {
+                goalDelayTimer++;
+                // 最後の敵が出てから約2秒(120フレーム)後にゴールを出す
+                if(goalDelayTimer > 120) {
+                    spawnGoalFlag();
+                    goalSpawned = true;
+                    showNavi("前方にゴールを発見！<br>タッチしてクリアせよ！");
+                }
+            }
 
             spawnTimer++;
-            if(spawnTimer > currentRule.spawnRate && !goalSpawned) { 
+            // ゴールがまだ出ておらず、タイマーが出現間隔を超えたら
+            if(!allSpawned && spawnTimer > currentRule.spawnRate) { 
                 const canSpawnMonster = monstersSpawnedTotal < currentRule.maxMonsters;
                 const canSpawnMeteor = meteorsSpawnedTotal < currentRule.totalMeteors;
                 
+                // どちらを出すか決定
                 if (canSpawnMonster && canSpawnMeteor) {
+                    // 両方出せるならランダム
                     if (Math.random() < 0.5) spawnMonster();
                     else spawnMeteor();
                 } else if (canSpawnMonster) {
+                    // モンスターしか残っていない
                     spawnMonster();
                 } else if (canSpawnMeteor) {
+                    // 隕石しか残っていない
                     spawnMeteor();
                 }
                 
+                // 出現させたらタイマーリセット
                 spawnTimer = 0; 
             }
 
@@ -487,38 +500,18 @@
         function updateProgressUI() {
             const totalTarget = currentRule.maxMonsters + currentRule.totalMeteors;
             const currentTotal = monstersSpawnedTotal + meteorsSpawnedTotal;
+            // 敵が出現した割合でバーを進める
             const progress = Math.min(100, (currentTotal / totalTarget) * 100);
             document.getElementById('distBar').style.width = `${progress}%`;
         }
 
-        // ゴール出現ロジック
-        function checkGoalSpawn() {
-            if (goalSpawned) return;
-            
-            // 全て出し切ったか？
-            const allSpawned = (monstersSpawnedTotal >= currentRule.maxMonsters) && 
-                               (meteorsSpawnedTotal >= currentRule.totalMeteors);
-            
-            if (allSpawned) {
-                // 少し待ってからゴール旗を出す（即座だと重なる可能性があるため）
-                if (spawnTimer > 100) {
-                    spawnGoalFlag();
-                    goalSpawned = true;
-                    showNavi("前方にゴールを発見！<br>タッチしてクリアせよ！");
-                }
-            }
-        }
-
-        // ゴール旗の生成
         function spawnGoalFlag() {
             const canvas = document.createElement('canvas');
             canvas.width = 64; canvas.height = 128;
             const ctx = canvas.getContext('2d');
             
-            // 旗のポール
             ctx.fillStyle = '#aaa';
             ctx.fillRect(5, 10, 5, 118);
-            // 旗部分（チェッカー）
             ctx.fillStyle = '#fff';
             ctx.fillRect(10, 10, 50, 40);
             ctx.fillStyle = '#e74c3c';
@@ -718,7 +711,6 @@
                     }
                     if(obj.y > window.innerHeight) removeObject(obj);
                 } else if(obj.type === 'goal') {
-                    // ゴールの動きと判定
                     obj.x -= gameSpeed;
                     obj.el.style.left = obj.x + 'px';
                     if(obj.x < playerX + 80 && obj.x > playerX - 50) {
@@ -740,7 +732,6 @@
 
             gameObjects.forEach(obj => {
                 if(!obj.alive) return;
-                // ゴールはマップには出さない
                 if(obj.type === 'goal') return;
 
                 const dx = obj.x - playerX;

@@ -53,9 +53,10 @@
         </div>
     </div>
 
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, signInAnonymously, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // ★下の行に signInWithRedirect, getRedirectResult を追加しました
+        import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, signInAnonymously, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, writeBatch, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -80,9 +81,37 @@
         const logoutBtn = document.getElementById('logoutBtn');
         const userNameSpan = document.getElementById('userName');
 
+        // ★スマホかどうかの判定機能
+        const isMobile = () => {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            return /android|ipad|iphone|ipod/i.test(userAgent);
+        };
+
+        // ★ログインボタンの処理を修正
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch((error) => alert("ログイン失敗: " + error.message));
+            if (isMobile()) {
+                // スマホの場合：リダイレクト（画面遷移）でログイン
+                // ※Android Chromeではこれが最も確実です
+                signInWithRedirect(auth, provider);
+            } else {
+                // PCの場合：今まで通りポップアップ
+                signInWithPopup(auth, provider).catch((error) => alert("ログイン失敗: " + error.message));
+            }
         });
+
+        // ★リダイレクトから戻ってきた時の処理（スマホ用）
+        getRedirectResult(auth)
+            .then((result) => {
+                if (result) {
+                    // リダイレクト成功時の処理は onAuthStateChanged が検知するので、
+                    // ここでは特別な処理は不要ですが、エラーハンドリングのために記述しています
+                    console.log("スマホログイン成功");
+                }
+            })
+            .catch((error) => {
+                console.error("スマホログイン失敗:", error);
+                alert("ログインに失敗しました: " + error.message);
+            });
 
         guestLoginBtn.addEventListener('click', () => {
             signInAnonymously(auth)
@@ -113,9 +142,12 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const bgm = document.getElementById('bgm');
-            bgm.volume = 0.3;
-            bgm.play().catch(() => {});
-            document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
+            // エラー回避のためbgmが存在するか確認
+            if(bgm) {
+                bgm.volume = 0.3;
+                bgm.play().catch(() => {});
+                document.body.addEventListener('click', () => { if (bgm.paused) bgm.play(); }, { once: true });
+            }
         });
 
         document.getElementById('resetDataBtn').addEventListener('click', async () => {

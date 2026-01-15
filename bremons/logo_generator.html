@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>BREMONS Logo Painter V9</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #333; /* 作業画面の背景（画像には影響しません） */
+            background-image: 
+                linear-gradient(45deg, #444 25%, transparent 25%), 
+                linear-gradient(-45deg, #444 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #444 75%), 
+                linear-gradient(-45deg, transparent 75%, #444 75%);
+            background-size: 20px 20px;
+            color: #fff;
+            font-family: sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #output-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.5); /* 画像が見やすいように暗くするだけ */
+            border-radius: 10px;
+            display: inline-block;
+        }
+        img {
+            max-width: 100%;
+            border: 1px solid #fff; /* 画像の境界線 */
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><rect width="10" height="10" fill="%23ccc"/><rect x="10" y="10" width="10" height="10" fill="%23ccc"/></svg>'); 
+            /* ↑画像自体が透明であることを確認するためのチェック柄（保存時には含まれません） */
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>👇 下に画像が生成されます 👇</h2>
+    <p>画像が表示されたら、右クリックして「名前を付けて画像を保存」してください。</p>
+    <div id="status">フォント読み込み中...</div>
+    <button onclick="drawLogo()" id="retryBtn" style="display:none;">再生成する</button>
+
+    <div id="output-area">
+        <img id="result-img" alt="ここにロゴ画像が表示されます">
+    </div>
+
+    <canvas id="logoCanvas" style="display:none;"></canvas>
+
+    <script>
+        // 設定値
+        const TEXT_MAIN = "BREMONS";
+        const TEXT_SUB = "- ブレモンズ -";
+        const FONT_FAMILY = '"DotGothic16", sans-serif';
+        const FONT_SIZE_MAIN = 208;
+        const FONT_SIZE_SUB = 64;
+        
+        // フォントが読み込まれるのを待機してから実行
+        document.fonts.ready.then(function () {
+            // 念のため少し待つ（ブラウザの描画安定待ち）
+            setTimeout(() => {
+                drawLogo();
+                document.getElementById('status').innerText = "✅ 生成完了！";
+                document.getElementById('retryBtn').style.display = "inline-block";
+            }, 1000);
+        });
+
+        function drawLogo() {
+            const canvas = document.getElementById('logoCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // キャンバスサイズの設定（大きめに確保）
+            canvas.width = 1200;
+            canvas.height = 400;
+
+            // --- 1. キャンバスをクリア（透明にする） ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // --- 2. メインロゴ "BREMONS" の描画 ---
+            ctx.font = `${FONT_SIZE_MAIN}px ${FONT_FAMILY}`;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            // 文字間隔の調整（手動計算不要な最新ブラウザ向け）
+            if (ctx.letterSpacing !== undefined) {
+                ctx.letterSpacing = "8px";
+            }
+
+            const centerX = canvas.width / 2;
+            const centerY = 150; // 高さ位置
+
+            // ▼ 影の設定 (drop-shadow再現)
+            ctx.shadowColor = "rgba(255, 255, 255, 0.2)";
+            ctx.shadowBlur = 0; // ドット絵風なのでぼかさない
+            ctx.shadowOffsetX = 16;
+            ctx.shadowOffsetY = 16;
+
+            // ▼ グラデーションの作成 (Pink -> Blue -> Purple)
+            // テキストの横幅を測定してグラデーション幅を決める
+            const metrics = ctx.measureText(TEXT_MAIN);
+            const textWidth = metrics.width;
+            const gradient = ctx.createLinearGradient(centerX - textWidth/2, 0, centerX + textWidth/2, 0);
+            gradient.addColorStop(0, "#ff9a9e");
+            gradient.addColorStop(0.5, "#4facfe");
+            gradient.addColorStop(1, "#f093fb");
+
+            // ▼ 描画実行
+            ctx.fillStyle = gradient;
+            ctx.fillText(TEXT_MAIN, centerX, centerY);
+
+
+            // --- 3. サブタイトル "- ブレモンズ -" の描画 ---
+            // 影の設定変更
+            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+            ctx.shadowOffsetX = 4;
+            ctx.shadowOffsetY = 4;
+
+            ctx.font = `${FONT_SIZE_SUB}px ${FONT_FAMILY}`;
+            ctx.fillStyle = "#ffffff";
+            // メインテキストより少し下に
+            ctx.fillText(TEXT_SUB, centerX, centerY + 160);
+
+            // --- 4. 画像に変換して表示 ---
+            const dataUrl = canvas.toDataURL("image/png");
+            const img = document.getElementById('result-img');
+            img.src = dataUrl;
+        }
+    </script>
+</body>
+</html>

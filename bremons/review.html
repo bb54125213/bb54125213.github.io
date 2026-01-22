@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ゲーム評価 - BREMONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="systemLog" style="position:fixed; top:-60px; left:0; width:100%; z-index:9999;">
+        <span id="systemLogText"></span>
+    </div>
+
+    <div class="game-container">
+        <div class="scrolling-bg"></div>
+        
+        <div class="ui-layer" style="display:block; overflow-y:auto;">
+            <header class="stage-select-header">
+                <button onclick="location.href='index.html'" class="pixel-btn back-btn">←戻る</button>
+                <h2 class="screen-title" style="color:#f1c40f;">ゲーム評価</h2>
+            </header>
+
+            <div class="outside-links-area">
+                <a href="https://life-log-factory.github.io/index.html" target="_blank" rel="noopener noreferrer" class="about-us-btn">
+                    私たちの団体<br>LIFE LOG Factoryについて
+                </a>
+            </div>
+
+            <div class="review-form-container">
+                <p style="font-size:14px; margin-bottom:20px; line-height:1.5;">
+                    ゲームの改善にご協力ください
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">年代</label>
+                    <select id="ageSelect" class="pixel-select">
+                        <option value="" disabled selected>選択してください</option>
+                        <option value="10代未満">10代未満</option>
+                        <option value="10代">10代</option>
+                        <option value="20代">20代</option>
+                        <option value="30代">30代</option>
+                        <option value="40代">40代</option>
+                        <option value="50代">50代</option>
+                        <option value="60代以上">60代以上</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">性別</label>
+                    <select id="genderSelect" class="pixel-select">
+                        <option value="" disabled selected>選択してください</option>
+                        <option value="男性">男性</option>
+                        <option value="女性">女性</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">トレーニング性</label>
+                    <p class="rating-desc">呼吸機能が鍛えられそうか、<br>呼吸のポイントがわかるか</p>
+                    <div class="star-rating-group" id="trainingStars">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="1">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="2">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="3">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="4">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="5">
+                    </div>
+                    <input type="hidden" id="trainingVal" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ゲーム性</label>
+                    <p class="rating-desc">ゲームとして面白いか、<br>続けたいと思えるか</p>
+                    <div class="star-rating-group" id="gameStars">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="1">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="2">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="3">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="4">
+                        <img src="./nightgame/star.png" class="rating-star" data-val="5">
+                    </div>
+                    <input type="hidden" id="gameVal" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">感想</label>
+                    <textarea id="feedbackText" class="pixel-textarea" placeholder="自由にご記入ください..."></textarea>
+                </div>
+
+                <button id="submitBtn" class="pixel-btn start-btn" style="font-size:16px; margin-top:10px;">
+                    評価を送る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="successModal" class="success-overlay hidden">
+        <div class="success-content">
+            <h2 class="success-title">送信されました！</h2>
+            <p class="success-msg">貴重なご意見<br>ありがとうございます！</p>
+            
+            <div class="success-btn-group">
+                <button onclick="location.href='index.html'" class="return-game-btn">
+                    BREMONSに戻る
+                </button>
+                
+                <a href="https://life-log-factory.github.io/index.html" target="_blank" rel="noopener noreferrer" class="about-us-link-btn">
+                    私たちについて
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ★★★ GASのURLを設定してください ★★★
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKOvRR50g3ii423ixqgBA36yuOaKjN0Zl-e_Hy2DSGsGXnx5dFDxhTKEtm0OLzqQ_8/exec";
+
+        function setupStars(containerId, inputId) {
+            const container = document.getElementById(containerId);
+            const input = document.getElementById(inputId);
+            const stars = container.querySelectorAll('.rating-star');
+
+            stars.forEach((star, index) => {
+                star.addEventListener('click', () => {
+                    const val = index + 1;
+                    input.value = val;
+                    stars.forEach((s, i) => {
+                        if (i < val) s.classList.add('active');
+                        else s.classList.remove('active');
+                    });
+                });
+            });
+        }
+
+        setupStars('trainingStars', 'trainingVal');
+        setupStars('gameStars', 'gameVal');
+
+        document.getElementById('submitBtn').addEventListener('click', () => {
+            const age = document.getElementById('ageSelect').value;
+            const gender = document.getElementById('genderSelect').value;
+            const trainingRating = document.getElementById('trainingVal').value;
+            const gameRating = document.getElementById('gameVal').value;
+            const feedback = document.getElementById('feedbackText').value;
+
+            if (!age || !gender || trainingRating == "0" || gameRating == "0") {
+                showSystemMessage("ERR: 未入力の項目があります");
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = "送信中...";
+
+            const data = { age, gender, trainingRating, gameRating, feedback };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(data),
+                mode: 'no-cors'
+            })
+            .then(() => {
+                // ★修正: メッセージではなくモーダルを出す
+                document.getElementById('successModal').classList.remove('hidden');
+                btn.innerText = "送信完了";
+            })
+            .catch(err => {
+                console.error(err);
+                showSystemMessage("ERR: 送信失敗");
+                btn.disabled = false;
+                btn.innerText = "評価を送る";
+            });
+        });
+
+        function showSystemMessage(msg) {
+            const logBox = document.getElementById('systemLog');
+            const logText = document.getElementById('systemLogText');
+            logText.innerText = ">> " + msg;
+            logBox.style.top = "0";
+            setTimeout(() => { logBox.style.top = "-60px"; }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -173,13 +173,19 @@
 
         // --- ログイン処理 ---
         loginBtn.addEventListener('click', () => {
-            if (isMobile()) {
-                signInWithRedirect(auth, provider);
-            } else {
-                signInWithPopup(auth, provider).catch((error) => showSystemMessage("ERR: LOGIN FAILED"));
-            }
+            // デバイス問わずポップアップ認証に統一
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    // ログイン成功時の処理（onAuthStateChangedが発火するので空でも良いが、念のため）
+                    console.log("Login Success");
+                })
+                .catch((error) => {
+                    console.error(error);
+                    // 具体的なエラー内容を簡易表示（デバッグ用）
+                    showSystemMessage("ERR: " + error.code);
+                });
         });
-        
+                
         getRedirectResult(auth).catch((e) => console.error(e));
 
         guestLoginBtn.addEventListener('click', async () => {
